@@ -17,7 +17,7 @@ webui/dist/
 webui/coverage/
 webui/.vite/
 *.tsbuildinfo
-
+desktop/node_modules/
 # Python bytecode & caches
 *.pyc
 *.pyo
@@ -46,6 +46,8 @@ build/
 *.spec
 pip-wheel-metadata/
 share/python-wheels/
+dist2/
+
 
 # Test & coverage
 .coverage

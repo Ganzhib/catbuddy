@@ -1,0 +1,48 @@
+{
+  "name": "nanobot-desktop",
+  "version": "1.0.0",
+  "description": "nanobot 桌面版 - 你的个人 AI 助手",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "ai.nanobot.desktop",
+    "productName": "nanobot",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "setup.html",
+      "assets/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../nanobot",
+        "to": "nanobot",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../.venv",
+        "to": "venv"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "nanobot"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

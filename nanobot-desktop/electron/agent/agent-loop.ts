@@ -62,6 +62,7 @@ interface TurnCtx {
   startedAt: number
   onToolProgress?: (ev: ToolEvent) => Promise<void>
   onRetryWait?: (msg: string) => Promise<void>
+  onSystemMessage?: (text: string) => Promise<void>
 }
 
 // ══════════════════════════════
@@ -71,7 +72,8 @@ export class AgentLoop {
   readonly workspace: string
   readonly sessions: SessionManager
   readonly tools: ToolRegistry
-  readonly model: string
+  model: string
+  modelPresets: Record<string, string> = {}
 
   private provider: LLMProvider
   private context: ContextBuilder
@@ -156,6 +158,7 @@ export class AgentLoop {
     if (cbs) {
       ctx.onToolProgress = async (ev) => cbs.onToolProgress?.(ev)
       ctx.onRetryWait = async (msg) => cbs.onRetryWait?.(msg)
+      ctx.onSystemMessage = async (text) => cbs.onSystemMessage?.(text)
     }
 
     // 状态机循环

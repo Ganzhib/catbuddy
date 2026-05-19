@@ -29,11 +29,13 @@ const IPC = {
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
   CHANNELS_STATUS: 'channels:status',
+  SYSTEM_MESSAGE: 'agent:system-message',
+  APP_RESTART: 'app:restart',
 } as const
 
 const api: NanobotAPI = {
   // ── Agent ──
-  sendMessage: (content, media) => ipcRenderer.invoke(IPC.AGENT_SEND, { content, media }),
+  sendMessage: (chatId, content, media) => ipcRenderer.invoke(IPC.AGENT_SEND, { chatId, content, media }),
   stopAgent: (sessionKey) => ipcRenderer.invoke(IPC.AGENT_STOP, { sessionKey }),
   getStatus: () => ipcRenderer.invoke(IPC.AGENT_STATUS),
 
@@ -73,6 +75,12 @@ const api: NanobotAPI = {
     ipcRenderer.on(IPC.TURN_COMPLETE, h)
     return () => ipcRenderer.removeListener(IPC.TURN_COMPLETE, h)
   },
+  onSystemMessage: (cb) => {
+    const h = (_: IpcRendererEvent, d: any) => cb(d)
+    ipcRenderer.on(IPC.SYSTEM_MESSAGE, h)
+    return () => ipcRenderer.removeListener(IPC.SYSTEM_MESSAGE, h)
+  },
+  restartApp: () => ipcRenderer.invoke(IPC.APP_RESTART),
 
   // ── Session ──
   listSessions: () => ipcRenderer.invoke(IPC.SESSION_LIST),

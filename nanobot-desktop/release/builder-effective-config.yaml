@@ -1,0 +1,26 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.nanobot.desktop
+productName: nanobot
+files:
+  - filter:
+      - dist/**/*
+      - dist-electron/**/*
+      - electron/assets/**/*
+win:
+  target:
+    - nsis
+  icon: electron/assets/icon.png
+mac:
+  target:
+    - dmg
+  icon: electron/assets/icon.png
+linux:
+  target:
+    - AppImage
+  icon: electron/assets/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+electronVersion: 33.2.1

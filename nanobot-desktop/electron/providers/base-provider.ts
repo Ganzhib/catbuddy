@@ -28,7 +28,7 @@ export interface ChatStreamWithRetryOpts extends ChatStreamOpts {
 // ═══ 抽象基类 ═══
 export abstract class LLMProvider {
   abstract readonly name: string
-  abstract readonly defaultModel: string
+  defaultModel: string = ''
 
   generation: GenerationSettings = { temperature: 0.7, maxTokens: 4096 }
 

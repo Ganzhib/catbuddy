@@ -177,7 +177,7 @@ export class SessionManager {
       lastConsolidated: infoLine.last_consolidated ?? 0,
       metadata: infoLine.metadata ?? {},
     }
-    const messages: MessageRecord[] = lines.slice(1).map(JSON.parse)
+    const messages: MessageRecord[] = lines.slice(1).map((line) => JSON.parse(line))
     return { info, messages }
   }
 

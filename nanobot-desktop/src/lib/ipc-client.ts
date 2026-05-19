@@ -12,7 +12,7 @@ interface RetryWaitData { message: string }
 export class IpcClient {
   // ── Agent ──
   async sendMessage(content: string, media?: string[]) {
-    await window.nanobot.sendMessage(content, media)
+    await window.nanobot.sendMessage('desktop:local', content, media)
   }
 
   async stopAgent(sessionKey: string = 'desktop:local') {

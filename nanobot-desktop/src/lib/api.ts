@@ -50,7 +50,7 @@ export async function fetchWebuiThread(
     schemaVersion: 1,
     sessionKey: session.key,
     savedAt: session.updatedAt,
-    messages: session.messages.map(m => ({
+    messages: session.messages.map((m: any) => ({
       id: String(m.id),
       role: m.role as any,
       content: m.content,
@@ -81,7 +81,7 @@ export async function fetchSettings(
       resolved_provider: config.agents.defaults.provider,
       has_api_key: true,
     },
-    providers: Object.entries(config.providers).map(([name, p]) => ({
+    providers: Object.entries(config.providers).map(([name, p]: [string, any]) => ({
       name,
       label: name,
       configured: !!p.apiKey,

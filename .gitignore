@@ -47,8 +47,11 @@ build/
 pip-wheel-metadata/
 share/python-wheels/
 dist2/
-
-
+node_modules/
+dist-*/*
+/bridge/node_modules/
+/bridge/dist/
+/bridge/package-lock.json
 # Test & coverage
 .coverage
 .coverage.*

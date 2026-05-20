@@ -46,17 +46,38 @@ export async function fetchWebuiThread(
 ): Promise<WebuiThreadPersistedPayload | null> {
   const session = await window.nanobot.getSession(key)
   if (!session) return null
-  return {
+
+  const result: WebuiThreadPersistedPayload = {
     schemaVersion: 1,
     sessionKey: session.key,
     savedAt: session.updatedAt,
-    messages: session.messages.map((m: any) => ({
-      id: String(m.id),
-      role: m.role as any,
-      content: m.content,
-      createdAt: new Date(m.timestamp).getTime(),
-    })),
+    messages: [],
   }
+
+  for (const m of session.messages) {
+    if (m.role === 'tool') {
+      // 将 tool 内部消息转换为 trace 行，保持与 Agent 执行时一致的展示方式
+      result.messages.push({
+        id: String(m.id),
+        role: 'assistant',
+        kind: 'trace',
+        traces: [
+          `${m.name}: ${m.content}`,
+        ],
+        createdAt: new Date(m.timestamp).getTime(),
+        content: ''
+      })
+    } else {
+      result.messages.push({
+        id: String(m.id),
+        role: m.role as any,
+        content: m.content,
+        createdAt: new Date(m.timestamp).getTime(),
+      })
+    }
+  }
+
+  return result
 }
 
 /** 删除会话 */

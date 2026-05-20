@@ -161,14 +161,15 @@ export function useSessionHistory(key: string | null): {
           id: m.id ?? `hist-${idx}`,
           createdAt: typeof m.createdAt === "number" ? m.createdAt : Date.now(),
         }));
-        const last = ui[ui.length - 1];
-        const hasPending = last?.kind === "trace";
+        // 历史回放的数据都是已完成的，不存在"进行中"的中间状态。
+        // hasPendingToolCalls 仅在实时 WebSocket 推送场景有意义（页面热刷新时
+        // Agent 仍在执行）。应用重启后所有会话均为纯历史数据，始终为 false。
         setState((prev) => ({
           key,
           messages: ui,
           loading: false,
           error: null,
-          hasPendingToolCalls: hasPending,
+          hasPendingToolCalls: false,
           version: prev.key === key ? prev.version + 1 : 1,
         }));
       } catch (e) {

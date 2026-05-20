@@ -13,6 +13,7 @@ type StatusHandler = (status: ConnectionStatus) => void
 type RuntimeModelHandler = (modelName: string | null, modelPreset?: string | null) => void
 type SessionUpdateScope = 'metadata' | 'thread' | string
 type SessionUpdateHandler = (chatId: string, scope?: SessionUpdateScope) => void
+type GoHomeHandler = () => void
 
 export type StreamError =
   | { kind: 'message_too_big' }
@@ -39,6 +40,7 @@ export class NanobotClient {
   private _currentStreamId: string | null = null
   private _activeChatId: string = DEFAULT_CHAT_ID
   private _latencyMs: number | null = null
+  private _goHomeHandlers = new Set<GoHomeHandler>()
 
   constructor(private token: string, private wsPath: string) {
     // token / wsPath 保留兼容，实际通过 IPC 通信
@@ -141,6 +143,15 @@ export class NanobotClient {
           text,
           kind: 'progress',
         })
+        // /new 清空了后端 session → 刷新前端 + 回到首页
+        if (text === 'Started a new conversation.') {
+          for (const h of this.sessionUpdateHandlers) {
+            try { h(this._activeChatId, 'thread') } catch { /* 隔离 */ }
+          }
+          for (const h of this._goHomeHandlers) {
+            try { h() } catch { /* 隔离 */ }
+          }
+        }
       }),
     ]
 
@@ -191,6 +202,11 @@ export class NanobotClient {
   onError(handler: ErrorHandler): Unsubscribe {
     this.errorHandlers.add(handler)
     return () => this.errorHandlers.delete(handler)
+  }
+
+  onGoHomeRequest(handler: GoHomeHandler): Unsubscribe {
+    this._goHomeHandlers.add(handler)
+    return () => this._goHomeHandlers.delete(handler)
   }
 
   onChat(chatId: string, handler: EventHandler): Unsubscribe {

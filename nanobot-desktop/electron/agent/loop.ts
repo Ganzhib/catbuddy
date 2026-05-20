@@ -3,11 +3,11 @@
  * 对应原版 nanobot/agent/loop.py
  */
 import { nanoid } from "nanoid";
-import { ContextBuilder } from "./context-builder";
-import { AgentRunner } from "./agent-runner";
+import { ContextBuilder } from "./context";
+import { AgentRunner } from "./runner";
 import { ToolRegistry } from "./tool-registry";
 import { SessionManager } from "../session/session-manager";
-import { Consolidator } from "./consolidator";
+import { Consolidator } from "./memory";
 import { LLMProvider } from "../providers";
 import type {
   InboundMessage,

@@ -2,7 +2,7 @@
  * IPC Handlers — 注册所有 main process 侧的 IPC 处理
  */
 import { ipcMain, BrowserWindow, app } from 'electron'
-import { AgentLoop } from '../agent/agent-loop'
+import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import type { NanobotConfig, ToolEvent, TurnCompleteData } from '../../shared/types'
 

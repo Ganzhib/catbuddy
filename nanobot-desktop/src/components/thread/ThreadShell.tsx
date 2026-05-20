@@ -155,6 +155,13 @@ export function ThreadShell({
         messageCacheRef.current.set(chatId, normalized);
         return normalized;
       }
+      // /new 命令清空后端后，服务器返回空历史 — 清空前端显示
+      if (hasNewCanonicalHistory && historical.length === 0) {
+        pendingCanonicalHydrateRef.current.delete(chatId);
+        appliedHistoryVersionRef.current.set(chatId, historyVersion);
+        messageCacheRef.current.set(chatId, []);
+        return [];
+      }
       if (cached && cached.length > 0) return projectWebuiThreadMessages(cached);
       if (historical.length === 0 && prev.length > 0) return projectWebuiThreadMessages(prev);
       appliedHistoryVersionRef.current.set(chatId, historyVersion);

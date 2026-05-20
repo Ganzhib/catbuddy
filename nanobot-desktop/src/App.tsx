@@ -164,6 +164,14 @@ function Shell({
     return client.onRuntimeModelUpdate((modelName) => onModelNameChange(modelName))
   }, [client, onModelNameChange])
 
+  // /new 命令 → 回到首页
+  useEffect(() => {
+    return client.onGoHomeRequest(() => {
+      setActiveKey(null);
+      setView('chat');
+    })
+  }, [client])
+
   const onTurnEnd = useDeferredTitleRefresh(activeSession, refresh)
 
   const onConfirmDelete = useCallback(async () => {

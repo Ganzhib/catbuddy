@@ -17,6 +17,11 @@ import type {
   ToolEvent,
   TurnCompleteData,
 } from "../../shared/types";
+import {
+  CommandRouter,
+  type CommandContext,
+  registerBuiltinCommands,
+} from "../command";
 
 // ══════════════════════════════
 // 状态机
@@ -83,6 +88,7 @@ export class AgentLoop {
   readonly workspace: string;
   readonly sessions: SessionManager;
   readonly tools: ToolRegistry;
+  readonly commands: CommandRouter;
   model: string;
   modelPresets: Record<string, string> = {};
 
@@ -144,6 +150,9 @@ export class AgentLoop {
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.consolidationRatio ?? 0.5,
     });
+
+    this.commands = new CommandRouter();
+    registerBuiltinCommands(this.commands);
 
     this._semaphore = { max: 3, current: 0, queue: [] };
   }
@@ -265,157 +274,25 @@ export class AgentLoop {
 
   private async _state_command(ctx: TurnCtx): Promise<string> {
     const raw = ctx.msg.content.trim();
+    process.stderr.write(`[state] COMMAND ${ctx.sessionKey} raw="${raw}"\n`);
 
-    if (raw === "/stop") {
-      await this.cancelSession(ctx.sessionKey);
-      ctx.outbound = {
-        channel: ctx.msg.channel,
-        chatId: ctx.msg.chatId,
-        content: "Task cancelled.",
-        media: [],
-        metadata: {},
-        buttons: [],
-      };
-      return "shortcut";
-    }
+    const cmdCtx: CommandContext = {
+      msg: ctx.msg,
+      sessionKey: ctx.sessionKey,
+      raw,
+      args: "",
+      loop: this,
+    };
 
-    if (raw === "/new") {
-      this.sessions.clear(ctx.sessionKey);
-      ctx.outbound = {
-        channel: ctx.msg.channel,
-        chatId: ctx.msg.chatId,
-        content: "Started a new conversation.",
-        media: [],
-        metadata: {},
-        buttons: [],
-      };
-      return "shortcut";
-    }
+    const result = await this.commands.dispatch(cmdCtx);
+    process.stderr.write(`[state] COMMAND result=${result !== null ? result.content.slice(0, 40) : 'null'}\n`);
 
-    if (raw === "/status" || raw.startsWith("/status")) {
-      const uptime = this.uptime;
-      const min = Math.floor(uptime / 60);
-      const s = uptime % 60;
-      ctx.outbound = {
-        channel: ctx.msg.channel,
-        chatId: ctx.msg.chatId,
-        content: [
-          `**nanobot Desktop**`,
-          `Model: \`${this.model}\``,
-          `Uptime: ${min}m ${s}s`,
-          `Active sessions: ${this.activeSessionCount}`,
-          `Tools: ${this.tools.toolNames.length} (${
-            this.tools.toolNames.join(", ")
-          })`,
-          `Workspace: ${this.workspace}`,
-        ].join("\n"),
-        media: [],
-        metadata: {},
-        buttons: [],
-      };
-      return "shortcut";
-    }
-
-    if (raw === "/history" || raw.startsWith("/history")) {
-      const args = raw.split(/\s+/);
-      const n = Math.min(parseInt(args[1]) || 10, 50);
-      const msgs = this.sessions.getHistory(ctx.sessionKey, { maxMessages: n });
-      if (msgs.length === 0) {
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: "(no history)",
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-      } else {
-        const lines = msgs.map((m) => {
-          const preview = (m.content || "").replace(/\n/g, " ").slice(0, 100);
-          return `[${m.role}] ${preview}${preview.length >= 100 ? "..." : ""}`;
-        });
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: lines.join("\n"),
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
+    if (result !== null) {
+      ctx.outbound = result;
+      if (result.content) {
+        await ctx.onSystemMessage?.(result.content);
+        process.stderr.write(`[state] COMMAND systemMessage sent\n`);
       }
-      return "shortcut";
-    }
-
-    if (raw === "/model" || raw.startsWith("/model ")) {
-      const args = raw.split(/\s+/).slice(1);
-      if (args.length > 0 && this.modelPresets[args[0]]) {
-        this.setModelPreset(args[0]);
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: `Model switched to: ${this.model}`,
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-      } else {
-        const presets = Object.keys(this.modelPresets).join(", ") ||
-          "(none configured)";
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content:
-            `Current model: \`${this.model}\`\nAvailable presets: ${presets}\nUsage: /model <preset-name>`,
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-      }
-      return "shortcut";
-    }
-
-    if (raw === "/compact") {
-      const msgs = this.sessions.getHistory(ctx.sessionKey, {
-        maxMessages: 9999,
-      });
-      if (msgs.length < 2) {
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: "(not enough messages to compact)",
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-        return "shortcut";
-      }
-      ctx.onToolProgress?.({ name: "consolidator", status: "started" });
-      try {
-        const summary = await this.consolidator.compactIdleSession(
-          ctx.sessionKey,
-          Math.max(2, msgs.length - 2),
-        );
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: summary
-            ? `Compacted. Summary:\n${summary.slice(0, 500)}`
-            : "Nothing to compact.",
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-      } catch (err: any) {
-        ctx.outbound = {
-          channel: ctx.msg.channel,
-          chatId: ctx.msg.chatId,
-          content: `Compact failed: ${err.message}`,
-          media: [],
-          metadata: {},
-          buttons: [],
-        };
-      }
-      ctx.onToolProgress?.({ name: "consolidator", status: "completed" });
       return "shortcut";
     }
 

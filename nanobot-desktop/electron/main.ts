@@ -1,13 +1,13 @@
 /**
  * Electron 主进程入口
  */
-import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import { app, BrowserWindow , Menu } from "electron";
 import path from "node:path";
 import { loadEnvFile } from "./utils";
 import { fileURLToPath } from "node:url";
 import { registerIpcHandlers } from "./ipc/handlers.js";
 import { AgentLoop } from "./agent/agent-loop.js";
-import { createProvider } from "./providers/factory.js";
+import { createProvider } from "./providers";
 import { SessionManager } from "./session/session-manager.js";
 import { getDefaultConfig } from "./config/defaults.js";
 import { log } from "./utils";

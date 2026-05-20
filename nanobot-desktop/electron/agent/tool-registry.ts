@@ -17,7 +17,6 @@ export class ToolRegistry {
   private _workspace: string = ''
   private _restrictWorkspace: boolean = false
 
-  /** 设置工作区（用于路径安全检查） */
   setWorkspace(dir: string, restrict: boolean = false) {
     this._workspace = path.resolve(dir)
     this._restrictWorkspace = restrict

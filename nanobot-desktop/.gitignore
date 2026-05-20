@@ -7,6 +7,8 @@
 .web
 .orion
 dist-electron
+release-fresh/
+release/
 # Claude / AI assistant artifacts
 docs/superpowers/
 docs/plans/

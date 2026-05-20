@@ -1,6 +1,6 @@
 /**
  * Context Builder — 组装 LLM 输入上下文
- * 对应原版 nanobot/agent/context.py，用 Handlebars 替代 Jinja2
+ * nanobot/agent/context.py，用 Handlebars 替代 Jinja2
  */
 import * as fs from 'fs'
 import * as path from 'path'

@@ -2,11 +2,11 @@
  * LLM Provider 抽象基类
  */
 import type {
-  LLMMessage, LLMResponse, ToolCallRequest,
+  LLMMessage, LLMResponse, 
   ToolDefinition, GenerationSettings,
 } from '../../shared/types'
 
-// ═══ 流式聊天参数 ═══
+
 export interface ChatStreamOpts {
   messages: LLMMessage[]
   tools?: ToolDefinition[]
@@ -25,7 +25,7 @@ export interface ChatStreamWithRetryOpts extends ChatStreamOpts {
   timeout?: number
 }
 
-// ═══ 抽象基类 ═══
+
 export abstract class LLMProvider {
   abstract readonly name: string
   defaultModel: string = ''

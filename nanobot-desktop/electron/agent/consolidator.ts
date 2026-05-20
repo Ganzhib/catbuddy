@@ -4,7 +4,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { LLMProvider } from '../providers/base-provider'
+import { LLMProvider } from '../providers'
 import { SessionManager } from '../session/session-manager'
 import type { MessageRecord, LLMMessage } from '../../shared/types'
 

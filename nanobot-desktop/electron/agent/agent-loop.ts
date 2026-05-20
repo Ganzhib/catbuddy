@@ -8,7 +8,7 @@ import { AgentRunner } from "./agent-runner";
 import { ToolRegistry } from "./tool-registry";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./consolidator";
-import { LLMProvider } from "../providers/base-provider";
+import { LLMProvider } from "../providers";
 import type {
   InboundMessage,
   LLMMessage,

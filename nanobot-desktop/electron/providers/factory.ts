@@ -1,12 +1,16 @@
 /**
- * Provider 工厂 — 根据配置创建 LLM Provider 实例（含 Fallback 链）
+ * Provider 工厂 — 根据配置创建 LLM Provider 实例
  */
 import { OpenAICompatProvider } from './openai-compat'
 import { AnthropicProvider } from './anthropic'
 import { FallbackProvider } from './fallback'
 import type { LLMProvider } from './base-provider'
 import type { NanobotConfig } from '../../shared/types'
-
+/**
+ * 
+ * @param params    创建 Provider 的参数
+ * @returns 
+ */
 function makeProvider(params: {
   model: string
   providerName?: string

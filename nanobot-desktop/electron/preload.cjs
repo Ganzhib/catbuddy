@@ -2,35 +2,10 @@
  * Preload script — pure CommonJS, NO TypeScript compilation
  * 直接放在项目根目录，.cjs 扩展名强制 CJS 模式
  */
+
+import { IPC } from './ipc'
 const { contextBridge, ipcRenderer } = require('electron')
 
-const IPC = {
-  AGENT_SEND:       'agent:send',
-  AGENT_STOP:       'agent:stop',
-  AGENT_STATUS:     'agent:status',
-  STREAM_DELTA:     'agent:stream-delta',
-  STREAM_END:       'agent:stream-end',
-  REASONING_DELTA:  'agent:reasoning-delta',
-  REASONING_END:    'agent:reasoning-end',
-  TOOL_PROGRESS:    'agent:tool-progress',
-  RETRY_WAIT:       'agent:retry-wait',
-  TURN_COMPLETE:    'agent:turn-complete',
-  SYSTEM_MESSAGE:   'agent:system-message',
-  SESSION_LIST:     'session:list',
-  SESSION_GET:      'session:get',
-  SESSION_DELETE:   'session:delete',
-  SESSION_CLEAR:    'session:clear',
-  SESSION_NEW:      'session:new',
-  CONFIG_GET:       'config:get',
-  CONFIG_UPDATE:    'config:update',
-  CONFIG_LIST_MODELS: 'config:list-models',
-  CONFIG_SET_MODEL: 'config:set-model',
-  WORKSPACE_SELECT: 'workspace:select',
-  WORKSPACE_GET:    'workspace:get',
-  SKILLS_LIST:      'skills:list',
-  SKILLS_TOGGLE:    'skills:toggle',
-  CHANNELS_STATUS:  'channels:status',
-}
 
 const api = {
   // ── Agent ──

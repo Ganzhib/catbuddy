@@ -2,7 +2,7 @@
  * AgentRunner — LLM + Tool 执行循环 + 上下文治理
  * 对应原版 nanobot/agent/runner.py
  */
-import { LLMProvider } from '../providers/base-provider'
+import { LLMProvider } from '../providers'
 import { ToolRegistry } from './tool-registry'
 import type {
   LLMMessage, ToolCallRequest, ToolEvent,

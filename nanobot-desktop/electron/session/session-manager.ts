@@ -1,9 +1,8 @@
-/**
- * Session Manager — JSONL 实现Local Fist原则
- */
+/** Session Manager - JSONL 实现 Local First 原则 */
 import * as fs from 'fs'
 import * as path from 'path'
 import type { SessionInfo, SessionDetail, MessageRecord } from '../../shared/types'
+
 
 const MAX_MESSAGES = 2000
 const PREVIEW_MAX_CHARS = 120
@@ -15,30 +14,17 @@ export class SessionManager {
   constructor(workspace: string) {
     this._dir = path.join(workspace, 'sessions')
     fs.mkdirSync(this._dir, { recursive: true })
-    // 迁移旧数据库（如果存在）
-    const dbPath = path.join(this._dir, 'sessions.db')
-    if (fs.existsSync(dbPath)) {
-      fs.renameSync(dbPath, path.join(this._dir, 'sessions.db.bak'))
-    }
+    this._migrateLegacyDb()
   }
 
-  private _safeKey(key: string): string {
-    return key.replace(/[<>:"/\\|?*]/g, '_').slice(0, 200)
-  }
 
-  private _filePath(key: string): string {
-    return path.join(this._dir, `${this._safeKey(key)}.jsonl`)
-  }
-
-  // ═══ CRUD ═══
 
   getOrCreate(key: string): SessionInfo {
     if (this._cache.has(key)) return this._cache.get(key)!
     const existing = this.get(key)
     if (existing) return existing
 
-    const now = new Date().toISOString()
-    const info: SessionInfo = { key, title: '', preview: '', createdAt: now, updatedAt: now, lastConsolidated: 0, metadata: {} }
+    const info = this._createEmptyInfo(key)
     this._save(info, [])
     this._cache.set(key, info)
     return info
@@ -70,21 +56,10 @@ export class SessionManager {
 
   addMessage(sessionKey: string, msg: Omit<MessageRecord, 'id' | 'sessionKey'>) {
     const fp = this._filePath(sessionKey)
-    let info: SessionInfo
-    let messages: MessageRecord[]
-
-    if (fs.existsSync(fp)) {
-      const loaded = this._load(fp)
-      info = loaded.info
-      messages = loaded.messages
-    } else {
-      const now = new Date().toISOString()
-      info = { key: sessionKey, title: '', preview: '', createdAt: now, updatedAt: now, lastConsolidated: 0, metadata: {} }
-      messages = []
-    }
+    const { info, messages } = fs.existsSync(fp) ? this._load(fp) : this._initSession(sessionKey)
 
     const now = new Date().toISOString()
-    const id = messages.length > 0 ? messages[messages.length - 1].id + 1 : 1
+    const id = this._nextMessageId(messages)
 
     messages.push({
       id,
@@ -100,14 +75,12 @@ export class SessionManager {
 
     // 上限裁剪
     if (messages.length > MAX_MESSAGES) {
-      messages = messages.slice(messages.length - MAX_MESSAGES)
+      messages.splice(0, messages.length - MAX_MESSAGES)
     }
 
+    // 更新会话预览
     info.updatedAt = now
-
-    // 生成预览
-    const lastUser = [...messages].reverse().find((m: any) => m.role === 'user')
-    info.preview = (lastUser?.content ?? '').slice(0, PREVIEW_MAX_CHARS)
+    info.preview = this._extractPreview(messages)
 
     this._save(info, messages)
     this._cache.set(sessionKey, info)
@@ -121,17 +94,14 @@ export class SessionManager {
     const limit = opts?.maxMessages ?? 120
 
     // 找到最后一条 user 消息的位置
-    let startIdx = messages.length
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') { startIdx = i; break }
-    }
+    const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === 'user')
+    const startIdx = lastUserIdx >= 0 ? messages.length - lastUserIdx : 0
 
-    return messages.slice(Math.max(0, startIdx), messages.length).slice(-limit)
+    return messages.slice(startIdx, messages.length).slice(-limit)
   }
 
   clear(key: string) {
-    const now = new Date().toISOString()
-    const info: SessionInfo = { key, title: '', preview: '', createdAt: now, updatedAt: now, lastConsolidated: 0, metadata: {} }
+    const info = this._createEmptyInfo(key)
     this._save(info, [])
     this._cache.set(key, info)
   }
@@ -139,6 +109,7 @@ export class SessionManager {
   delete(key: string): boolean {
     const fp = this._filePath(key)
     this._cache.delete(key)
+
     if (fs.existsSync(fp)) {
       fs.unlinkSync(fp)
       return true
@@ -148,7 +119,7 @@ export class SessionManager {
 
   list(): SessionInfo[] {
     const results: SessionInfo[] = []
-    const files = fs.readdirSync(this._dir).filter(f => f.endsWith('.jsonl'))
+    const files = fs.readdirSync(this._dir).filter((f) => f.endsWith('.jsonl'))
 
     for (const f of files) {
       const fp = path.join(this._dir, f)
@@ -163,20 +134,55 @@ export class SessionManager {
     return results.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   }
 
-  // ═══ 内部方法 ═══
+
+
+  private _migrateLegacyDb() {
+    const dbPath = path.join(this._dir, 'sessions.db')
+    if (fs.existsSync(dbPath)) {
+      fs.renameSync(dbPath, path.join(this._dir, 'sessions.db.bak'))
+    }
+  }
+
+  private _safeKey(key: string): string {
+    return key.replace(/[<>:"/\\|?*]/g, '_').slice(0, 200)
+  }
+
+  private _filePath(key: string): string {
+    return path.join(this._dir, `${this._safeKey(key)}.jsonl`)
+  }
+
+  private _createEmptyInfo(key: string): SessionInfo {
+    const now = new Date().toISOString()
+    return {
+      key,
+      title: '',
+      preview: '',
+      createdAt: now,
+      updatedAt: now,
+      lastConsolidated: 0,
+      metadata: {},
+    }
+  }
+
+  private _initSession(sessionKey: string) {
+    return {
+      info: this._createEmptyInfo(sessionKey),
+      messages: [] as MessageRecord[],
+    }
+  }
+
+  private _nextMessageId(messages: MessageRecord[]): number {
+    return messages.length > 0 ? messages[messages.length - 1].id + 1 : 1
+  }
+
+  private _extractPreview(messages: MessageRecord[]): string {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+    return (lastUser?.content ?? '').slice(0, PREVIEW_MAX_CHARS)
+  }
 
   private _load(fp: string): { info: SessionInfo; messages: MessageRecord[] } {
     const lines = fs.readFileSync(fp, 'utf-8').split('\n').filter(Boolean)
-    const infoLine = JSON.parse(lines[0])
-    const info: SessionInfo = {
-      key: infoLine.key,
-      title: infoLine.title ?? '',
-      preview: infoLine.preview ?? '',
-      createdAt: infoLine.created_at,
-      updatedAt: infoLine.updated_at,
-      lastConsolidated: infoLine.last_consolidated ?? 0,
-      metadata: infoLine.metadata ?? {},
-    }
+    const info = this._parseInfoLine(lines[0])
     const messages: MessageRecord[] = lines.slice(1).map((line) => JSON.parse(line))
     return { info, messages }
   }
@@ -184,7 +190,11 @@ export class SessionManager {
   private _readInfoLine(fp: string): SessionInfo | null {
     const firstLine = fs.readFileSync(fp, 'utf-8').split('\n')[0]
     if (!firstLine) return null
-    const d = JSON.parse(firstLine)
+    return this._parseInfoLine(firstLine)
+  }
+
+  private _parseInfoLine(raw: string): SessionInfo {
+    const d = JSON.parse(raw)
     return {
       key: d.key,
       title: d.title ?? '',
@@ -208,9 +218,10 @@ export class SessionManager {
       metadata: info.metadata,
     }
 
-    const lines = [JSON.stringify(meta), ...messages.map(m => JSON.stringify(m))]
-    // 原子写入：先写临时文件再 rename
+    const lines = [JSON.stringify(meta), ...messages.map((m) => JSON.stringify(m))]
     const tmp = fp + '.tmp'
+
+    // 原子写入：先写临时文件再 rename
     fs.writeFileSync(tmp, lines.join('\n') + '\n', 'utf-8')
     fs.renameSync(tmp, fp)
   }

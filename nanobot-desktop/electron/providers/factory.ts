@@ -5,7 +5,7 @@ import { OpenAICompatProvider } from './openai-compat'
 import { AnthropicProvider } from './anthropic'
 import { FallbackProvider } from './fallback'
 import type { LLMProvider } from './base-provider'
-import type { NanobotConfig, ProviderConfig, InlineFallbackConfig } from '../../shared/types'
+import type { NanobotConfig } from '../../shared/types'
 
 function makeProvider(params: {
   model: string

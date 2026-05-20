@@ -1,5 +1,5 @@
 /**
- * Session Manager — JSONL 文件存储（和 Python 原版一致）
+ * Session Manager — JSONL 实现Local Fist原则
  */
 import * as fs from 'fs'
 import * as path from 'path'

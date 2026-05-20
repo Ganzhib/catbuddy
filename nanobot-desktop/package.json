@@ -9,6 +9,9 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "build:unpack": "tsc && vite build && electron-builder --dir",
+    "build:unpack:fresh": "tsc && vite build && electron-builder --dir --config.directories.output=release-fresh",
+    "kill-app": "taskkill /IM nanobot.exe /F 2>nul || exit 0",
+    "rebuild:unpack": "pnpm run kill-app && pnpm run build:unpack",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
@@ -58,7 +61,7 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11",
+    "vite": "^5.4.21",
     "vite-plugin-electron": "^0.28.0",
     "vite-plugin-electron-renderer": "^0.14.0",
     "vitest": "^2.1.8"
@@ -72,7 +75,10 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "electron/assets/**/*"
+      "electron/assets/**/*",
+      "preload.cjs",
+      "templates/**/*",
+      "skills/**/*"
     ],
     "win": {
       "target": [
@@ -96,5 +102,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
   }
 }

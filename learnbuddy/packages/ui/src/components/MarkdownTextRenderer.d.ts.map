@@ -1,0 +1,1 @@
+{"version":3,"file":"MarkdownTextRenderer.d.ts","sourceRoot":"","sources":["MarkdownTextRenderer.tsx"],"names":[],"mappings":"AAYA,OAAO,0BAA0B,CAAC;AAElC,UAAU,yBAAyB;IACjC,QAAQ,EAAE,MAAM,CAAC;IACjB,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,aAAa,CAAC,EAAE,OAAO,CAAC;CACzB;AAKD;;;GAGG;AACH,MAAM,CAAC,OAAO,UAAU,oBAAoB,CAAC,EAC3C,QAAQ,EACR,SAAS,EACT,aAAoB,GACrB,EAAE,yBAAyB,2CAgH3B"}

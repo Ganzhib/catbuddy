@@ -12,7 +12,7 @@ export function registerIpcHandlers(
   config: NanobotConfig,
 ) {
   // ═══ Agent ═══
-  // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → WebUIChannel → 前端
+  // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → DesktopChannel → 前端
   ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
     const id = (chatId && !chatId.startsWith('desktop:')) ? `desktop:${chatId}` : (chatId || 'desktop:main')
     const bus = agentLoop.bus;

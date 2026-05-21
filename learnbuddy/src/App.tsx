@@ -12,7 +12,7 @@ import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
 import { clearSavedSecret, fetchBootstrap, loadSavedSecret, saveSecret } from '@/lib/bootstrap'
 import { deriveTitle } from '@/lib/format'
-import { learnbuddyClient } from '@/lib/learnbuddy-client'
+import { createLearnbuddyClient, type learnbuddyClient } from '@/lib/learnbuddy-client'
 import { ClientProvider, useClient } from '@/providers/ClientProvider'
 import type { ChatSummary } from '@/lib/types'
 
@@ -36,7 +36,10 @@ export default function App() {
     setBootError(null)
     try {
       const boot = await fetchBootstrap()
-      const client = new learnbuddyClient(boot.token, boot.ws_path)
+      const client = createLearnbuddyClient({
+        token: boot.token,
+        wsPath: boot.ws_path,
+      })
       client.connect()
       setState({ client, token: boot.token, modelName: boot.model_name ?? null })
       setBootError(null)

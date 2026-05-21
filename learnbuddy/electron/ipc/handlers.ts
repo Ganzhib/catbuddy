@@ -4,13 +4,17 @@
 import { ipcMain, app } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
+import { saveConfig } from '../config/persist'
 import type { learnbuddyConfig } from '../../shared/types'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
   config: learnbuddyConfig,
+  configFile: string,
 ) {
+  const persistConfig = () => saveConfig(configFile, config)
+
   // ═══ Agent ═══
   // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → DesktopChannel → 前端
   ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
@@ -69,9 +73,12 @@ export function registerIpcHandlers(
       agentLoop.setModel(value)
     }
 
+    if (path === 'agents.defaults.disabledSkills' && Array.isArray(value)) {
+      agentLoop.setDisabledSkills(value as string[])
+    }
+
     // Provider API key 变更 → 重建 fallback provider
     if (path.startsWith('providers.') && path.endsWith('.apiKey')) {
-      console.log('[config] Provider updated, reloading...')
       try {
         const { createProvider } = await import('../providers/factory.js')
         const newProvider = createProvider(config)
@@ -80,8 +87,11 @@ export function registerIpcHandlers(
         if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
       } catch (err: any) {
         console.error('[config] Failed to reload provider:', err.message)
+        throw err
       }
     }
+
+    persistConfig()
   })
 
   ipcMain.handle('config:list-models', async () => {
@@ -91,6 +101,7 @@ export function registerIpcHandlers(
 
   ipcMain.handle('config:set-model', async (_event, { presetName }: { presetName: string }) => {
     agentLoop.setModelPreset(presetName)
+    persistConfig()
   })
 
   // ═══ Workspace ═══
@@ -108,7 +119,9 @@ export function registerIpcHandlers(
   // ═══ Skills ═══
   ipcMain.handle('skills:list', async () => agentLoop.listSkills())
   ipcMain.handle('skills:toggle', async (_event, { name, enabled }: { name: string; enabled: boolean }) => {
-    agentLoop.toggleSkill(name, enabled)
+    const disabled = agentLoop.toggleSkill(name, enabled)
+    config.agents.defaults.disabledSkills = disabled
+    persistConfig()
   })
 
   // ═══ Restart ═══
@@ -119,5 +132,7 @@ export function registerIpcHandlers(
   })
 
   // ═══ Channels ═══
-  ipcMain.handle('channels:status', async () => ({}))
+  ipcMain.handle('channels:status', async () => ({
+    desktop: { enabled: true, running: true },
+  }))
 }

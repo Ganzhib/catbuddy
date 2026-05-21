@@ -64,6 +64,11 @@ export class ContextBuilder {
     }
   }
 
+  setDisabledSkills(names: string[]): void {
+    this.disabledSkills.clear()
+    for (const name of names) this.disabledSkills.add(name)
+  }
+
   /** 读取 workspace 中的文件 */
   readWorkspaceFile(name: string): string {
     try { return fs.readFileSync(path.join(this.workspace, name), 'utf-8') } catch { return '' }

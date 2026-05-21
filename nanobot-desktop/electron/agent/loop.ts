@@ -22,6 +22,7 @@ import {
   type CommandContext,
   registerBuiltinCommands,
 } from "../command";
+import type { MessageBus } from "../bus";
 
 // ══════════════════════════════
 // 状态机
@@ -104,8 +105,8 @@ export class AgentLoop {
   private maxMessages: number;
   private providerRetryMode: "standard" | "persistent";
   private _activeTasks = new Map<string, AbortController[]>();
-  // 并发控制
-  private _semaphore: { max: number; current: number; queue: (() => void)[] };
+
+  private bus: MessageBus | null;
 
   constructor(opts: {
     provider: LLMProvider;
@@ -120,6 +121,7 @@ export class AgentLoop {
     restrictToWorkspace?: boolean;
     consolidationRatio?: number;
     sessionManager?: SessionManager;
+    bus?: MessageBus;
   }) {
     this.provider = opts.provider;
     this.workspace = opts.workspace;
@@ -151,10 +153,10 @@ export class AgentLoop {
       consolidationRatio: opts.consolidationRatio ?? 0.5,
     });
 
+    this.bus = opts.bus ?? null;
+
     this.commands = new CommandRouter();
     registerBuiltinCommands(this.commands);
-
-    this._semaphore = { max: 3, current: 0, queue: [] };
   }
 
   // ═══ 公开属性 ═══
@@ -165,7 +167,111 @@ export class AgentLoop {
     return this._activeTasks.size;
   }
 
-  // ═══ 主入口 ═══
+  // ═══ Bus 模式：后台消费循环（参考 nanobot/agent/loop.py run()） ═══
+  async run(): Promise<void> {
+    if (!this.bus) throw new Error("AgentLoop.run() requires a MessageBus");
+    this._running = true;
+    while (this._running) {
+      const msg = await this.bus.consumeInbound();
+      if (!msg) continue;
+
+      const raw = msg.content.trim();
+
+      // Priority 命令在锁外处理（/stop 必须立即响应）
+      if (this.commands.isPriority(raw)) {
+        const cmdCtx: CommandContext = {
+          msg, sessionKey: msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`,
+          raw, args: "", loop: this,
+        };
+        const result = await this.commands.dispatchPriority(cmdCtx);
+        if (result) await this.bus.publishOutbound(result);
+        continue;
+      }
+
+      // 普通消息 → _dispatch (per-session lock + stream → bus.outbound)
+      this._dispatch(msg).catch((err) =>
+        console.error("[agent] _dispatch crashed:", err),
+      );
+    }
+  }
+
+  /**
+   * _dispatch — 处理单条消息。
+   * 参考 nanobot/agent/loop.py _dispatch()
+   * stream callback 直接发布到 bus.outbound（而不是 IPC），由 ChannelManager 路由。
+   */
+  private async _dispatch(msg: InboundMessage): Promise<void> {
+    const key = msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
+    const streamBase = `${key}:${Date.now()}`;
+    let segment = 0;
+    const streamId = (): string => `${streamBase}:${segment}`;
+
+    const cbs: StreamCallbacks = {
+      onStreamDelta: (delta) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: delta, media: [], buttons: [],
+          metadata: { _stream_delta: true, _stream_id: streamId() },
+        });
+      },
+      onStreamEnd: () => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: "", media: [], buttons: [],
+          metadata: { _stream_end: true, _stream_id: streamId() },
+        });
+        segment++;
+      },
+      onReasoningDelta: (content) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content, media: [], buttons: [],
+          metadata: { _reasoning_delta: true },
+        });
+      },
+      onReasoningEnd: () => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: "", media: [], buttons: [],
+          metadata: { _reasoning_end: true },
+        });
+      },
+      onToolProgress: (ev) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: `${ev.status === "started" ? "🔧" : "✅"} ${ev.name}${
+            ev.detail ? `: ${ev.detail}` : ""
+          }`,
+          media: [], buttons: [],
+          metadata: { _progress: true, _tool_hint: true },
+        });
+      },
+      onSystemMessage: (text) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: text, media: [], buttons: [],
+          metadata: { _progress: true },
+        });
+      },
+    };
+
+    try {
+      const response = await this.process(msg, cbs);
+      if (response) {
+        response.metadata = { ...response.metadata, _streamed: true };
+        await this.bus!.publishOutbound(response);
+      }
+    } catch (err) {
+      console.error("[agent] _dispatch error:", err);
+      this.bus!.publishOutbound({
+        channel: msg.channel, chatId: msg.chatId,
+        content: `Sorry, I encountered an error.`,
+        media: [], buttons: [], metadata: {},
+      });
+    }
+  }
+
+  // ═══ process：直接调用模式（IPC handler / cron / heartbeat） ═══
   async process(
     msg: InboundMessage,
     cbs?: StreamCallbacks,

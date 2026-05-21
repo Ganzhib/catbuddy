@@ -6,8 +6,12 @@ const MAX_COUNT = 50;
 const MAX_CONTENT_CHARS = 100;
 
 export function cmdHistory(ctx: CommandContext): OutboundMessage {
-  const parts = ctx.raw.trim().split(/\s+/);
-  const n = Math.max(1, Math.min(parseInt(parts[1]) || DEFAULT_COUNT, MAX_COUNT));
+  const args = ctx.args
+    ? ctx.args.trim()
+    : new URLSearchParams(ctx.raw).toString() || "";
+  const n = args
+    ? Math.max(1, Math.min(parseInt(args) || DEFAULT_COUNT, MAX_COUNT))
+    : DEFAULT_COUNT;
 
   const msgs = ctx.loop.sessions.getHistory(ctx.sessionKey, {
     maxMessages: n,

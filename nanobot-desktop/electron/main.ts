@@ -11,6 +11,8 @@ import { createProvider } from "./providers";
 import { SessionManager } from "./session/session-manager.js";
 import { getDefaultConfig } from "./config/defaults.js";
 import { log } from "./utils";
+import { MessageBus } from "./bus/index.js";
+import { ChannelManager, WebUIChannel } from "./channels/index.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 按优先级加载 .env（延迟到 app ready 后）
@@ -18,6 +20,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
 let agentLoop: AgentLoop | null = null;
 let sessions: SessionManager | null = null;
+let bus: MessageBus | null = null;
+let channelManager: ChannelManager | null = null;
 
 function getPreloadPath(): string {
   return path.join(__dirname, "./preload.cjs");
@@ -62,24 +66,39 @@ function createWindow() {
 }
 
 async function initAgent() {
-  const config = getDefaultConfig();
+  // 工作区域: ~/.nanobot-desktop
   const home = app.getPath("home");
-  const workspace = path.join(home, "workspace");
-
-  // 首次启动时创建配置目录和 config.json
-  const configDir = path.join(home, "config");
-  const configFile = path.join(configDir, "config.json");
+  const nanobotDir = path.join(home, ".nanobot-desktop");
+  const workspace = path.join(nanobotDir, "workspace");
+  const configFile = path.join(nanobotDir, "config", "config.json");
 
   const fs = await import("node:fs");
-  fs.mkdirSync(configDir, { recursive: true });
-  fs.writeFileSync(configFile, JSON.stringify(config, null, 2), "utf-8");
+  fs.mkdirSync(path.dirname(configFile), { recursive: true });
+
+  // 优先读取已有 config.json，首次启动时生成默认配置
+  let config: any;
+  if (fs.existsSync(configFile)) {
+    config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+    console.log("[main] Config loaded from:", configFile);
+  } else {
+    config = getDefaultConfig();
+    // 用真实路径覆写默认 workspace
+    config.workspace = workspace.replace(/\\/g, "/");
+    fs.writeFileSync(configFile, JSON.stringify(config, null, 2), "utf-8");
+    console.log("[main] Config written to:", configFile);
+  }
+
   // 将 config_path 写入 config 对象，供前端 Settings 展示
   (config as any).runtime = { config_path: configFile };
-  console.log("[main] Config written to:", configFile);
 
   console.log("[main] Workspace:", workspace);
 
   sessions = new SessionManager(workspace);
+
+  // ── Bus + ChannelDispatcher（未来多管道的基础设施） ──
+  bus = new MessageBus();
+  channelManager = new ChannelManager(bus);
+  channelManager.register(new WebUIChannel());
 
   const provider = createProvider(config);
   agentLoop = new AgentLoop({
@@ -91,8 +110,15 @@ async function initAgent() {
     contextWindowTokens: config.agents.defaults.contextWindowTokens,
     restrictToWorkspace: config.tools.restrictToWorkspace,
     sessionManager: sessions,
+    bus,  // ← 注入 bus，开启 multi-channel 支持
   });
   registerIpcHandlers(agentLoop, sessions, config);
+
+  // 启动 bus 驱动的后台循环
+  channelManager.start();
+  agentLoop.run().catch((err) =>
+    console.error("[main] AgentLoop.run() crashed:", err)
+  );
   log.success("[main] Backend initialized successfully");
 }
 

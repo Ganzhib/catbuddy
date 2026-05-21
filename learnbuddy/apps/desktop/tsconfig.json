@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../packages/ui/src/*"],
+      "@learnbuddy/ui": ["../../packages/ui/src/index.ts"],
+      "@learnbuddy/ui/*": ["../../packages/ui/src/*"],
+      "@learnbuddy/shared/brand": ["../../packages/shared/src/brand.mjs"],
+      "@learnbuddy/shared": ["../../packages/shared/src/index.ts"],
+      "@learnbuddy/client": ["../../packages/client/src/index.ts"],
+      "@learnbuddy/platform": ["../../packages/platform/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "electron/**/*",
+    "../../packages/shared/src/**/*",
+    "../../packages/client/src/**/*",
+    "../../packages/platform/src/**/*",
+    "../../packages/ui/src/**/*",
+    "vite-env.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "dist-electron", "release"]
+}

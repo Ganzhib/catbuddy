@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../packages/ui/src/*"],
+      "@learnbuddy/ui": ["../../packages/ui/src/index.ts"],
+      "@learnbuddy/ui/*": ["../../packages/ui/src/*"],
+      "@learnbuddy/shared/brand": ["../../packages/shared/src/brand.mjs"],
+      "@learnbuddy/shared": ["../../packages/shared/src/index.ts"],
+      "@learnbuddy/client": ["../../packages/client/src/index.ts"],
+      "@learnbuddy/platform": ["../../packages/platform/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*", "vite-env.d.ts", "../../packages/ui/src/**/*", "../../packages/ui/vite-env.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

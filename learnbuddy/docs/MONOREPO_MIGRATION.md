@@ -2,8 +2,8 @@
 
 从当前 **单包 Electron 桌面应用** 迁移到 **Web + 桌面共用 UI/客户端、分应用打包** 的 pnpm monorepo。
 
-**文档版本**: 2026-05-21  
-**当前基线**: `learnbuddy/` 单包；`transport` 已抽象；`createLearnbuddyClient` 已合并进 `learnbuddy-client.ts`  
+**文档版本**: 2026-05-22  
+**当前基线**: pnpm monorepo 已落地（`apps/desktop`、`apps/web`、`packages/{shared,client,platform,ui}`）；`pnpm lint` 通过。根目录 `src/`、`electron/` 仍保留作过渡，请以 `apps/*` 与 `packages/*` 为准。  
 **目标基线**: `apps/desktop` + `apps/web` + `packages/*`，桌面与 Web 可独立 dev/build，共享同一套 UI 与协议。
 
 ---

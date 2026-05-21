@@ -61,7 +61,7 @@
       "system": "系统"
     },
     "relay": {
-      "section": "远程控制（中继）",
+      "section": "远程控制",
       "connection": "中继连接",
       "connectionHelp": "中继服务运行且完成配对后，Web 可向本桌面发送消息。",
       "connected": "已连接",

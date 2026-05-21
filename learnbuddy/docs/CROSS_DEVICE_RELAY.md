@@ -39,7 +39,7 @@ RELAY_SECRET=your-executor-secret
 # 勿再写 RELAY_DEFAULT_SESSIONS=desktop:main — 会话 key 随侧边栏对话变化
 ```
 
-重启 `pnpm dev`。主进程日志应出现 `[relay] connected`。在 **设置 → 远程控制（中继）** 可查看配对码与已订阅的 `sessionKey`。
+重启 `pnpm dev`。主进程日志应出现 `[relay] connected`。在 **设置 → 远程控制** 可查看配对码与已订阅的 `sessionKey`。
 
 ### 3. Web 配对 + 发消息
 

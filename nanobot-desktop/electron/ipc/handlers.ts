@@ -1,46 +1,33 @@
 /**
  * IPC Handlers — 注册所有 main process 侧的 IPC 处理
  */
-import { ipcMain, BrowserWindow, app } from 'electron'
+import { ipcMain, app } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
-import type { NanobotConfig, ToolEvent, TurnCompleteData } from '../../shared/types'
+import type { NanobotConfig } from '../../shared/types'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
   config: NanobotConfig,
 ) {
-  const win = () => BrowserWindow.getAllWindows()[0]
-  const send = (channel: string, data: unknown) => win()?.webContents.send(channel, data)
-
   // ═══ Agent ═══
+  // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → WebUIChannel → 前端
   ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
-    // 使用前端传入的 chatId 作为 sessionKey，确保多对话隔离
-    // chatId 可能是 "1747665_abc"（无前缀）→ 统一加 "desktop:" 前缀
     const id = (chatId && !chatId.startsWith('desktop:')) ? `desktop:${chatId}` : (chatId || 'desktop:main')
-    await agentLoop.process(
-      {
-        channel: 'desktop',
-        senderId: 'user',
-        chatId: id,
-        content,
-        media: media ?? [],
-        timestamp: Date.now(),
-        metadata: {},
-        sessionKeyOverride: id,
-      },
-      {
-        onStreamDelta: (delta, streamId) => send('agent:stream-delta', { content: delta, streamId }),
-        onStreamEnd: (streamId, resuming) => send('agent:stream-end', { streamId, resuming }),
-        onReasoningDelta: (content) => send('agent:reasoning-delta', { content }),
-        onReasoningEnd: () => send('agent:reasoning-end', {}),
-        onToolProgress: (event: ToolEvent) => send('agent:tool-progress', event),
-        onRetryWait: (message: string) => send('agent:retry-wait', { message }),
-        onTurnComplete: (data: TurnCompleteData) => send('agent:turn-complete', data),
-        onSystemMessage: (text: string) => send('agent:system-message', { text }),
-      },
-    )
+    const bus = agentLoop.bus;
+    if (!bus) throw new Error("AgentLoop must be initialized with a MessageBus");
+    bus.publishInbound({
+      channel: 'desktop',
+      senderId: 'user',
+      chatId: id,
+      content,
+      media: media ?? [],
+      timestamp: Date.now(),
+      metadata: {},
+      sessionKeyOverride: id,
+    });
+    return { ok: true };
   })
 
   ipcMain.handle('agent:stop', async (_event, { sessionKey }: { sessionKey: string }) => {

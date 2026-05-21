@@ -13,9 +13,11 @@ const IPC = {
   REASONING_DELTA: 'agent:reasoning-delta',
   REASONING_END: 'agent:reasoning-end',
   TOOL_PROGRESS: 'agent:tool-progress',
+  FILE_EDIT: 'agent:file-edit',
   RETRY_WAIT: 'agent:retry-wait',
   TURN_COMPLETE: 'agent:turn-complete',
   SYSTEM_MESSAGE: 'agent:system-message',
+  ASSISTANT_MESSAGE: 'agent:assistant-message',
   SESSION_LIST: 'session:list',
   SESSION_GET: 'session:get',
   SESSION_DELETE: 'session:delete',
@@ -44,9 +46,11 @@ const api = {
   onReasoningDelta: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.REASONING_DELTA, h); return () => ipcRenderer.removeListener(IPC.REASONING_DELTA, h) },
   onReasoningEnd: (cb) => { const h = () => cb(); ipcRenderer.on(IPC.REASONING_END, h); return () => ipcRenderer.removeListener(IPC.REASONING_END, h) },
   onToolProgress: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.TOOL_PROGRESS, h); return () => ipcRenderer.removeListener(IPC.TOOL_PROGRESS, h) },
+  onFileEdit: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.FILE_EDIT, h); return () => ipcRenderer.removeListener(IPC.FILE_EDIT, h) },
   onRetryWait: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.RETRY_WAIT, h); return () => ipcRenderer.removeListener(IPC.RETRY_WAIT, h) },
   onTurnComplete: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.TURN_COMPLETE, h); return () => ipcRenderer.removeListener(IPC.TURN_COMPLETE, h) },
   onSystemMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.SYSTEM_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.SYSTEM_MESSAGE, h) },
+  onAssistantMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.ASSISTANT_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.ASSISTANT_MESSAGE, h) },
 
   // ── Session ──
   listSessions: () => ipcRenderer.invoke(IPC.SESSION_LIST),

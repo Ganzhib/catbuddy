@@ -15,6 +15,7 @@ import type {
   LLMMessage,
   OutboundMessage,
   SkillInfo,
+  FileEditEvent,
   ToolEvent,
   TurnCompleteData,
 } from "../../shared/types";
@@ -63,9 +64,12 @@ export interface StreamCallbacks {
   onReasoningDelta?: (content: string) => void;
   onReasoningEnd?: () => void;
   onToolProgress?: (event: ToolEvent) => void;
+  onFileEdit?: (edit: FileEditEvent) => void;
   onRetryWait?: (message: string) => void;
   onTurnComplete?: (data: TurnCompleteData) => void;
   onSystemMessage?: (text: string) => void;
+  /** 非流式完整回复（命令/无 delta 的 turn），走 assistant 气泡而非 progress */
+  onAssistantMessage?: (text: string) => void;
 }
 
 // ══════════════════════════════
@@ -83,8 +87,10 @@ interface TurnCtx {
   outbound: OutboundMessage | null;
   startedAt: number;
   onToolProgress?: (ev: ToolEvent) => Promise<void>;
+  onFileEdit?: (edit: FileEditEvent) => Promise<void>;
   onRetryWait?: (msg: string) => Promise<void>;
   onSystemMessage?: (text: string) => Promise<void>;
+  onAssistantMessage?: (text: string) => Promise<void>;
 }
 
 // ══════════════════════════════
@@ -219,9 +225,12 @@ export class AgentLoop {
     const streamId = (): string => `${streamBase}:${segment}`;
 
     let streamChunks = 0;
+    /** 本 turn 是否已通过 delta 推送过正文（跨 stream segment 累计，不在 segment 结束时清零） */
+    let hadStreamedContent = false;
 
     const cbs: StreamCallbacks = {
       onStreamDelta: (delta) => {
+        hadStreamedContent = true;
         streamChunks++;
         this.bus!.publishOutbound({
           channel: msg.channel, chatId: msg.chatId,
@@ -261,6 +270,14 @@ export class AgentLoop {
           metadata: { _tool_progress: true, _tool_event: ev },
         });
       },
+      onFileEdit: (edit) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: "",
+          media: [], buttons: [],
+          metadata: { _file_edit: true, _file_edit_event: edit },
+        });
+      },
       onTurnComplete: (data) => {
         this.bus!.publishOutbound({
           channel: msg.channel, chatId: msg.chatId,
@@ -276,17 +293,37 @@ export class AgentLoop {
           metadata: { _progress: true },
         });
       },
+      onAssistantMessage: (text) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: text, media: [], buttons: [],
+          metadata: { _assistant_complete: true },
+        });
+      },
+      onRetryWait: (message) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: message, media: [], buttons: [],
+          metadata: { _progress: true },
+        });
+      },
     };
 
     try {
       turnLog.step("process");
       const response = await this.process(msg, cbs);
-      if (response) {
-        response.metadata = { ...response.metadata, _streamed: true };
-        await this.bus!.publishOutbound(response);
-        turnLog.step("outbound").debug("response published", {
-          len: response.content.length,
-        });
+      if (response?.content?.trim()) {
+        if (hadStreamedContent) {
+          turnLog.debug("skip duplicate outbound (already streamed)");
+        } else {
+          await this.bus!.publishOutbound({
+            ...response,
+            metadata: { ...response.metadata, _assistant_complete: true },
+          });
+          turnLog.step("outbound").debug("assistant complete published", {
+            len: response.content.length,
+          });
+        }
       } else {
         turnLog.debug("no response");
       }
@@ -327,16 +364,17 @@ export class AgentLoop {
     }
   }
 
-  // ═══ process：直接调用模式（cron / heartbeat） ═══
+  // ═══ process：直接调用（cron / heartbeat / bus 内 _dispatch） ═══
   async process(
     msg: InboundMessage,
-    cbs?: StreamCallbacks,
+    streamCallbacks?: StreamCallbacks,
   ): Promise<OutboundMessage | null> {
-    const key = msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
+    const sessionKey =
+      msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
 
-    const ctx: TurnCtx = {
+    const turn: TurnCtx = {
       msg,
-      sessionKey: key,
+      sessionKey,
       state: State.RESTORE,
       turnId: nanoid(),
       finalContent: null,
@@ -347,48 +385,78 @@ export class AgentLoop {
       startedAt: performance.now(),
     };
 
-    // 绑定流式回调到 ctx
-    if (cbs) {
-      ctx.onToolProgress = async (ev) => cbs.onToolProgress?.(ev);
-      ctx.onRetryWait = async (msg) => cbs.onRetryWait?.(msg);
-      ctx.onSystemMessage = async (text) => cbs.onSystemMessage?.(text);
+    if (streamCallbacks) {
+      turn.onToolProgress = async (event) =>
+        streamCallbacks.onToolProgress?.(event);
+      turn.onFileEdit = async (edit) =>
+        streamCallbacks.onFileEdit?.(edit);
+      turn.onRetryWait = async (message) =>
+        streamCallbacks.onRetryWait?.(message);
+      turn.onSystemMessage = async (text) =>
+        streamCallbacks.onSystemMessage?.(text);
+      turn.onAssistantMessage = async (text) =>
+        streamCallbacks.onAssistantMessage?.(text);
     }
 
-    // 状态机循环
-    const smLog = newTrace(`sm:${ctx.turnId.slice(0, 6)}`);
-    while (ctx.state !== State.DONE) {
-      const handler = `_state_${State[ctx.state].toLowerCase()}`;
-      const fn =
-        (this as any)[handler] as ((
-          ctx: TurnCtx,
-          cbs?: StreamCallbacks,
-        ) => Promise<string>);
-      if (!fn) throw new Error(`Missing handler: ${handler}`);
-      const event = await fn.call(this, ctx, cbs);
-      const next = TRANSITIONS[`${State[ctx.state]}:${event}`];
-      if (!next) {
-        throw new Error(`No transition from ${State[ctx.state]} on "${event}"`);
+    const trace = newTrace(`sm:${turn.turnId.slice(0, 6)}`);
+
+    while (turn.state !== State.DONE) {
+      const fromState = turn.state;
+      let event: string;
+
+      switch (fromState) {
+        case State.RESTORE:
+          event = await this._state_restore(turn);
+          break;
+        case State.COMPACT:
+          event = await this._state_compact(turn);
+          break;
+        case State.COMMAND:
+          event = await this._state_command(turn);
+          break;
+        case State.BUILD:
+          event = await this._state_build(turn);
+          break;
+        case State.RUN:
+          event = await this._state_run(turn, streamCallbacks);
+          break;
+        case State.SAVE:
+          event = await this._state_save(turn);
+          break;
+        case State.RESPOND:
+          event = await this._state_respond(turn);
+          break;
+        default:
+          throw new Error(`Unhandled turn state: ${State[fromState]}`);
       }
-      console.log(`==============================================State Machine=========================================`);
-      smLog.step(State[next].toLowerCase()).transition(
-        State[ctx.state].toLowerCase(),
-        State[next].toLowerCase(),
-        event,
-      );
-      ctx.state = next;
+
+      const transitionKey = `${State[fromState]}:${event}`;
+      const toState = TRANSITIONS[transitionKey];
+      if (toState === undefined) {
+        throw new Error(
+          `Invalid transition: ${State[fromState]} --[${event}]--> (not in TRANSITIONS)`,
+        );
+      }
+
+      trace
+        .step(State[toState].toLowerCase())
+        .transition(
+          State[fromState].toLowerCase(),
+          State[toState].toLowerCase(),
+          event,
+        );
+
+      turn.state = toState;
     }
 
-    // turn_complete
-    if (cbs?.onTurnComplete) {
-      cbs.onTurnComplete({
-        content: ctx.finalContent ?? "",
-        toolsUsed: ctx.toolsUsed,
-        usage: { inputTokens: 0, outputTokens: 0 },
-        latencyMs: Math.round(performance.now() - ctx.startedAt),
-      });
-    }
+    streamCallbacks?.onTurnComplete?.({
+      content: turn.finalContent ?? "",
+      toolsUsed: turn.toolsUsed,
+      usage: { inputTokens: 0, outputTokens: 0 },
+      latencyMs: Math.round(performance.now() - turn.startedAt),
+    });
 
-    return ctx.outbound;
+    return turn.outbound;
   }
 
   // ═══ 状态处理器 ═══
@@ -410,7 +478,11 @@ export class AgentLoop {
     if (enabled && allMessages.length >= threshold) {
       const keepRecent = Math.max(2, Math.floor(threshold / 2));
       const archived = allMessages.length - keepRecent;
-      ctx.onToolProgress?.({ name: "consolidator", status: "started" });
+      ctx.onToolProgress?.({
+        name: "consolidator",
+        status: "started",
+        callId: "consolidator",
+      });
       ctx.onSystemMessage?.(`🔄 上下文压缩中（${archived} 条历史消息）...`);
 
       // 同步等待压缩完成，再回答用户
@@ -418,7 +490,11 @@ export class AgentLoop {
         ctx.sessionKey,
         keepRecent,
       );
-      ctx.onToolProgress?.({ name: "consolidator", status: "completed" });
+      ctx.onToolProgress?.({
+        name: "consolidator",
+        status: "completed",
+        callId: "consolidator",
+      });
       ctx.onSystemMessage?.(
         summary
           ? `✅ 已压缩 ${archived} 条历史消息\n> ${summary.slice(0, 120)}${
@@ -451,7 +527,7 @@ export class AgentLoop {
     if (result !== null) {
       ctx.outbound = result;
       if (result.content) {
-        await ctx.onSystemMessage?.(result.content);
+        await ctx.onAssistantMessage?.(result.content);
       }
       return "shortcut";
     }
@@ -504,21 +580,31 @@ export class AgentLoop {
 
     const streamId = `${ctx.sessionKey}:${Date.now()}`;
 
-    const result = await this.runner.run({
-      initialMessages: ctx.allMessages,
-      tools: this.tools,
-      model: this.model,
-      maxIterations: this.maxIterations,
-      maxToolResultChars: this.maxToolResultChars,
-      concurrentTools: true,
-      workspace: this.workspace,
-      sessionKey: ctx.sessionKey,
-      contextWindowTokens: this.contextWindowTokens,
-      providerRetryMode: this.providerRetryMode,
-      progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
-      retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
-      onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
-    });
+    this.tools.setFileEditCallback(
+      cbs?.onFileEdit
+        ? async (edit) => { await cbs.onFileEdit!(edit) }
+        : undefined,
+    );
+    let result;
+    try {
+      result = await this.runner.run({
+        initialMessages: ctx.allMessages,
+        tools: this.tools,
+        model: this.model,
+        maxIterations: this.maxIterations,
+        maxToolResultChars: this.maxToolResultChars,
+        concurrentTools: true,
+        workspace: this.workspace,
+        sessionKey: ctx.sessionKey,
+        contextWindowTokens: this.contextWindowTokens,
+        providerRetryMode: this.providerRetryMode,
+        progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
+        retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
+        onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
+      });
+    } finally {
+      this.tools.setFileEditCallback(undefined);
+    }
 
     ctx.finalContent = result.finalContent;
     ctx.toolsUsed = result.toolsUsed;

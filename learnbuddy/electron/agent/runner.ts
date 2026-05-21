@@ -119,27 +119,38 @@ export class AgentRunner {
 
         for (const toolCall of activeCalls) {
           const t0 = Date.now()
-          const event: ToolEvent = { name: toolCall.name, status: 'started' }
-          spec.progressCallback?.(event)
+          const base = {
+            name: toolCall.name,
+            callId: toolCall.id,
+            arguments: toolCall.arguments,
+          }
+          spec.progressCallback?.({ ...base, status: 'started' })
 
           let result: string
+          let failed = false
           try {
             result = await spec.tools.execute(toolCall)
           } catch (err: any) {
+            failed = true
             result = `Error: ${err.message}`
-            toolEvents.push({ name: toolCall.name, status: 'error', detail: result })
-            spec.progressCallback?.({ name: toolCall.name, status: 'error', detail: result })
+            toolEvents.push({ ...base, status: 'error', detail: result })
+            spec.progressCallback?.({ ...base, status: 'error', detail: result })
           }
 
-          const durationMs = Date.now() - t0
-          toolEvents.push({ name: toolCall.name, status: 'completed', durationMs })
-
-          // 截断
           const truncated = result.length > spec.maxToolResultChars
             ? result.slice(0, spec.maxToolResultChars) + '\n...[truncated]'
             : result || `(${toolCall.name} completed)`
 
-          spec.progressCallback?.({ name: toolCall.name, status: 'completed', detail: truncated.slice(0, 200) })
+          const durationMs = Date.now() - t0
+          if (!failed) {
+            toolEvents.push({ ...base, status: 'completed', durationMs })
+            spec.progressCallback?.({
+              ...base,
+              status: 'completed',
+              detail: truncated.slice(0, 200),
+              durationMs,
+            })
+          }
 
           // 注入 tool call + result
           messages.push({

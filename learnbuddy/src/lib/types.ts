@@ -40,6 +40,8 @@ export interface UIMessage {
   /** For trace rows: each individual hint line, so consecutive hints can
    * render as a single collapsible group. */
   traces?: string[];
+  /** Per call_id merged tool progress (start → end/error on same row). */
+  toolProgress?: Record<string, ToolProgressEvent>;
   /** Activity rows: explicit file edits emitted by edit tools. */
   fileEdits?: UIFileEdit[];
   /** Activity rows created during the same agent phase share one collapsible block. */
@@ -78,6 +80,9 @@ export interface ToolProgressEvent {
   call_id?: string;
   name?: string;
   arguments?: unknown;
+  /** Short preview for completed tool (desktop IPC). */
+  detail?: string;
+  durationMs?: number;
   result?: unknown;
   error?: unknown;
   files?: unknown[];
@@ -239,6 +244,8 @@ export type InboundEvent =
       event: "turn_end";
       chat_id: string;
       latency_ms?: number;
+      /** Tools invoked during this turn (desktop IPC). */
+      tools_used?: string[];
       /** Authoritative sustained-goal snapshot for this chat (same shape as ``goal_state`` events). */
       goal_state?: GoalStateWsPayload;
     }

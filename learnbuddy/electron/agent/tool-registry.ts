@@ -4,7 +4,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { exec as cpExec } from 'child_process'
-import type { ToolDefinition, ToolCallRequest } from '../../shared/types'
+import type { FileEditEvent, ToolDefinition, ToolCallRequest } from '../../shared/types'
 
 export interface Tool {
   readonly name: string
@@ -16,10 +16,34 @@ export class ToolRegistry {
   private readonly _tools = new Map<string, Tool>()
   private _workspace: string = ''
   private _restrictWorkspace: boolean = false
+  private _fileEditCallback?: (edit: FileEditEvent) => Promise<void>
 
   setWorkspace(dir: string, restrict: boolean = false) {
     this._workspace = path.resolve(dir)
     this._restrictWorkspace = restrict
+  }
+
+  setFileEditCallback(cb?: (edit: FileEditEvent) => Promise<void>): void {
+    this._fileEditCallback = cb
+  }
+
+  private displayPath(resolved: string): string {
+    const rel = path.relative(this._workspace, resolved)
+    if (!rel || rel.startsWith('..')) return resolved.replace(/\\/g, '/')
+    return rel.replace(/\\/g, '/')
+  }
+
+  private lineDelta(before: string, after: string): { added: number; deleted: number } {
+    const beforeLines = before === '' ? 0 : before.split('\n').length
+    const afterLines = after === '' ? 0 : after.split('\n').length
+    return {
+      added: Math.max(0, afterLines - beforeLines),
+      deleted: Math.max(0, beforeLines - afterLines),
+    }
+  }
+
+  private async notifyFileEdit(edit: FileEditEvent): Promise<void> {
+    await this._fileEditCallback?.(edit)
   }
 
   /** 将相对/绝对路径解析到工作区内 */
@@ -115,9 +139,51 @@ export class ToolRegistry {
       execute: async (call) => {
         const { path: fp, content } = call.arguments as any
         const resolved = this.resolvePath(String(fp))
-        fs.mkdirSync(path.dirname(resolved), { recursive: true })
-        fs.writeFileSync(resolved, String(content), 'utf-8')
-        return `File written: ${resolved} (${Buffer.byteLength(String(content))} bytes)`
+        const display = this.displayPath(resolved)
+        const base = {
+          call_id: call.id,
+          tool: 'write_file',
+          path: display,
+          absolute_path: resolved,
+        }
+        void this.notifyFileEdit({
+          ...base,
+          version: 1,
+          phase: 'start',
+          status: 'editing',
+          added: 0,
+          deleted: 0,
+        })
+        try {
+          const before = fs.existsSync(resolved)
+            ? fs.readFileSync(resolved, 'utf-8')
+            : ''
+          fs.mkdirSync(path.dirname(resolved), { recursive: true })
+          const after = String(content)
+          fs.writeFileSync(resolved, after, 'utf-8')
+          const { added, deleted } = this.lineDelta(before, after)
+          await this.notifyFileEdit({
+            ...base,
+            version: 1,
+            phase: 'end',
+            status: 'done',
+            added: before === '' ? after.split('\n').length : added,
+            deleted: before === '' ? 0 : deleted,
+            approximate: before !== '',
+          })
+          return `File written: ${resolved} (${Buffer.byteLength(after)} bytes)`
+        } catch (err: any) {
+          await this.notifyFileEdit({
+            ...base,
+            version: 1,
+            phase: 'error',
+            status: 'error',
+            added: 0,
+            deleted: 0,
+            error: err.message,
+          })
+          return `Error executing write_file: ${err.message}`
+        }
       },
     })
 
@@ -173,15 +239,88 @@ export class ToolRegistry {
       execute: async (call) => {
         const { path: fp, old_string, new_string } = call.arguments as any
         const resolved = this.resolvePath(String(fp))
-        if (!fs.existsSync(resolved)) return 'Error: file not found'
-        const content = fs.readFileSync(resolved, 'utf-8')
-        const old = String(old_string)
-        const count = content.split(old).length - 1
-        if (count === 0) return 'Error: old_string not found in file'
-        if (count > 1) return `Error: old_string matches ${count} times — must be unique. Provide more context.`
-        const updated = content.replace(old, String(new_string))
-        fs.writeFileSync(resolved, updated, 'utf-8')
-        return `File edited: ${resolved} (1 replacement, ${updated.split('\n').length} lines)`
+        const display = this.displayPath(resolved)
+        const base = {
+          call_id: call.id,
+          tool: 'edit_file',
+          path: display,
+          absolute_path: resolved,
+        }
+        void this.notifyFileEdit({
+          ...base,
+          version: 1,
+          phase: 'start',
+          status: 'editing',
+          added: 0,
+          deleted: 0,
+        })
+        if (!fs.existsSync(resolved)) {
+          await this.notifyFileEdit({
+            ...base,
+            version: 1,
+            phase: 'error',
+            status: 'error',
+            added: 0,
+            deleted: 0,
+            error: 'file not found',
+          })
+          return 'Error: file not found'
+        }
+        try {
+          const content = fs.readFileSync(resolved, 'utf-8')
+          const old = String(old_string)
+          const neu = String(new_string)
+          const count = content.split(old).length - 1
+          if (count === 0) {
+            await this.notifyFileEdit({
+              ...base,
+              version: 1,
+              phase: 'error',
+              status: 'error',
+              added: 0,
+              deleted: 0,
+              error: 'old_string not found',
+            })
+            return 'Error: old_string not found in file'
+          }
+          if (count > 1) {
+            await this.notifyFileEdit({
+              ...base,
+              version: 1,
+              phase: 'error',
+              status: 'error',
+              added: 0,
+              deleted: 0,
+              error: `matches ${count} times`,
+            })
+            return `Error: old_string matches ${count} times — must be unique. Provide more context.`
+          }
+          const updated = content.replace(old, neu)
+          fs.writeFileSync(resolved, updated, 'utf-8')
+          const added = neu.split('\n').length
+          const deleted = old.split('\n').length
+          await this.notifyFileEdit({
+            ...base,
+            version: 1,
+            phase: 'end',
+            status: 'done',
+            added,
+            deleted,
+            approximate: true,
+          })
+          return `File edited: ${resolved} (1 replacement, ${updated.split('\n').length} lines)`
+        } catch (err: any) {
+          await this.notifyFileEdit({
+            ...base,
+            version: 1,
+            phase: 'error',
+            status: 'error',
+            added: 0,
+            deleted: 0,
+            error: err.message,
+          })
+          return `Error executing edit_file: ${err.message}`
+        }
       },
     })
 

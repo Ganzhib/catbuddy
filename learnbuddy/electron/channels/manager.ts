@@ -15,7 +15,7 @@ export class ChannelManager {
 
   register(channel: BaseChannel): void {
     this.channels.set(channel.name, channel);
-    console.log(`[manager] Registered channel: ${channel.name}`);
+    console.log(`==============[manager] Registered channel: ${channel.name}=========================`);
   }
 
   unregister(name: string): void {

@@ -80,7 +80,6 @@
       "dist/**/*",
       "dist-electron/**/*",
       "electron/assets/**/*",
-      "preload.cjs",
       "templates/**/*",
       "skills/**/*"
     ],

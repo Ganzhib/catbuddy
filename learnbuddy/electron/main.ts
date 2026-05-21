@@ -49,9 +49,9 @@ function createWindow() {
     show: false,
   });
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.webContents.openDevTools();
-  }
+  // if (process.env.VITE_DEV_SERVER_URL) {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   mainWindow.on("ready-to-show", () => mainWindow?.show());
   mainWindow.on("closed", () => {
@@ -109,10 +109,11 @@ async function initAgent() {
     maxMessages: config.agents.defaults.maxMessages,
     contextWindowTokens: config.agents.defaults.contextWindowTokens,
     restrictToWorkspace: config.tools.restrictToWorkspace,
+    disabledSkills: config.agents.defaults.disabledSkills ?? [],
     sessionManager: sessions,
     bus,  // ← 注入 bus，开启 multi-channel 支持
   });
-  registerIpcHandlers(agentLoop, sessions, config);
+  registerIpcHandlers(agentLoop, sessions, config, configFile);
 
   // 启动 bus 驱动的后台循环
   channelManager.start();

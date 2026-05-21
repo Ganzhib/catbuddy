@@ -24,6 +24,10 @@ import {
   registerBuiltinCommands,
 } from "../command";
 import type { MessageBus } from "../bus";
+import {
+  applySkillToggle,
+  listDiscoverableSkills,
+} from "./skill";
 
 // ══════════════════════════════
 // 状态机
@@ -610,15 +614,20 @@ export class AgentLoop {
   }
 
   listSkills(): SkillInfo[] {
-    return this.tools.toolNames.map((name) => ({
-      name,
-      description: this.tools.get(name)?.definition.function.description ?? "",
-      enabled: true,
-      isBuiltin: true,
-    }));
+    return listDiscoverableSkills(
+      this.workspace,
+      this.context.disabledSkills,
+    );
   }
 
-  toggleSkill(_name: string, _enabled: boolean) {
-    // 后续实现
+  /** Returns updated disabled skill names (persist by caller). */
+  toggleSkill(name: string, enabled: boolean): string[] {
+    const next = applySkillToggle(this.context.disabledSkills, name, enabled);
+    this.context.setDisabledSkills(next);
+    return next;
+  }
+
+  setDisabledSkills(names: string[]): void {
+    this.context.setDisabledSkills(names);
   }
 }

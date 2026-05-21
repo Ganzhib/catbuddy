@@ -1,3 +1,9 @@
+
+/*
+!/.gitignore
+!/learnbuddy/
+!/learnbuddy/**
+
 # Project-specific
 .worktrees/
 .worktree/

@@ -50,6 +50,7 @@ pip-wheel-metadata/
 share/python-wheels/
 dist2/
 node_modules/
+relay-server/node_modules/
 dist-*/*
 /bridge/node_modules/
 /bridge/dist/

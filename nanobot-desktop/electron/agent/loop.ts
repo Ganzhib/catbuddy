@@ -9,6 +9,7 @@ import { ToolRegistry } from "./tool-registry";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./memory";
 import { LLMProvider } from "../providers";
+import { type Logger, logger, trace as newTrace } from "../utils/logger";
 import type {
   InboundMessage,
   LLMMessage,
@@ -171,14 +172,18 @@ export class AgentLoop {
   async run(): Promise<void> {
     if (!this.bus) throw new Error("AgentLoop.run() requires a MessageBus");
     this._running = true;
+    logger.init("agent").info("Bus-driven loop started");
     while (this._running) {
       const msg = await this.bus.consumeInbound();
       if (!msg) continue;
 
       const raw = msg.content.trim();
+      const traceId = `turn:${nanoid(8)}`;
+      const log = newTrace(traceId).step("inbound");
 
       // Priority 命令在锁外处理（/stop 必须立即响应）
       if (this.commands.isPriority(raw)) {
+        // log.step("priority_cmd");
         const cmdCtx: CommandContext = {
           msg, sessionKey: msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`,
           raw, args: "", loop: this,
@@ -189,7 +194,8 @@ export class AgentLoop {
       }
 
       // 普通消息 → _dispatch (per-session lock + stream → bus.outbound)
-      this._dispatch(msg).catch((err) =>
+      // 传递 trace logger，让 _dispatch 复用同一个 turn id
+      this._dispatch(msg, log).catch((err) =>
         console.error("[agent] _dispatch crashed:", err),
       );
     }
@@ -200,14 +206,18 @@ export class AgentLoop {
    * 参考 nanobot/agent/loop.py _dispatch()
    * stream callback 直接发布到 bus.outbound（而不是 IPC），由 ChannelManager 路由。
    */
-  private async _dispatch(msg: InboundMessage): Promise<void> {
+  private async _dispatch(msg: InboundMessage, log?: Logger): Promise<void> {
     const key = msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
+    const turnLog = (log ?? newTrace(`turn:${nanoid(8)}`)).step("dispatch");
     const streamBase = `${key}:${Date.now()}`;
     let segment = 0;
     const streamId = (): string => `${streamBase}:${segment}`;
 
+    let streamChunks = 0;
+
     const cbs: StreamCallbacks = {
       onStreamDelta: (delta) => {
+        streamChunks++;
         this.bus!.publishOutbound({
           channel: msg.channel, chatId: msg.chatId,
           content: delta, media: [], buttons: [],
@@ -215,12 +225,14 @@ export class AgentLoop {
         });
       },
       onStreamEnd: () => {
+        turnLog.debug(`stream segment ended`, { chunks: streamChunks });
         this.bus!.publishOutbound({
           channel: msg.channel, chatId: msg.chatId,
           content: "", media: [], buttons: [],
           metadata: { _stream_end: true, _stream_id: streamId() },
         });
         segment++;
+        streamChunks = 0;
       },
       onReasoningDelta: (content) => {
         this.bus!.publishOutbound({
@@ -256,13 +268,20 @@ export class AgentLoop {
     };
 
     try {
+      turnLog.step("process");
       const response = await this.process(msg, cbs);
       if (response) {
         response.metadata = { ...response.metadata, _streamed: true };
         await this.bus!.publishOutbound(response);
+        turnLog.step("outbound").debug("response published", {
+          len: response.content.length,
+        });
+      } else {
+        turnLog.debug("no response");
       }
+      turnLog.end("turn completed");
     } catch (err) {
-      console.error("[agent] _dispatch error:", err);
+      turnLog.error("dispatch error", err);
       this.bus!.publishOutbound({
         channel: msg.channel, chatId: msg.chatId,
         content: `Sorry, I encountered an error.`,
@@ -271,7 +290,7 @@ export class AgentLoop {
     }
   }
 
-  // ═══ process：直接调用模式（IPC handler / cron / heartbeat） ═══
+  // ═══ process：直接调用模式（cron / heartbeat） ═══
   async process(
     msg: InboundMessage,
     cbs?: StreamCallbacks,
@@ -299,6 +318,7 @@ export class AgentLoop {
     }
 
     // 状态机循环
+    const smLog = newTrace(`sm:${ctx.turnId.slice(0, 6)}`);
     while (ctx.state !== State.DONE) {
       const handler = `_state_${State[ctx.state].toLowerCase()}`;
       const fn =
@@ -312,6 +332,12 @@ export class AgentLoop {
       if (!next) {
         throw new Error(`No transition from ${State[ctx.state]} on "${event}"`);
       }
+      console.log(`==============================================State Machine=========================================`);
+      smLog.step(State[next].toLowerCase()).transition(
+        State[ctx.state].toLowerCase(),
+        State[next].toLowerCase(),
+        event,
+      );
       ctx.state = next;
     }
 
@@ -331,12 +357,6 @@ export class AgentLoop {
   // ═══ 状态处理器 ═══
 
   private async _state_restore(ctx: TurnCtx): Promise<string> {
-    const msg = ctx.msg;
-    const preview = msg.content.slice(0, 80) +
-      (msg.content.length > 80 ? "..." : "");
-    process.stderr.write(`[state] RESTORE ${ctx.sessionKey} msgs=${preview}\n`);
-
-    // 确保 session 存在
     this.sessions.getOrCreate(ctx.sessionKey);
     return "ok";
   }
@@ -380,7 +400,6 @@ export class AgentLoop {
 
   private async _state_command(ctx: TurnCtx): Promise<string> {
     const raw = ctx.msg.content.trim();
-    process.stderr.write(`[state] COMMAND ${ctx.sessionKey} raw="${raw}"\n`);
 
     const cmdCtx: CommandContext = {
       msg: ctx.msg,
@@ -391,13 +410,11 @@ export class AgentLoop {
     };
 
     const result = await this.commands.dispatch(cmdCtx);
-    process.stderr.write(`[state] COMMAND result=${result !== null ? result.content.slice(0, 40) : 'null'}\n`);
 
     if (result !== null) {
       ctx.outbound = result;
       if (result.content) {
         await ctx.onSystemMessage?.(result.content);
-        process.stderr.write(`[state] COMMAND systemMessage sent\n`);
       }
       return "shortcut";
     }

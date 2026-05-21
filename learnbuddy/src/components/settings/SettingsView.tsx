@@ -565,16 +565,6 @@ function RelayRemoteSettings() {
             ) : null}
           </div>
         </SettingsRow>
-        <SettingsRow
-          title={t("settings.relay.sessionKey")}
-          description={t("settings.relay.sessionKeyHelp")}
-        >
-          <span className="max-w-[420px] text-right text-xs text-muted-foreground break-all">
-            {(status.subscribedSessions?.length ?? 0) > 0
-              ? status.subscribedSessions!.join(", ")
-              : t("settings.values.notAvailable")}
-          </span>
-        </SettingsRow>
         {status.lastError ? (
           <SettingsRow title={t("settings.relay.lastError")}>
             <span className="max-w-[420px] text-right text-xs text-destructive break-all">

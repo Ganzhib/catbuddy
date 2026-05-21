@@ -6,7 +6,7 @@ import type { NanobotConfig } from '../../shared/types'
 export function getDefaultConfig(): NanobotConfig {
   const home = process.env.HOME || process.env.USERPROFILE || '.'
   return {
-    workspace: `${home}/nanobot-workspace`,
+    workspace: `${home}/.nanobot-desktop/workspace`,
     agents: {
       defaults: {
         model: 'deepseek-chat',

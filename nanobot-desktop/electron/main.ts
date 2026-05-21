@@ -12,7 +12,7 @@ import { SessionManager } from "./session/session-manager.js";
 import { getDefaultConfig } from "./config/defaults.js";
 import { log } from "./utils";
 import { MessageBus } from "./bus/index.js";
-import { ChannelManager, WebUIChannel } from "./channels/index.js";
+import { ChannelManager, DesktopChannel } from "./channels/index.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 按优先级加载 .env（延迟到 app ready 后）
@@ -98,7 +98,7 @@ async function initAgent() {
   // ── Bus + ChannelDispatcher（未来多管道的基础设施） ──
   bus = new MessageBus();
   channelManager = new ChannelManager(bus);
-  channelManager.register(new WebUIChannel());
+  channelManager.register(new DesktopChannel());
 
   const provider = createProvider(config);
   agentLoop = new AgentLoop({

@@ -5,4 +5,4 @@
  */
 export type { BaseChannel } from "./base";
 export { ChannelManager } from "./manager";
-export { WebUIChannel } from "./webui";
+export { DesktopChannel } from "./desktop";

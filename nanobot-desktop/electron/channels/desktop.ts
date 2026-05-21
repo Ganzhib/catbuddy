@@ -7,9 +7,9 @@ import { BrowserWindow } from "electron";
 import type { OutboundMessage } from "../../shared/types";
 import type { BaseChannel } from "./base";
 
-export class WebUIChannel implements BaseChannel {
-  readonly name = "webui";
-  readonly displayName = "WebUI";
+export class DesktopChannel implements BaseChannel {
+  readonly name = "desktop";
+  readonly displayName = "desktop";
 
   private _running = false;
 

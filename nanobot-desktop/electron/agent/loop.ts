@@ -106,7 +106,7 @@ export class AgentLoop {
   private providerRetryMode: "standard" | "persistent";
   private _activeTasks = new Map<string, AbortController[]>();
 
-  private bus: MessageBus | null;
+  readonly bus: MessageBus | null;
 
   constructor(opts: {
     provider: LLMProvider;

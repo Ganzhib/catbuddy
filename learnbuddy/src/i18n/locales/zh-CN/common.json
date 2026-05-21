@@ -60,6 +60,19 @@
       "ai": "AI",
       "system": "系统"
     },
+    "relay": {
+      "section": "远程控制（中继）",
+      "connection": "中继连接",
+      "connectionHelp": "中继服务运行且完成配对后，Web 可向本桌面发送消息。",
+      "connected": "已连接",
+      "disconnected": "未连接",
+      "pairingCode": "配对码",
+      "pairingHelp": "在 relay 上调用 POST /api/pair 绑定此码与你自选的 viewer token；Web 请求 Bearer 用该 token，不要用 RELAY_SECRET。",
+      "copy": "复制",
+      "sessionKey": "已订阅会话",
+      "sessionKeyHelp": "Web 发消息的 sessionKey 须与桌面当前对话一致（如 desktop:1730_abc）；切换对话会自动订阅。",
+      "lastError": "最近错误"
+    },
     "rows": {
       "theme": "主题",
       "language": "语言",

@@ -3,6 +3,14 @@ import type { UIFileEdit } from "@/lib/types";
 import type { AgentTransport, TransportCallbacks } from "./types";
 import { inboundFromFileEdit, inboundFromToolEvent } from "./event-mappers";
 
+function chatIdFromPayload(
+  data: { chatId?: string },
+  fallback: () => string,
+): string {
+  const id = data.chatId?.trim();
+  return id || fallback();
+}
+
 export class IpcTransport implements AgentTransport {
   readonly kind = "ipc" as const;
 
@@ -15,95 +23,111 @@ export class IpcTransport implements AgentTransport {
 
     callbacks.onStatus("connecting");
 
-    const chatId = () => callbacks.getActiveChatId();
+    const activeChatId = () => callbacks.getActiveChatId();
 
     const unsubs = [
-      api.onStreamDelta(({ content, streamId }) => {
+      api.onStreamDelta((data) => {
         callbacks.onEvent({
           event: "delta",
-          chat_id: chatId(),
-          text: content,
-          stream_id: streamId,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          text: data.content,
+          stream_id: data.streamId,
         });
       }),
 
-      api.onStreamEnd(({ streamId }) => {
+      api.onStreamEnd((data) => {
         callbacks.onEvent({
           event: "stream_end",
-          chat_id: chatId(),
-          stream_id: streamId,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          stream_id: data.streamId,
         });
       }),
 
-      api.onTurnComplete((data: TurnCompleteData) => {
+      api.onTurnComplete((data) => {
+        const chat_id = chatIdFromPayload(data, activeChatId);
+        const { chatId: _c, ...turn } = data;
         callbacks.onEvent({
           event: "turn_end",
-          chat_id: chatId(),
-          latency_ms: data.latencyMs,
-          tools_used: data.toolsUsed?.length
-            ? ([...new Set(data.toolsUsed)] as string[])
+          chat_id,
+          latency_ms: turn.latencyMs,
+          tools_used: turn.toolsUsed?.length
+            ? ([...new Set(turn.toolsUsed)] as string[])
             : undefined,
         });
         callbacks.onEvent({
           event: "goal_status",
-          chat_id: chatId(),
+          chat_id,
           status: "idle",
         });
       }),
 
-      api.onReasoningDelta(({ content }) => {
+      api.onReasoningDelta((data) => {
         callbacks.onEvent({
           event: "reasoning_delta",
-          chat_id: chatId(),
-          text: content,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          text: data.content,
         });
       }),
 
-      api.onReasoningEnd(() => {
+      api.onReasoningEnd((data) => {
         callbacks.onEvent({
           event: "reasoning_end",
-          chat_id: chatId(),
+          chat_id: chatIdFromPayload(data, activeChatId),
         });
       }),
 
       api.onToolProgress((data) => {
-        callbacks.onEvent(inboundFromToolEvent(chatId(), data));
+        const chat_id = chatIdFromPayload(data, activeChatId);
+        const { chatId: _c, ...tool } = data;
+        callbacks.onEvent(inboundFromToolEvent(chat_id, tool));
       }),
 
-      api.onFileEdit?.((edit) => {
+      api.onFileEdit?.((data) => {
+        const chat_id = chatIdFromPayload(data, activeChatId);
+        const { chatId: _c, ...edit } = data;
         callbacks.onEvent(
-          inboundFromFileEdit(chatId(), edit as UIFileEdit),
+          inboundFromFileEdit(chat_id, edit as UIFileEdit),
         );
       }),
 
-      api.onRetryWait(({ message }) => {
+      api.onRetryWait?.((data) => {
         callbacks.onEvent({
           event: "message",
-          chat_id: chatId(),
-          text: message,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          text: data.message,
           kind: "progress",
         });
       }),
 
-      api.onAssistantMessage?.(({ text }) => {
+      api.onAssistantMessage?.((data) => {
         callbacks.onEvent({
           event: "message",
-          chat_id: chatId(),
-          text,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          text: data.text,
         });
       }),
 
-      api.onSystemMessage(({ text }) => {
+      api.onSystemMessage((data) => {
         callbacks.onEvent({
           event: "message",
-          chat_id: chatId(),
-          text,
+          chat_id: chatIdFromPayload(data, activeChatId),
+          text: data.text,
           kind: "progress",
         });
-        if (text === "Started a new conversation.") {
-          callbacks.onSessionUpdate?.(chatId(), "thread");
+        if (data.text === "Started a new conversation.") {
+          callbacks.onSessionUpdate?.(chatIdFromPayload(data, activeChatId), "thread");
           callbacks.onGoHome?.();
         }
+      }),
+
+      api.onRelayInbound?.((data) => {
+        const chat_id = data.chatId?.trim();
+        if (!chat_id || !data.content?.trim()) return;
+        callbacks.onEvent({
+          event: "user_inbound",
+          chat_id,
+          text: data.content,
+        });
       }),
     ];
 

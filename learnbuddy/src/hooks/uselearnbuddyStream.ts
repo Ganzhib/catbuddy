@@ -703,6 +703,22 @@ export function uselearnbuddyStream(
         streamEndTimerRef.current = null;
       }
 
+      if (ev.event === "user_inbound") {
+        const text = ev.text?.trim();
+        if (!text) return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "user",
+            content: text,
+            createdAt: Date.now(),
+          },
+        ]);
+        setIsStreaming(true);
+        return;
+      }
+
       if (ev.event === "delta") {
         if (suppressStreamUntilTurnEndRef.current) return;
         const chunk = typeof ev.text === "string" ? ev.text : "";

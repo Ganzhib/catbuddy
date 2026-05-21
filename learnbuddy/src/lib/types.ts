@@ -192,6 +192,8 @@ export type ConnectionStatus =
 export type InboundEvent =
   | { event: "ready"; chat_id: string; client_id: string }
   | { event: "attached"; chat_id: string }
+  /** User message injected from Web relay (desktop did not send locally). */
+  | { event: "user_inbound"; chat_id: string; text: string }
   | {
       event: "message";
       chat_id: string;

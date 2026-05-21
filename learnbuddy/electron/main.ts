@@ -12,7 +12,11 @@ import { SessionManager } from "./session/session-manager.js";
 import { getDefaultConfig } from "./config/defaults.js";
 import { log } from "./utils";
 import { MessageBus } from "./bus/index.js";
-import { ChannelManager, DesktopChannel } from "./channels/index.js";
+import { ChannelManager, DesktopChannel, RelayChannel } from "./channels/index.js";
+import {
+  loadRelayConfigFromEnv,
+  RelayClient,
+} from "./sync/relay-client.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 按优先级加载 .env（延迟到 app ready 后）
@@ -22,6 +26,7 @@ let agentLoop: AgentLoop | null = null;
 let sessions: SessionManager | null = null;
 let bus: MessageBus | null = null;
 let channelManager: ChannelManager | null = null;
+let relayClient: RelayClient | null = null;
 
 function getPreloadPath(): string {
   return path.join(__dirname, "./preload.cjs");
@@ -100,6 +105,14 @@ async function initAgent() {
   channelManager = new ChannelManager(bus);
   channelManager.register(new DesktopChannel());
 
+  const relayCfg = loadRelayConfigFromEnv();
+  if (relayCfg) {
+    relayClient = new RelayClient(relayCfg, bus);
+    relayClient.start();
+    channelManager.register(new RelayChannel(relayClient));
+    console.log("[main] Relay enabled:", relayCfg.url);
+  }
+
   const provider = createProvider(config);
   agentLoop = new AgentLoop({
     provider,
@@ -113,7 +126,13 @@ async function initAgent() {
     sessionManager: sessions,
     bus,  // ← 注入 bus，开启 multi-channel 支持
   });
-  registerIpcHandlers(agentLoop, sessions, config, configFile);
+  registerIpcHandlers(agentLoop, sessions, config, configFile, relayClient);
+
+  if (relayClient) {
+    const rows = sessions.list();
+    relayClient.syncSessions(rows.map((r) => r.key));
+    console.log("[main] Relay subscribed sessions:", rows.length);
+  }
 
   // 启动 bus 驱动的后台循环
   channelManager.start();

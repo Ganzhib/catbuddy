@@ -37,7 +37,12 @@ export default defineConfig({
           build: {
             outDir: "dist-electron",
             rollupOptions: {
-              external: ["electron"],
+              external: [
+                "electron",
+                "ws",
+                "bufferutil",
+                "utf-8-validate",
+              ],
             },
           },
           resolve: {
@@ -55,8 +60,29 @@ export default defineConfig({
       "@shared": path.resolve(__dirname, "./shared"),
     },
   },
+  server: {
+    proxy: {
+      "/relay-api": {
+        target: "http://127.0.0.1:18765",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/relay-api/, ""),
+      },
+      "/relay-ws": {
+        target: "http://127.0.0.1:18765",
+        ws: true,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/relay-ws/, ""),
+      },
+    },
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        "relay-web": path.resolve(__dirname, "relay-web.html"),
+      },
+    },
   },
 });

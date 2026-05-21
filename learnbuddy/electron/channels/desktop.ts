@@ -21,8 +21,8 @@ export class DesktopChannel implements BaseChannel {
     return BrowserWindow.getAllWindows()[0] ?? null;
   }
 
-  private sendIpc(channel: string, data: unknown): void {
-    this.win()?.webContents.send(channel, data);
+  private sendIpc(channel: string, chatId: string, data: Record<string, unknown>): void {
+    this.win()?.webContents.send(channel, { chatId, ...data });
   }
 
   async start(): Promise<void> {
@@ -35,12 +35,12 @@ export class DesktopChannel implements BaseChannel {
 
   async send(msg: OutboundMessage): Promise<void> {
     if (msg.metadata?._progress && msg.content) {
-      this.sendIpc("agent:system-message", { text: msg.content });
+      this.sendIpc("agent:system-message", msg.chatId, { text: msg.content });
     }
   }
 
-  async sendAssistantMessage(_chatId: string, text: string): Promise<void> {
-    this.sendIpc("agent:assistant-message", { text });
+  async sendAssistantMessage(chatId: string, text: string): Promise<void> {
+    this.sendIpc("agent:assistant-message", chatId, { text });
   }
 
   async sendDelta(
@@ -49,34 +49,34 @@ export class DesktopChannel implements BaseChannel {
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     const streamId = (metadata?._stream_id as string) ?? chatId;
-    this.sendIpc("agent:stream-delta", { content: delta, streamId });
+    this.sendIpc("agent:stream-delta", chatId, { content: delta, streamId });
   }
 
   async sendStreamEnd(
-    _chatId: string,
+    chatId: string,
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     const streamId = (metadata?._stream_id as string) ?? "";
-    this.sendIpc("agent:stream-end", { streamId, resuming: false });
+    this.sendIpc("agent:stream-end", chatId, { streamId, resuming: false });
   }
 
   async sendReasoningDelta(chatId: string, delta: string): Promise<void> {
-    this.sendIpc("agent:reasoning-delta", { content: delta });
+    this.sendIpc("agent:reasoning-delta", chatId, { content: delta });
   }
 
-  async sendReasoningEnd(_chatId: string): Promise<void> {
-    this.sendIpc("agent:reasoning-end", {});
+  async sendReasoningEnd(chatId: string): Promise<void> {
+    this.sendIpc("agent:reasoning-end", chatId, {});
   }
 
-  async sendToolProgress(_chatId: string, event: ToolEvent): Promise<void> {
-    this.sendIpc("agent:tool-progress", event);
+  async sendToolProgress(chatId: string, event: ToolEvent): Promise<void> {
+    this.sendIpc("agent:tool-progress", chatId, { ...event });
   }
 
-  async sendFileEdit(_chatId: string, edit: FileEditEvent): Promise<void> {
-    this.sendIpc("agent:file-edit", edit);
+  async sendFileEdit(chatId: string, edit: FileEditEvent): Promise<void> {
+    this.sendIpc("agent:file-edit", chatId, { ...edit });
   }
 
-  async sendTurnComplete(_chatId: string, data: TurnCompleteData): Promise<void> {
-    this.sendIpc("agent:turn-complete", data);
+  async sendTurnComplete(chatId: string, data: TurnCompleteData): Promise<void> {
+    this.sendIpc("agent:turn-complete", chatId, { ...data });
   }
 }

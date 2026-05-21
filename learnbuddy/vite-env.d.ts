@@ -21,16 +21,17 @@ declare global {
     stopAgent(sessionKey: string): Promise<void>;
     getStatus(): Promise<AgentStatus>;
 
-    onStreamDelta(cb: (data: { content: string; streamId: string }) => void): () => void;
-    onStreamEnd(cb: (data: { streamId: string; resuming: boolean }) => void): () => void;
-    onReasoningDelta(cb: (data: { content: string }) => void): () => void;
-    onReasoningEnd(cb: () => void): () => void;
-    onToolProgress(cb: (data: ToolEvent) => void): () => void;
-    onFileEdit(cb: (data: FileEditEvent) => void): () => void;
-    onRetryWait(cb: (data: { message: string }) => void): () => void;
-    onTurnComplete(cb: (data: TurnCompleteData) => void): () => void;
-    onSystemMessage(cb: (data: { text: string }) => void): () => void;
-    onAssistantMessage(cb: (data: { text: string }) => void): () => void;
+    onStreamDelta(cb: (data: { chatId: string; content: string; streamId: string }) => void): () => void;
+    onStreamEnd(cb: (data: { chatId: string; streamId: string; resuming: boolean }) => void): () => void;
+    onReasoningDelta(cb: (data: { chatId: string; content: string }) => void): () => void;
+    onReasoningEnd(cb: (data: { chatId: string }) => void): () => void;
+    onToolProgress(cb: (data: ToolEvent & { chatId: string }) => void): () => void;
+    onFileEdit(cb: (data: FileEditEvent & { chatId: string }) => void): () => void;
+    onRetryWait(cb: (data: { chatId: string; message: string }) => void): () => void;
+    onTurnComplete(cb: (data: TurnCompleteData & { chatId: string }) => void): () => void;
+    onSystemMessage(cb: (data: { chatId: string; text: string }) => void): () => void;
+    onAssistantMessage(cb: (data: { chatId: string; text: string }) => void): () => void;
+    onRelayInbound(cb: (data: { chatId: string; sessionKey: string; content: string }) => void): () => void;
 
     listSessions(): Promise<SessionInfo[]>;
     getSession(key: string): Promise<SessionDetail | null>;
@@ -52,6 +53,20 @@ declare global {
     restartApp(): Promise<void>;
 
     getChannelsStatus(): Promise<Record<string, ChannelStatus>>;
+
+    getRelayStatus(): Promise<{
+      enabled: boolean;
+      connected: boolean;
+      deviceId?: string;
+      pairingCode?: string;
+      lastError?: string;
+      subscribedSessions?: string[];
+    }>;
+    relaySubscribeSession(payload: {
+      sessionKey?: string;
+      chatId?: string;
+    }): Promise<{ sessionKey: string; subscribed?: string[] }>;
+    relaySyncAllSessions(): Promise<{ keys: string[]; subscribed?: string[] }>;
   }
 
   interface Window {

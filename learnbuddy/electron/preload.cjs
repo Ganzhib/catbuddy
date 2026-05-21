@@ -18,6 +18,7 @@ const IPC = {
   TURN_COMPLETE: 'agent:turn-complete',
   SYSTEM_MESSAGE: 'agent:system-message',
   ASSISTANT_MESSAGE: 'agent:assistant-message',
+  RELAY_INBOUND: 'agent:relay-inbound',
   SESSION_LIST: 'session:list',
   SESSION_GET: 'session:get',
   SESSION_DELETE: 'session:delete',
@@ -32,6 +33,9 @@ const IPC = {
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
   CHANNELS_STATUS: 'channels:status',
+  RELAY_STATUS: 'relay:status',
+  RELAY_SUBSCRIBE: 'relay:subscribe-session',
+  RELAY_SYNC_ALL: 'relay:sync-all-sessions',
 }
 
 const api = {
@@ -51,6 +55,7 @@ const api = {
   onTurnComplete: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.TURN_COMPLETE, h); return () => ipcRenderer.removeListener(IPC.TURN_COMPLETE, h) },
   onSystemMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.SYSTEM_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.SYSTEM_MESSAGE, h) },
   onAssistantMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.ASSISTANT_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.ASSISTANT_MESSAGE, h) },
+  onRelayInbound: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.RELAY_INBOUND, h); return () => ipcRenderer.removeListener(IPC.RELAY_INBOUND, h) },
 
   // ── Session ──
   listSessions: () => ipcRenderer.invoke(IPC.SESSION_LIST),
@@ -78,6 +83,10 @@ const api = {
 
   // ── Channels ──
   getChannelsStatus: () => ipcRenderer.invoke(IPC.CHANNELS_STATUS),
+
+  getRelayStatus: () => ipcRenderer.invoke(IPC.RELAY_STATUS),
+  relaySubscribeSession: (payload) => ipcRenderer.invoke(IPC.RELAY_SUBSCRIBE, payload),
+  relaySyncAllSessions: () => ipcRenderer.invoke(IPC.RELAY_SYNC_ALL),
 }
 
 contextBridge.exposeInMainWorld('learnbuddy', api)

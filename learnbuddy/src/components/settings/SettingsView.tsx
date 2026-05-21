@@ -490,6 +490,103 @@ function SettingsSidebar({
   );
 }
 
+function RelayRemoteSettings() {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState<{
+    enabled: boolean;
+    connected: boolean;
+    pairingCode?: string;
+    lastError?: string;
+    subscribedSessions?: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!window.learnbuddy?.getRelayStatus) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const st = await window.learnbuddy!.getRelayStatus!();
+        if (!cancelled) setStatus(st);
+      } catch {
+        if (!cancelled) setStatus(null);
+      }
+    };
+    void poll();
+    const id = setInterval(() => void poll(), 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  if (!status?.enabled) return null;
+
+  const copyPairing = async () => {
+    const code = status.pairingCode;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <section>
+      <SettingsSectionTitle>{t("settings.relay.section")}</SettingsSectionTitle>
+      <SettingsGroup>
+        <SettingsRow
+          title={t("settings.relay.connection")}
+          description={t("settings.relay.connectionHelp")}
+        >
+          <span
+            className={cn(
+              "text-[13px] font-medium",
+              status.connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+            )}
+          >
+            {status.connected
+              ? t("settings.relay.connected")
+              : t("settings.relay.disconnected")}
+          </span>
+        </SettingsRow>
+        <SettingsRow
+          title={t("settings.relay.pairingCode")}
+          description={t("settings.relay.pairingHelp")}
+        >
+          <div className="flex items-center gap-2">
+            <code className="rounded-md bg-muted px-2.5 py-1 text-[13px] font-semibold tracking-widest">
+              {status.pairingCode || "—"}
+            </code>
+            {status.pairingCode ? (
+              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => void copyPairing()}>
+                {t("settings.relay.copy")}
+              </Button>
+            ) : null}
+          </div>
+        </SettingsRow>
+        <SettingsRow
+          title={t("settings.relay.sessionKey")}
+          description={t("settings.relay.sessionKeyHelp")}
+        >
+          <span className="max-w-[420px] text-right text-xs text-muted-foreground break-all">
+            {(status.subscribedSessions?.length ?? 0) > 0
+              ? status.subscribedSessions!.join(", ")
+              : t("settings.values.notAvailable")}
+          </span>
+        </SettingsRow>
+        {status.lastError ? (
+          <SettingsRow title={t("settings.relay.lastError")}>
+            <span className="max-w-[420px] text-right text-xs text-destructive break-all">
+              {status.lastError}
+            </span>
+          </SettingsRow>
+        ) : null}
+      </SettingsGroup>
+    </section>
+  );
+}
+
 function CompactionSettings() {
   const { t } = useTranslation()
   const [enabled, setEnabled] = useState(true)
@@ -705,6 +802,7 @@ function GeneralSettings({
         </section>
       )}
 
+      <RelayRemoteSettings />
       <CompactionSettings />
     </div>
   );

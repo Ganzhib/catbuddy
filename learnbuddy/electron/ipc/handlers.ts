@@ -6,32 +6,78 @@ import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
 import type { learnbuddyConfig } from '../../shared/types'
+import type { RelayClient } from '../sync/relay-client.js'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
   config: learnbuddyConfig,
   configFile: string,
+  relayClient: RelayClient | null = null,
 ) {
   const persistConfig = () => saveConfig(configFile, config)
+
+  const toSessionKey = (chatId?: string): string => {
+    if (!chatId?.trim()) return 'desktop:main'
+    const raw = chatId.trim()
+    return raw.startsWith('desktop:') ? raw : `desktop:${raw}`
+  }
+
+  const bareChatId = (sessionKey: string): string => {
+    const idx = sessionKey.indexOf(':')
+    return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
+  }
 
   // ═══ Agent ═══
   // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → DesktopChannel → 前端
   ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
-    const id = (chatId && !chatId.startsWith('desktop:')) ? `desktop:${chatId}` : (chatId || 'desktop:main')
+    const sessionKey = toSessionKey(chatId)
     const bus = agentLoop.bus;
     if (!bus) throw new Error("AgentLoop must be initialized with a MessageBus");
     bus.publishInbound({
       channel: 'desktop',
       senderId: 'user',
-      chatId: id,
+      chatId: bareChatId(sessionKey),
       content,
       media: media ?? [],
       timestamp: Date.now(),
       metadata: {},
-      sessionKeyOverride: id,
+      sessionKeyOverride: sessionKey,
     });
-    return { ok: true };
+    relayClient?.subscribeSession(sessionKey);
+    if (content.trim()) {
+      relayClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
+        event: "user_inbound",
+        chat_id: bareChatId(sessionKey),
+        text: content,
+      });
+    }
+    return { ok: true, sessionKey };
+  })
+
+  ipcMain.handle('relay:status', async () => {
+    const st = relayClient?.status;
+    return {
+      enabled: !!relayClient,
+      connected: st?.connected ?? false,
+      deviceId: st?.deviceId,
+      pairingCode: st?.pairingCode,
+      lastError: st?.lastError,
+      subscribedSessions: relayClient?.subscribedSessionKeys ?? [],
+    };
+  })
+
+  ipcMain.handle('relay:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
+    const key = sessionKey?.trim() || toSessionKey(chatId)
+    relayClient?.subscribeSession(key)
+    return { sessionKey: key, subscribed: relayClient?.subscribedSessionKeys ?? [] }
+  })
+
+  ipcMain.handle('relay:sync-all-sessions', async () => {
+    const list = await sessions.list()
+    const keys = list.map((row) => row.key)
+    relayClient?.syncSessions(keys)
+    return { keys, subscribed: relayClient?.subscribedSessionKeys ?? [] }
   })
 
   ipcMain.handle('agent:stop', async (_event, { sessionKey }: { sessionKey: string }) => {
@@ -134,5 +180,9 @@ export function registerIpcHandlers(
   // ═══ Channels ═══
   ipcMain.handle('channels:status', async () => ({
     desktop: { enabled: true, running: true },
+    relay: {
+      enabled: !!relayClient,
+      running: relayClient?.status.connected ?? false,
+    },
   }))
 }

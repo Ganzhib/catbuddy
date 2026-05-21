@@ -72,6 +72,19 @@
       "ai": "AI",
       "system": "System"
     },
+    "relay": {
+      "section": "Remote control (relay)",
+      "connection": "Relay connection",
+      "connectionHelp": "Web can send messages to this desktop when the relay server is running and paired.",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "pairingCode": "Pairing code",
+      "pairingHelp": "Use POST /api/pair on the relay with this code, then use the viewer token you chose — not RELAY_SECRET — as the Web Bearer.",
+      "copy": "Copy",
+      "sessionKey": "Subscribed sessions",
+      "sessionKeyHelp": "Web POST must use the same sessionKey as the chat open on desktop (e.g. desktop:1730_abc). Switching chats updates subscriptions automatically.",
+      "lastError": "Last error"
+    },
     "rows": {
       "theme": "Theme",
       "language": "Language",

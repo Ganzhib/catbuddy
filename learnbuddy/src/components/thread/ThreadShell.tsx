@@ -132,6 +132,11 @@ export function ThreadShell({
     if (chatId && historyKey) sessionKeyByChatIdRef.current.set(chatId, historyKey);
   }, [chatId, historyKey]);
 
+  useEffect(() => {
+    if (!historyKey || !window.learnbuddy?.relaySubscribeSession) return;
+    void window.learnbuddy.relaySubscribeSession({ sessionKey: historyKey });
+  }, [historyKey]);
+
   const displayMessages = useMemo(() => projectWebuiThreadMessages(messages), [messages]);
 
   const showHeroComposer = messages.length === 0 && !loading;

@@ -14,6 +14,9 @@
     "rebuild:unpack": "pnpm run kill-app && pnpm run build:unpack",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "relay:dev": "cd relay-server && pnpm install && node server.mjs",
+    "relay:test": "cd relay-server && node test-e2e.mjs && node test-ui-event.mjs",
+    "relay:web": "vite --open /relay-web.html",
     "brand:generate": "node scripts/generate-brand.mjs",
     "brand:cutout": "node scripts/remove-icon-background.mjs"
   },
@@ -37,6 +40,7 @@
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^2.6.0",
+    "ws": "^8.18.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
@@ -53,6 +57,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.1",

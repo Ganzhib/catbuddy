@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)" />
+    <!-- brand:generate syncs these hrefs from shared/brand.mjs -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/learnbuddy_favicon_32.png" />
+    <link rel="icon" type="image/png" sizes="73x75" href="/brand/learnbuddy_icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/learnbuddy_apple_touch.png" />
+    <title>learnbuddy</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("learnbuddy-webui.theme");
+          var dark =
+            stored === "dark" ||
+            (!stored &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch {}
+      })();
+    </script>
+    <style>
+      html, body, #root { height: 100%; }
+      body { margin: 0; background: #171717; color: #fafafa; font-family: system-ui, -apple-system, sans-serif; }
+      .boot-splash { display: flex; height: 100%; align-items: center; justify-content: center; }
+      .boot-splash-inner { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.55); font-size: 14px; }
+      .boot-mark { object-fit: contain; opacity: 0.9; }
+    </style>
+  </head>
+  <body class="bg-background text-foreground antialiased">
+    <div id="root">
+      <div class="boot-splash">
+        <div class="boot-splash-inner">
+          <img src="/brand/learnbuddy_icon.png" alt="" width="40" height="40" class="boot-mark" />
+          <span>Loading learnbuddy…</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

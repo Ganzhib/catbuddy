@@ -1,13 +1,12 @@
+import uiPreset from "../../packages/ui/tailwind.preset.cjs";
+
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class",
+  presets: [uiPreset],
   content: [
     "./index.html",
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
-  theme: {
-    extend: {},
-  },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };

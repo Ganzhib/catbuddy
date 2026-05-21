@@ -10,7 +10,7 @@ import { useSessions } from '@/hooks/useSessions'
 import { useDeferredTitleRefresh } from '@/hooks/useDeferredTitleRefresh'
 import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
-import { clearSavedSecret, fetchBootstrap, loadSavedSecret, saveSecret } from "@learnbuddy/platform"
+import { clearSavedSecret, fetchBootstrap } from "@learnbuddy/platform"
 import { deriveTitle } from '@/lib/format'
 import { createLearnbuddyClient, type learnbuddyClient } from "@learnbuddy/client"
 import { ClientProvider, useClient } from '@/providers/ClientProvider'

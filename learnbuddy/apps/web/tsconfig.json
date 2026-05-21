@@ -6,7 +6,7 @@
       "@/*": ["../../packages/ui/src/*"],
       "@learnbuddy/ui": ["../../packages/ui/src/index.ts"],
       "@learnbuddy/ui/*": ["../../packages/ui/src/*"],
-      "@learnbuddy/shared/brand": ["../../packages/shared/src/brand.mjs"],
+      "@learnbuddy/shared/brand": ["../../packages/shared/src/brand.d.ts"],
       "@learnbuddy/shared": ["../../packages/shared/src/index.ts"],
       "@learnbuddy/client": ["../../packages/client/src/index.ts"],
       "@learnbuddy/platform": ["../../packages/platform/src/index.ts"]

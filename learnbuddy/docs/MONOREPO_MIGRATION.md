@@ -282,12 +282,13 @@ export function createPlatformApi(): PlatformApi
 
 **目标**: monorepo 成为唯一前端主线。
 
-- [ ] 根 README：双端 dev/build 说明
-- [ ] 标记 `../webui/` deprecated，链到新文档
-- [ ] CI（可选）：`pnpm -r lint`；`build:web`；`build:desktop` 矩阵
-- [ ] 清理 dead code（§2.4）
-- [ ] 更新 `PROJECT_PLAN.md` 或归档
-- [ ] 版本号策略：`@learnbuddy/*` 内部 `0.0.0` workspace 协议即可
+- [x] 根 README：双端 dev/build 说明
+- [x] 标记 `../webui/` deprecated，链到新文档（[WEBUI_DEPRECATED.md](./WEBUI_DEPRECATED.md)）
+- [ ] CI（可选）：`pnpm -r lint`；`build:web`；`build:desktop` 矩阵（仓库根为 `nanobot` 时需在根 `.github` 配置 `working-directory: learnbuddy`）
+- [x] 清理 dead code（§2.4）：移除 `ipc-client`、空 `subagent.ts`、未使用 trace 辅助函数
+- [x] 更新 `PROJECT_PLAN.md` 或归档
+- [x] 版本号策略：`@learnbuddy/*` 内部 `0.0.0` workspace 协议即可
+- [x] 删除根目录遗留 `src/`、`electron/`、`shared/` 等单包副本
 
 **完成标准**: 新成员按 README 可在 30 分钟内跑起 desktop 或 web 其一；webui 目录不再更新。
 

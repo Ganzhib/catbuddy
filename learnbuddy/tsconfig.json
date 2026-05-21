@@ -1,25 +1,11 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["shared/*"],
-      "@/*": ["src/*"]
-    }
-  },
-  "include": ["src/**/*", "shared/**/*", "electron/**/*", "vite-env.d.ts"],
-  "exclude": ["node_modules", "dist", "dist-electron", "release"]
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/client" },
+    { "path": "./packages/platform" },
+    { "path": "./packages/ui" },
+    { "path": "./apps/desktop" },
+    { "path": "./apps/web" }
+  ]
 }

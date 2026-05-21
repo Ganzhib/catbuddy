@@ -12,6 +12,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { MarkdownText, preloadMarkdownText } from "@/components/MarkdownText";
 import { cn } from "@/lib/utils";
 import { formatTurnLatency } from "@/lib/format";
+import { ProgressTraceLines, ToolCallCards } from "@/components/thread/ToolCallCards";
 import type { UIImage, UIMediaAttachment, UIMessage } from "@/lib/types";
 
 interface MessageBubbleProps {
@@ -565,8 +566,33 @@ interface TraceGroupProps {
  */
 export function TraceGroup({ message, animClass }: TraceGroupProps) {
   const { t } = useTranslation();
-  const lines = message.traces ?? [message.content];
+  const toolCount = message.toolProgress
+    ? Object.keys(message.toolProgress).length
+    : 0;
+  const progressOnly = (message.traces ?? []).filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (trimmed.startsWith("Tools:")) return true;
+    return !trimmed.startsWith("▶") && !trimmed.startsWith("✓") && !trimmed.startsWith("✗");
+  });
+
+  if (toolCount > 0) {
+    return (
+      <div className={cn("w-full space-y-2", animClass)}>
+        {toolCount > 1 ? (
+          <p className="px-0.5 text-[11px] font-medium text-muted-foreground/70">
+            {t("message.toolMany", { count: toolCount })}
+          </p>
+        ) : null}
+        <ToolCallCards toolProgress={message.toolProgress!} />
+        <ProgressTraceLines lines={progressOnly} />
+      </div>
+    );
+  }
+
+  const lines = progressOnly;
   const count = lines.length;
+  if (count === 0) return null;
   const [open, setOpen] = useState(false);
   return (
     <div className={cn("w-full", animClass)}>
@@ -593,23 +619,7 @@ export function TraceGroup({ message, animClass }: TraceGroupProps) {
           )}
         />
       </button>
-      {open && (
-        <ul
-          className={cn(
-            "mt-1 space-y-0.5 border-l border-muted-foreground/20 pl-3",
-            "animate-in fade-in-0 slide-in-from-top-1 duration-200",
-          )}
-        >
-          {lines.map((line, i) => (
-            <li
-              key={i}
-              className="whitespace-pre-wrap break-words font-mono text-[11.5px] leading-relaxed text-muted-foreground/90"
-            >
-              {line}
-            </li>
-          ))}
-        </ul>
-      )}
+      {open ? <ProgressTraceLines lines={lines} className="mt-1" /> : null}
     </div>
   );
 }

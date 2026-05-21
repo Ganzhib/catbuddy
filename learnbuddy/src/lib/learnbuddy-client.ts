@@ -6,6 +6,8 @@ import type {
   ConnectionStatus, InboundEvent, Outbound,
   OutboundMedia, OutboundImageGeneration,
 } from './types'
+import type { ToolEvent } from '../../shared/types'
+import { toolProgressFromBackendEvent } from './tool-traces'
 
 type Unsubscribe = () => void
 type EventHandler = (ev: InboundEvent) => void
@@ -97,6 +99,9 @@ export class learnbuddyClient {
           event: 'turn_end',
           chat_id: this._activeChatId,
           latency_ms: data.latencyMs,
+          tools_used: data.toolsUsed?.length
+            ? [...new Set(data.toolsUsed)] as string[]
+            : undefined,
         })
         this._dispatch(this._activeChatId, {
           event: 'goal_status',
@@ -120,17 +125,39 @@ export class learnbuddyClient {
         })
       }),
 
-      api.onToolProgress((data) => {
+      api.onToolProgress((data: ToolEvent) => {
+        const toolEvent = toolProgressFromBackendEvent(data)
         this._dispatch(this._activeChatId, {
           event: 'message',
           chat_id: this._activeChatId,
-          text: `${data.status === 'started' ? '🔧' : '✅'} ${data.name}${data.detail ? `: ${data.detail}` : ''}`,
+          text: '',
           kind: 'tool_hint',
-          tool_events: [{
-            version: 1,
-            phase: data.status === 'started' ? 'start' : data.status === 'completed' ? 'end' : 'error',
-            name: data.name,
-          }],
+          tool_events: [toolEvent],
+        })
+      }),
+
+      api.onFileEdit?.((edit) => {
+        this._dispatch(this._activeChatId, {
+          event: 'file_edit',
+          chat_id: this._activeChatId,
+          edits: [edit as import('./types').UIFileEdit],
+        })
+      }),
+
+      api.onRetryWait(({ message }) => {
+        this._dispatch(this._activeChatId, {
+          event: 'message',
+          chat_id: this._activeChatId,
+          text: message,
+          kind: 'progress',
+        })
+      }),
+
+      api.onAssistantMessage?.(({ text }) => {
+        this._dispatch(this._activeChatId, {
+          event: 'message',
+          chat_id: this._activeChatId,
+          text,
         })
       }),
 

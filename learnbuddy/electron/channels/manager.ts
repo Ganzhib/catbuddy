@@ -81,6 +81,12 @@ export class ChannelManager {
           continue;
         }
 
+        // 文件编辑进度
+        if (meta._file_edit && meta._file_edit_event) {
+          await channel.sendFileEdit?.(msg.chatId, meta._file_edit_event as import("../../shared/types").FileEditEvent);
+          continue;
+        }
+
         // 整轮结束
         if (meta._turn_complete && meta._turn_data) {
           await channel.sendTurnComplete?.(msg.chatId, meta._turn_data as import("../../shared/types").TurnCompleteData);
@@ -93,8 +99,13 @@ export class ChannelManager {
           continue;
         }
 
-        // 普通消息
-        await channel.send(msg);
+        // 非流式完整助手回复（勿走 system-message / progress trace）
+        if (meta._assistant_complete && msg.content) {
+          await channel.sendAssistantMessage?.(msg.chatId, msg.content);
+          continue;
+        }
+
+        // 普通消息（无专用元数据时忽略，避免误投 progress）
       } catch (err) {
         console.error("[manager] Error dispatching message:", err);
       }

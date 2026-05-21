@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useClient } from "@/providers/ClientProvider";
 import { toMediaAttachment } from "@/lib/media";
-import { toolTraceLinesFromEvents } from "@/lib/tool-traces";
+import { linesFromToolProgress, upsertToolProgress } from "@/lib/tool-traces";
+import type { ToolProgressEvent } from "@/lib/types";
 import type { StreamError } from "@/lib/learnbuddy-client";
 import type {
   InboundEvent,
@@ -187,6 +188,121 @@ function stampLastAssistantLatency(prev: UIMessage[], latencyMs: number): UIMess
   return prev;
 }
 
+function appendToolsUsedSummary(
+  prev: UIMessage[],
+  toolsUsed: string[],
+): UIMessage[] {
+  if (toolsUsed.length === 0) return prev;
+  const summary = `Tools: ${toolsUsed.join(', ')}`;
+  for (let i = prev.length - 1; i >= 0; i -= 1) {
+    const m = prev[i];
+    if (m.kind !== "trace") continue;
+    const traces = [...(m.traces ?? []), summary];
+    const merged: UIMessage = {
+      ...m,
+      traces,
+      content: summary,
+    };
+    return [...prev.slice(0, i), merged, ...prev.slice(i + 1)];
+  }
+  return prev;
+}
+
+/** Show file chip as soon as write_file / edit_file tool card appears (before file_edit IPC). */
+function optimisticFileEditFromToolStart(
+  event: ToolProgressEvent,
+): UIFileEdit | null {
+  if (event.phase !== "start") return null;
+  if (event.name !== "write_file" && event.name !== "edit_file") return null;
+  const args = event.arguments;
+  if (!args || typeof args !== "object") return null;
+  const path = (args as { path?: unknown }).path;
+  if (typeof path !== "string" || !path.trim()) return null;
+  const trimmed = path.trim();
+  return {
+    version: 1,
+    call_id: event.call_id ?? `${event.name}:${trimmed}`,
+    tool: event.name,
+    path: trimmed,
+    phase: "start",
+    status: "editing",
+    added: 0,
+    deleted: 0,
+  };
+}
+
+function mergeFileEditIntoTrace(
+  prev: UIMessage[],
+  segmentId: string,
+  edits: UIFileEdit[],
+): UIMessage[] {
+  const normalized = mergeFileEdits(undefined, edits);
+  if (normalized.length === 0) return prev;
+  const targetIndex = findFileEditTraceIndex(prev, segmentId, normalized);
+  if (targetIndex === null) {
+    return [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "tool",
+        kind: "trace",
+        content: "",
+        traces: [],
+        fileEdits: normalized,
+        activitySegmentId: segmentId,
+        createdAt: Date.now(),
+      },
+    ];
+  }
+  const target = prev[targetIndex];
+  return replaceMessageAt(prev, targetIndex, {
+    ...target,
+    fileEdits: mergeFileEdits(target.fileEdits, normalized),
+    activitySegmentId: target.activitySegmentId ?? segmentId,
+  });
+}
+
+function appendToolProgressTrace(
+  prev: UIMessage[],
+  toolEvent: ToolProgressEvent,
+  segmentId: string,
+): UIMessage[] {
+  const last = prev[prev.length - 1];
+  if (
+    last
+    && last.kind === "trace"
+    && !last.isStreaming
+    && (!last.activitySegmentId || last.activitySegmentId === segmentId)
+  ) {
+    const toolProgress = upsertToolProgress(last.toolProgress, toolEvent);
+    const traces = linesFromToolProgress(toolProgress);
+    const merged: UIMessage = {
+      ...last,
+      toolProgress,
+      traces,
+      content: traces[traces.length - 1] ?? last.content,
+      activitySegmentId: last.activitySegmentId ?? segmentId,
+    };
+    return [...prev.slice(0, -1), merged];
+  }
+
+  const toolProgress = upsertToolProgress(undefined, toolEvent);
+  const traces = linesFromToolProgress(toolProgress);
+  return [
+    ...prev,
+    {
+      id: crypto.randomUUID(),
+      role: "tool",
+      kind: "trace",
+      toolProgress,
+      content: traces[traces.length - 1] ?? "",
+      traces,
+      activitySegmentId: segmentId,
+      createdAt: Date.now(),
+    },
+  ];
+}
+
 function absorbCompleteAssistantMessage(
   prev: UIMessage[],
   message: Omit<UIMessage, "id" | "role" | "createdAt">,
@@ -260,21 +376,50 @@ function mergeFileEdits(existing: UIFileEdit[] | undefined, incoming: UIFileEdit
   return next;
 }
 
+/**
+ * Find the trace row to merge file_edit into — prefer the in-flight tool card
+ * (same call_id / activity segment) so file chips appear immediately.
+ */
 function findFileEditTraceIndex(
   prev: UIMessage[],
-  segmentId: string | null,
+  segmentId: string,
   incoming: UIFileEdit[],
 ): number | null {
   const incomingKeys = new Set(incoming.map(fileEditKey));
+  const callIds = new Set(
+    incoming
+      .map((edit) => edit.call_id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  );
+
   for (let i = prev.length - 1; i >= 0; i -= 1) {
     const candidate = prev[i];
     if (candidate.role === "user") break;
-    if (candidate.kind !== "trace" || !candidate.fileEdits?.length) continue;
-    if (segmentId && candidate.activitySegmentId === segmentId) return i;
-    for (const existing of candidate.fileEdits) {
-      if (incomingKeys.has(fileEditKey(existing))) return i;
+    if (candidate.kind !== "trace") continue;
+    if (candidate.activitySegmentId && candidate.activitySegmentId !== segmentId) {
+      continue;
+    }
+
+    if (candidate.fileEdits?.length) {
+      for (const existing of candidate.fileEdits) {
+        if (incomingKeys.has(fileEditKey(existing))) return i;
+      }
+    }
+
+    if (callIds.size > 0 && candidate.toolProgress) {
+      for (const callId of callIds) {
+        if (candidate.toolProgress[callId]) return i;
+      }
     }
   }
+
+  for (let i = prev.length - 1; i >= 0; i -= 1) {
+    const candidate = prev[i];
+    if (candidate.role === "user") break;
+    if (candidate.kind !== "trace") continue;
+    if (candidate.activitySegmentId === segmentId) return i;
+  }
+
   return null;
 }
 
@@ -562,7 +707,6 @@ export function uselearnbuddyStream(
         if (suppressStreamUntilTurnEndRef.current) return;
         const chunk = typeof ev.text === "string" ? ev.text : "";
         if (!chunk) return;
-        clearActivitySegment();
         setIsStreaming(true);
         pendingStreamEventsRef.current.push({ kind: "delta", text: chunk });
         schedulePendingStreamFlush();
@@ -625,6 +769,9 @@ export function uselearnbuddyStream(
         setMessages((prev) => {
           let finalized = prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m));
           finalized = pruneReasoningOnlyPlaceholders(finalized);
+          if (ev.tools_used?.length) {
+            finalized = appendToolsUsedSummary(finalized, ev.tools_used);
+          }
           if (typeof ev.latency_ms === "number" && ev.latency_ms >= 0) {
             finalized = stampLastAssistantLatency(finalized, Math.round(ev.latency_ms));
           }
@@ -642,7 +789,7 @@ export function uselearnbuddyStream(
       if (ev.event === "message") {
         if (
           suppressStreamUntilTurnEndRef.current &&
-          (ev.kind === "tool_hint" || ev.kind === "progress" || ev.kind === "reasoning")
+          (ev.kind === "progress" || ev.kind === "reasoning")
         ) {
           return;
         }
@@ -661,20 +808,35 @@ export function uselearnbuddyStream(
         // Intermediate agent breadcrumbs (tool-call hints, raw progress).
         // Attach them to the last trace row if it was the last emitted item
         // so a sequence of calls collapses into one compact trace group.
-        if (ev.kind === "tool_hint" || ev.kind === "progress") {
-          const structuredLines = toolTraceLinesFromEvents(ev.tool_events);
-          const lines = structuredLines.length > 0
-            ? structuredLines
-            : ev.text
-              ? [ev.text]
-              : [];
-          if (lines.length === 0) return;
+        if (ev.kind === "tool_hint") {
+          const raw = ev.tool_events?.[0];
+          const toolEvent: ToolProgressEvent | null = raw
+            ? (raw as ToolProgressEvent)
+            : null;
+          if (!toolEvent?.name) return;
+          const segmentId = ensureActivitySegmentId();
+          setMessages((prev) => {
+            let next = appendToolProgressTrace(prev, toolEvent, segmentId);
+            const optimistic = optimisticFileEditFromToolStart(toolEvent);
+            if (optimistic) {
+              fileEditSegmentRef.current = segmentId;
+              next = mergeFileEditIntoTrace(next, segmentId, [optimistic]);
+            }
+            return next;
+          });
+          return;
+        }
+
+        if (ev.kind === "progress") {
+          const line = ev.text?.trim();
+          if (!line) return;
           setMessages((prev) => {
             const segmentId = ensureActivitySegmentId();
             const last = prev[prev.length - 1];
             if (
               last
               && last.kind === "trace"
+              && !last.toolProgress
               && !last.isStreaming
               && (!last.activitySegmentId || last.activitySegmentId === segmentId)
             ) {
@@ -685,8 +847,8 @@ export function uselearnbuddyStream(
                   : [];
               const merged: UIMessage = {
                 ...last,
-                traces: [...previousTraces, ...lines],
-                content: lines[lines.length - 1],
+                traces: [...previousTraces, line],
+                content: "",
                 activitySegmentId: last.activitySegmentId ?? segmentId,
               };
               return [...prev.slice(0, -1), merged];
@@ -697,8 +859,8 @@ export function uselearnbuddyStream(
                 id: crypto.randomUUID(),
                 role: "tool",
                 kind: "trace",
-                content: lines[lines.length - 1],
-                traces: lines,
+                content: "",
+                traces: [line],
                 activitySegmentId: segmentId,
                 createdAt: Date.now(),
               },
@@ -716,7 +878,6 @@ export function uselearnbuddyStream(
         // flight, drop the placeholder so we don't render the text twice.
         // Do NOT reset isStreaming here — only ``turn_end`` signals that
         // the full turn (all tool calls + final text) is complete.
-        clearActivitySegment();
         setMessages((prev) => {
           const activeId = buffer.current?.messageId;
           buffer.current = null;
@@ -746,41 +907,13 @@ export function uselearnbuddyStream(
         const opensFileEditPhase = normalized.some(
           (edit) => edit.status === "editing" || edit.phase === "start",
         );
-        let eventSegmentId = fileEditSegmentRef.current;
-        if (!eventSegmentId && opensFileEditPhase) {
-          eventSegmentId = detachedActivitySegmentId();
-          fileEditSegmentRef.current = eventSegmentId;
+        const segmentId = ensureActivitySegmentId();
+        if (opensFileEditPhase) {
+          fileEditSegmentRef.current = segmentId;
         }
-        setMessages((prev) => {
-          let segmentId = eventSegmentId;
-          const targetIndex = findFileEditTraceIndex(prev, segmentId, normalized);
-          if (targetIndex !== null) {
-            const target = prev[targetIndex];
-            segmentId = target.activitySegmentId ?? segmentId ?? detachedActivitySegmentId();
-            if (opensFileEditPhase) fileEditSegmentRef.current = segmentId;
-            const merged: UIMessage = {
-              ...target,
-              fileEdits: mergeFileEdits(target.fileEdits, normalized),
-              activitySegmentId: segmentId,
-            };
-            return replaceMessageAt(prev, targetIndex, merged);
-          }
-          segmentId = segmentId ?? detachedActivitySegmentId();
-          if (opensFileEditPhase) fileEditSegmentRef.current = segmentId;
-          return [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              role: "tool",
-              kind: "trace",
-              content: "",
-              traces: [],
-              fileEdits: normalized,
-              activitySegmentId: segmentId,
-              createdAt: Date.now(),
-            },
-          ];
-        });
+        setMessages((prev) =>
+          mergeFileEditIntoTrace(prev, segmentId, normalized),
+        );
         return;
       }
       // ``attached`` / ``error`` frames aren't actionable here; the client

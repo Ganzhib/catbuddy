@@ -7,6 +7,7 @@ export const IPC = {
   REASONING_DELTA: 'agent:reasoning-delta',
   REASONING_END: 'agent:reasoning-end',
   TOOL_PROGRESS: 'agent:tool-progress',
+  FILE_EDIT: 'agent:file-edit',
   RETRY_WAIT: 'agent:retry-wait',
   TURN_COMPLETE: 'agent:turn-complete',
   SESSION_LIST: 'session:list',
@@ -24,5 +25,6 @@ export const IPC = {
   SKILLS_TOGGLE: 'skills:toggle',
   CHANNELS_STATUS: 'channels:status',
   SYSTEM_MESSAGE: 'agent:system-message',
+  ASSISTANT_MESSAGE: 'agent:assistant-message',
   APP_RESTART: 'app:restart',
 } as const

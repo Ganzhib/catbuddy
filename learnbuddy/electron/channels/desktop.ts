@@ -4,7 +4,7 @@
  * 从 bus.outbound 消费 Agent 响应，通过 webContents.send 投送到渲染进程。
  */
 import { BrowserWindow } from "electron";
-import type { OutboundMessage, ToolEvent, TurnCompleteData } from "../../shared/types";
+import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "../../shared/types";
 import type { BaseChannel } from "./base";
 
 export class DesktopChannel implements BaseChannel {
@@ -34,9 +34,13 @@ export class DesktopChannel implements BaseChannel {
   }
 
   async send(msg: OutboundMessage): Promise<void> {
-    if (msg.content) {
+    if (msg.metadata?._progress && msg.content) {
       this.sendIpc("agent:system-message", { text: msg.content });
     }
+  }
+
+  async sendAssistantMessage(_chatId: string, text: string): Promise<void> {
+    this.sendIpc("agent:assistant-message", { text });
   }
 
   async sendDelta(
@@ -66,6 +70,10 @@ export class DesktopChannel implements BaseChannel {
 
   async sendToolProgress(_chatId: string, event: ToolEvent): Promise<void> {
     this.sendIpc("agent:tool-progress", event);
+  }
+
+  async sendFileEdit(_chatId: string, edit: FileEditEvent): Promise<void> {
+    this.sendIpc("agent:file-edit", edit);
   }
 
   async sendTurnComplete(_chatId: string, data: TurnCompleteData): Promise<void> {

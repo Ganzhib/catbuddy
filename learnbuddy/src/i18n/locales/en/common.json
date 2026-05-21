@@ -348,6 +348,15 @@
     "assistantTyping": "Assistant is typing",
     "toolSingle": "Using a tool",
     "toolMany": "Used {{count}} tools",
+    "toolCard": {
+      "running": "Running",
+      "done": "Done",
+      "error": "Failed",
+      "arguments": "Arguments",
+      "output": "Output",
+      "waiting": "Waiting for result…",
+      "duration": "{{ms}} ms"
+    },
     "toolSummary": "{{count}} tool",
     "toolSummaryMany": "{{count}} tools",
     "reasoningTools": "Reasoning · {{count}} tools",

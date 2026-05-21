@@ -85,8 +85,28 @@ export interface ToolDefinition {
 export interface ToolEvent {
   name: string
   status: 'started' | 'completed' | 'error'
+  /** Provider tool call id — used to merge start/end into one UI row. */
+  callId?: string
+  arguments?: Record<string, unknown>
   detail?: string
   durationMs?: number
+}
+
+/** File edit progress for write_file / edit_file (desktop UI). */
+export interface FileEditEvent {
+  version?: number
+  call_id: string
+  tool: string
+  path: string
+  absolute_path?: string
+  phase?: 'start' | 'end' | 'error' | string
+  added: number
+  deleted: number
+  approximate?: boolean
+  status: 'editing' | 'done' | 'error'
+  binary?: boolean
+  error?: string
+  pending?: boolean
 }
 
 // ── Session ──

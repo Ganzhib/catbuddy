@@ -55,8 +55,12 @@ function countActivity(messages: UIMessage[], fileEdits: FileEditSummary[]): Act
       continue;
     }
     if (m.kind === "trace") {
-      const lines = m.traces?.length ?? (m.content.trim() ? 1 : 0);
-      toolCalls += lines;
+      if (m.toolProgress && Object.keys(m.toolProgress).length > 0) {
+        toolCalls += Object.keys(m.toolProgress).length;
+      } else {
+        const lines = m.traces?.length ?? (m.content.trim() ? 1 : 0);
+        toolCalls += lines;
+      }
     }
   }
   let added = 0;
@@ -126,6 +130,8 @@ export function AgentActivityCluster({
     primaryFileTooltipPath,
   } = countActivity(messages, fileEdits);
   const hasPendingFileEdit = fileEdits.some((edit) => edit.pending);
+  const hasLiveActivity =
+    isTurnStreaming && (toolCalls > 0 || fileCount > 0 || reasoningSteps > 0);
 
   const [userToggledOuter, setUserToggledOuter] = useState(false);
   const [outerOpenLocal, setOuterOpenLocal] = useState(false);
@@ -133,8 +139,8 @@ export function AgentActivityCluster({
   const activityContentRef = useRef<HTMLDivElement>(null);
   const autoFollowActivityRef = useRef(true);
   const scrollFrameRef = useRef<number | null>(null);
-  /** Collapsed by default during “Working…” and after the turn; user expands to inspect traces. */
-  const outerExpanded = userToggledOuter ? outerOpenLocal : false;
+  /** Auto-expand while tools/files/reasoning are active; user can still collapse manually. */
+  const outerExpanded = userToggledOuter ? outerOpenLocal : hasLiveActivity;
 
   const hasLiveEditingFiles = isTurnStreaming && hasEditingFiles;
   const headerBusy = fileCount > 0 ? hasEditingFiles : isTurnStreaming;
@@ -326,7 +332,10 @@ export function AgentActivityCluster({
                   );
                 }
                 if (m.kind === "trace") {
-                  const hasTraceLines = (m.traces?.length ?? 0) > 0 || m.content.trim().length > 0;
+                  const hasTraceLines =
+                    (m.toolProgress && Object.keys(m.toolProgress).length > 0)
+                    || (m.traces?.length ?? 0) > 0
+                    || m.content.trim().length > 0;
                   return hasTraceLines ? (
                     <div key={m.id} className="flex flex-col gap-1">
                       <TraceGroup message={m} animClass="" />

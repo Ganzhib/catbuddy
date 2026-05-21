@@ -2,7 +2,7 @@
  * IPC Client — 替代原版 WebSocket learnbuddyClient
  * 保持与原版相同的 API 签名，方便后续迁移 webui 组件
  */
-import type { ToolEvent, TurnCompleteData, SessionInfo, SessionDetail } from '../../shared/types'
+import type { FileEditEvent, ToolEvent, TurnCompleteData, SessionInfo, SessionDetail } from '../../shared/types'
 
 interface StreamDeltaData { content: string; streamId: string }
 interface StreamEndData { streamId: string; resuming: boolean }
@@ -37,6 +37,10 @@ export class IpcClient {
 
   onToolProgress(cb: (data: ToolEvent) => void): () => void {
     return window.learnbuddy.onToolProgress(cb)
+  }
+
+  onFileEdit(cb: (data: FileEditEvent) => void): () => void {
+    return window.learnbuddy.onFileEdit(cb)
   }
 
   onRetryWait(cb: (data: RetryWaitData) => void): () => void {

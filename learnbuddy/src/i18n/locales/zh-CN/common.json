@@ -336,6 +336,15 @@
     "assistantTyping": "助手正在输入",
     "toolSingle": "正在使用工具",
     "toolMany": "已使用 {{count}} 个工具",
+    "toolCard": {
+      "running": "执行中",
+      "done": "完成",
+      "error": "失败",
+      "arguments": "参数",
+      "output": "输出",
+      "waiting": "等待结果…",
+      "duration": "{{ms}} 毫秒"
+    },
     "toolSummary": "{{count}} 个工具",
     "toolSummaryMany": "{{count}} 个工具",
     "reasoningTools": "推理 · {{count}} 个工具",

@@ -19,6 +19,9 @@ export interface BaseChannel {
   /** 发送完整消息（非流式） */
   send(msg: OutboundMessage): Promise<void>;
 
+  /** 非流式完整助手正文（渲染为聊天气泡，非工具区 progress） */
+  sendAssistantMessage?(chatId: string, text: string): Promise<void>;
+
   /** 发送流式增量片段 */
   sendDelta?(chatId: string, delta: string, metadata?: Record<string, unknown>): Promise<void>;
 
@@ -33,6 +36,9 @@ export interface BaseChannel {
 
   /** 工具调用进度 */
   sendToolProgress?(chatId: string, event: import("../../shared/types").ToolEvent): Promise<void>;
+
+  /** 文件编辑进度（write_file / edit_file） */
+  sendFileEdit?(chatId: string, edit: import("../../shared/types").FileEditEvent): Promise<void>;
 
   /** 整轮对话结束（前端据此停止 loading） */
   sendTurnComplete?(chatId: string, data: import("../../shared/types").TurnCompleteData): Promise<void>;

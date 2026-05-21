@@ -1,9 +1,3 @@
-
-/*
-!/.gitignore
-!/learnbuddy/
-!/learnbuddy/**
-
 # Project-specific
 .worktrees/
 .worktree/
@@ -12,11 +6,12 @@
 .env
 .web
 .orion
-
+dist-electron
+release-fresh/
+release/
 # Claude / AI assistant artifacts
 docs/superpowers/
 docs/plans/
-
 # webui (monorepo frontend)
 webui/node_modules/
 webui/dist/
@@ -54,6 +49,7 @@ pip-wheel-metadata/
 share/python-wheels/
 dist2/
 node_modules/
+relay-server/node_modules/
 dist-*/*
 /bridge/node_modules/
 /bridge/dist/
@@ -108,3 +104,14 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Local nanobot monorepo (not part of learnbuddy repo)
+nanobot/
+webui/
+tests/
+bridge/
+desktop/
+docs/
+case/
+images/
+.agent/

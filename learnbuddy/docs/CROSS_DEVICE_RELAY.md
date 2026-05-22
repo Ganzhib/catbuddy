@@ -5,7 +5,7 @@ Web 只做输入与展示；**Agent + 本地 workspace 工具只在桌面 Electr
 ## 架构
 
 ```text
-apps/web (未来)          relay-server              apps/desktop
+apps/web                 gateway (@learnbuddy)      apps/desktop
      │                        │                         │
      │  POST /api/.../messages│                         │
      ├───────────────────────►│  inbound_message (WS)   │
@@ -20,7 +20,7 @@ apps/web (未来)          relay-server              apps/desktop
 ### 1. 启动中转
 
 ```bash
-cd learnbuddy/relay-server
+cd learnbuddy/gateway
 pnpm install
 RELAY_SECRET=your-executor-secret pnpm start
 # 默认 http://127.0.0.1:18765  WS ws://127.0.0.1:18765/ws
@@ -141,7 +141,7 @@ VITE_RELAY_VIEWER_TOKEN=my-web-viewer-token
 
 | 路径 | 说明 |
 |------|------|
-| `relay-server/server.mjs` | 最小中转服务 |
+| `gateway/` (`@learnbuddy/gateway`) | NestJS 中转 + Gateway 垫片；应急 `server.mjs` |
 | `electron/sync/relay-client.ts` | 桌面 WS 客户端 |
 | `electron/channels/relay.ts` | 出站 fan-out → `ui_event` |
 | `electron/channels/manager.ts` | `desktop` 出站同时投递 `relay` |

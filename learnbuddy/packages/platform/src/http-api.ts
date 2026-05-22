@@ -41,6 +41,17 @@ export async function listSessionsHttp(
   return apiFetch<ChatSummary[]>('/api/sessions', token, base)
 }
 
+export async function createSessionHttp(
+  token: string,
+  base: string = '',
+  chatId?: string,
+): Promise<ChatSummary> {
+  return apiFetch<ChatSummary>('/api/sessions', token, base, {
+    method: 'POST',
+    body: JSON.stringify(chatId ? { chatId } : {}),
+  })
+}
+
 export async function fetchWebuiThreadHttp(
   token: string,
   key: string,

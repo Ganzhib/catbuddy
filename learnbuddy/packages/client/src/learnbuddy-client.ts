@@ -8,6 +8,7 @@ import type {
   OutboundMedia,
   OutboundImageGeneration,
 } from "@learnbuddy/shared";
+import { bareChatId } from "@learnbuddy/shared";
 import { createAgentTransport } from "./transport/create-transport";
 import type {
   AgentTransport,
@@ -22,11 +23,14 @@ type RuntimeModelHandler = (modelName: string | null, modelPreset?: string | nul
 type SessionUpdateHandler = (chatId: string, scope?: SessionUpdateScope) => void;
 type GoHomeHandler = () => void;
 
-export type StreamError = { kind: "message_too_big" };
+export type StreamError =
+  | { kind: "message_too_big" }
+  | { kind: "gateway_executor_offline"; code?: string };
 
 type ErrorHandler = (error: StreamError) => void;
 
-const DEFAULT_CHAT_ID = `desktop:${Date.now()}_main`;
+/** Placeholder until ``attach`` / ``sendMessage`` picks a real chat. */
+const DEFAULT_CHAT_ID = "";
 
 export class learnbuddyClient {
   status_: ConnectionStatus = "idle";
@@ -84,11 +88,11 @@ export class learnbuddyClient {
         if (ev.event === "delta" && ev.stream_id) {
           this._currentStreamId = ev.stream_id;
         }
-        const chatId =
+        const raw =
           "chat_id" in ev && typeof ev.chat_id === "string"
             ? ev.chat_id
             : this._activeChatId;
-        this._dispatch(chatId, ev);
+        this._dispatch(bareChatId(raw), ev);
       },
       onStatus: (status) => this.setStatus(status),
       onSessionUpdate: (chatId, scope) => {
@@ -109,7 +113,18 @@ export class learnbuddyClient {
           }
         }
       },
+      onSendError: (code) => this._notifyError({ kind: "gateway_executor_offline", code }),
     });
+  }
+
+  private _notifyError(error: StreamError): void {
+    for (const h of this.errorHandlers) {
+      try {
+        h(error);
+      } catch {
+        /* isolated */
+      }
+    }
   }
 
   close(): void {
@@ -165,7 +180,10 @@ export class learnbuddyClient {
   }
 
   attach(chatId: string): void {
-    this.knownChats.add(chatId);
+    const id = bareChatId(chatId);
+    this.knownChats.add(id);
+    this._activeChatId = id;
+    this.transport.ensureSession?.(id);
   }
 
   sendMessage(
@@ -174,11 +192,12 @@ export class learnbuddyClient {
     media?: OutboundMedia[],
     _options?: { imageGeneration?: OutboundImageGeneration },
   ): void {
-    this.knownChats.add(chatId);
-    this._activeChatId = chatId;
+    const id = bareChatId(chatId);
+    this.knownChats.add(id);
+    this._activeChatId = id;
 
     const mediaUrls = media?.map((m) => m.data_url) ?? [];
-    this.transport.sendMessage(chatId, content, mediaUrls);
+    this.transport.sendMessage(id, content, mediaUrls);
   }
 
   private _emitSessionHandshake(): void {
@@ -195,14 +214,34 @@ export class learnbuddyClient {
   }
 
   private _dispatch(chatId: string, ev: InboundEvent): void {
-    const handlers = this.chatHandlers.get(chatId);
-    if (handlers) {
+    const bareId = bareChatId(chatId) || bareChatId(this._activeChatId);
+    if (!bareId) return;
+    const prefixed = `desktop:${bareId}`;
+    const ids =
+      chatId === bareId || chatId === prefixed ? [bareId] : [bareId, prefixed];
+    let delivered = false;
+    for (const id of ids) {
+      const handlers = this.chatHandlers.get(id);
+      if (!handlers?.size) continue;
+      delivered = true;
       for (const h of handlers) {
         try {
           h(ev);
         } catch {
           /* isolated */
         }
+      }
+    }
+    if (delivered) return;
+    const active = bareChatId(this._activeChatId);
+    const fallback =
+      this.chatHandlers.get(active) ?? this.chatHandlers.get(this._activeChatId);
+    if (!fallback?.size) return;
+    for (const h of fallback) {
+      try {
+        h(ev);
+      } catch {
+        /* isolated */
       }
     }
   }
@@ -224,6 +263,10 @@ export interface CreateLearnbuddyClientOptions {
   /** Override auto-detected transport (desktop IPC vs web WebSocket). */
   transport?: AgentTransport;
   transportMode?: CreateTransportOptions["mode"];
+  /** learnbuddy gateway HTTP base (``/gateway-api`` in Vite dev). */
+  gatewayHttpBase?: string;
+  /** @deprecated Use gatewayHttpBase */
+  relayHttpBase?: string;
 }
 
 /** Bootstrap entry: pluggable transport, same learnbuddyClient API for UI. */
@@ -236,6 +279,8 @@ export function createLearnbuddyClient(
       mode: options.transportMode ?? "auto",
       token: options.token,
       wsPath: options.wsPath,
+      gatewayHttpBase: options.gatewayHttpBase ?? options.relayHttpBase,
+      relayHttpBase: options.gatewayHttpBase ?? options.relayHttpBase,
     });
   return new learnbuddyClient(transport);
 }

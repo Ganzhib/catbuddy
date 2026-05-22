@@ -4,8 +4,25 @@
 import { BrowserWindow } from "electron";
 import WebSocket from "ws";
 import { randomUUID } from "node:crypto";
-import type { RelayClientMessage, RelayServerMessage } from "@learnbuddy/shared";
+import type {
+  RelayClientMessage,
+  RelayServerMessage,
+  RelaySessionRow,
+  SessionDetail,
+  SessionInfo,
+} from "@learnbuddy/shared";
 import type { MessageBus } from "../bus/index.js";
+import { buildWebuiThreadFromSession } from "./session-thread.js";
+
+export interface RelaySessionProvider {
+  list(): SessionInfo[];
+  getDetail(key: string): SessionDetail | null;
+  getOrCreate(key: string): SessionInfo;
+  importWebuiThread(
+    sessionKey: string,
+    payload: Record<string, unknown>,
+  ): void;
+}
 
 export interface RelayClientConfig {
   url: string;
@@ -23,6 +40,7 @@ export interface RelayClientStatus {
 }
 
 type InboundHandler = (msg: Extract<RelayServerMessage, { type: "inbound_message" }>) => void;
+type CreateSessionHandler = (sessionKey: string, chatId: string) => void;
 
 export class RelayClient {
   private ws: WebSocket | null = null;
@@ -32,6 +50,8 @@ export class RelayClient {
   private _connected = false;
   private _lastError?: string;
   private onInbound: InboundHandler | null = null;
+  private onCreateSession: CreateSessionHandler | null = null;
+  private sessionProvider: RelaySessionProvider | null = null;
   private readonly subscribedSessions = new Set<string>();
 
   constructor(
@@ -52,6 +72,37 @@ export class RelayClient {
 
   setInboundHandler(handler: InboundHandler): void {
     this.onInbound = handler;
+  }
+
+  setCreateSessionHandler(handler: CreateSessionHandler): void {
+    this.onCreateSession = handler;
+  }
+
+  setSessionProvider(provider: RelaySessionProvider): void {
+    this.sessionProvider = provider;
+  }
+
+  publishThreadSnapshot(sessionKey: string): void {
+    if (!this._connected || !this.sessionProvider) return;
+    const detail = this.sessionProvider.getDetail(sessionKey);
+    const built = buildWebuiThreadFromSession(detail);
+    if (!built?.messages?.length) return;
+    this.send({
+      type: "thread_snapshot",
+      sessionKey,
+      payload: built as unknown as Record<string, unknown>,
+    });
+  }
+
+  /** Push desktop session list to gateway (Web sidebar sync). */
+  publishSessionsSync(requestId?: string): void {
+    if (!this._connected || !this.sessionProvider) return;
+    const payload: RelayClientMessage = {
+      type: "sessions_sync",
+      requestId,
+      sessions: this.buildSessionRows(),
+    };
+    this.send(payload);
   }
 
   start(): void {
@@ -161,12 +212,48 @@ export class RelayClient {
       for (const key of this.subscribedSessions) {
         this.send({ type: "subscribe", sessionKey: key });
       }
+      this.publishSessionsSync();
+      return;
+    }
+
+    if (msg.type === "sync_push") {
+      this.applySyncPush(msg);
+      return;
+    }
+
+    if (msg.type === "request_sessions") {
+      this.publishSessionsSync(msg.requestId);
+      return;
+    }
+
+    if (msg.type === "request_thread") {
+      const sessionKey = msg.sessionKey.trim();
+      const detail = sessionKey
+        ? this.sessionProvider?.getDetail(sessionKey) ?? null
+        : null;
+      const built = buildWebuiThreadFromSession(detail);
+      this.send({
+        type: "thread_response",
+        requestId: msg.requestId,
+        payload: built as Record<string, unknown> | null,
+      });
       return;
     }
 
     if (msg.type === "error") {
       this._lastError = msg.message;
       console.warn("[relay] error:", msg.message);
+      return;
+    }
+
+    if (msg.type === "create_session") {
+      const sessionKey = msg.sessionKey.trim();
+      const chatId = msg.chatId.trim();
+      if (sessionKey) {
+        this.subscribeSession(sessionKey);
+        this.onCreateSession?.(sessionKey, chatId || sessionKey.slice(sessionKey.indexOf(":") + 1));
+        this.publishSessionsSync();
+      }
       return;
     }
 
@@ -203,6 +290,44 @@ export class RelayClient {
     });
   }
 
+  private applySyncPush(
+    msg: Extract<RelayServerMessage, { type: "sync_push" }>,
+  ): void {
+    if (!this.sessionProvider) return;
+    const rows = Array.isArray(msg.sessions) ? msg.sessions : [];
+    for (const row of rows) {
+      if (row?.key) this.sessionProvider.getOrCreate(row.key);
+    }
+    const threads = msg.threads ?? {};
+    for (const [sessionKey, payload] of Object.entries(threads)) {
+      if (!sessionKey || !payload) continue;
+      this.sessionProvider.importWebuiThread(sessionKey, payload);
+      this.subscribeSession(sessionKey);
+    }
+    console.log(
+      `[relay] sync_push applied sessions=${rows.length} threads=${Object.keys(threads).length}`,
+    );
+    this.publishSessionsSync();
+  }
+
+  private buildSessionRows(): RelaySessionRow[] {
+    if (!this.sessionProvider) return [];
+    return this.sessionProvider.list().map((s) => {
+      const idx = s.key.indexOf(":");
+      const channel = idx === -1 ? "desktop" : s.key.slice(0, idx);
+      const chatId = idx === -1 ? s.key : s.key.slice(idx + 1);
+      return {
+        key: s.key,
+        channel,
+        chatId,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+        title: s.title ?? "",
+        preview: s.preview ?? "",
+      };
+    });
+  }
+
   private send(msg: RelayClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
@@ -220,16 +345,18 @@ export class RelayClient {
 
 export function loadRelayConfigFromEnv(): RelayClientConfig | null {
   const enabled =
-    process.env.RELAY_ENABLED === "true"
+    process.env.GATEWAY_ENABLED === "true"
+    || process.env.GATEWAY_ENABLED === "1"
+    || process.env.RELAY_ENABLED === "true"
     || process.env.RELAY_ENABLED === "1";
-  const url = process.env.RELAY_URL?.trim();
-  const secret = process.env.RELAY_SECRET?.trim();
+  const url = (process.env.GATEWAY_URL ?? process.env.RELAY_URL)?.trim();
+  const secret = (process.env.GATEWAY_SECRET ?? process.env.RELAY_SECRET)?.trim();
   if (!enabled || !url || !secret) return null;
   const sessions = process.env.RELAY_DEFAULT_SESSIONS?.trim();
   return {
     url,
     secret,
-    deviceId: process.env.RELAY_DEVICE_ID?.trim() || undefined,
+    deviceId: (process.env.GATEWAY_DEVICE_ID ?? process.env.RELAY_DEVICE_ID)?.trim() || undefined,
     sessionKeys: sessions
       ? sessions.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined,

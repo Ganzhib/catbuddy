@@ -28,25 +28,36 @@ export function shouldUseRelayDevProxy(): boolean {
   return import.meta.env.DEV && (port === "5173" || port === "4173");
 }
 
-/** Prefer Vite `/relay-api` proxy in dev to avoid CORS (localhost vs 127.0.0.1). */
-export function resolveRelayHttpBase(stored?: string): string {
+/** Prefer Vite `/gateway-api` proxy in dev to avoid CORS. */
+export function resolveGatewayHttpBase(stored?: string): string {
   const raw = stored?.trim();
   if (shouldUseRelayDevProxy()) {
     const direct =
       !raw
       || /^https?:\/\/(127\.0\.0\.1|localhost):18765\/?$/i.test(raw);
-    if (direct) return `${window.location.origin}/relay-api`;
+    if (direct) return `${window.location.origin}/gateway-api`;
   }
   return raw || "http://127.0.0.1:18765";
 }
 
-export function relayWsUrlFromHttp(httpBase: string): string {
-  if (typeof window !== "undefined" && httpBase.includes("/relay-api")) {
+/** @deprecated Use resolveGatewayHttpBase */
+export const resolveRelayHttpBase = resolveGatewayHttpBase;
+
+export function gatewayWsUrlFromHttp(httpBase: string): string {
+  if (typeof window !== "undefined") {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${window.location.host}/relay-ws/ws`;
+    if (httpBase.includes("/gateway-api")) {
+      return `${proto}//${window.location.host}/gateway-ws/ws`;
+    }
+    if (httpBase.includes("/relay-api")) {
+      return `${proto}//${window.location.host}/relay-ws/ws`;
+    }
   }
   return httpBaseToWs(httpBase);
 }
+
+/** @deprecated Use gatewayWsUrlFromHttp */
+export const relayWsUrlFromHttp = gatewayWsUrlFromHttp;
 
 export function relayConfigFromEnv(): RelayWebConfig | null {
   const base = import.meta.env.VITE_RELAY_HTTP_BASE as string | undefined;

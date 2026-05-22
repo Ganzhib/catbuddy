@@ -7,7 +7,7 @@
     },
     "error": {
       "title": "Couldn't reach learnbuddy",
-      "gatewayHint": "Make sure the gateway is running (`learnbuddy gateway`) and that this page is open on the same machine."
+      "gatewayHint": "For dev, run `pnpm relay:dev` plus desktop (RELAY_ENABLED=true), or start nanobot gateway; open this page on the same machine as the backend."
     },
     "auth": {
       "title": "Authentication required",
@@ -45,6 +45,13 @@
     "toggleTheme": "Toggle theme",
     "home": "Home",
     "newChat": "New chat",
+    "remote": {
+      "label": "Remote control",
+      "off": "Local only — Web sync disabled",
+      "connected": "Gateway connected — syncing with Web",
+      "waitingDesktop": "Enabled — waiting for desktop on Gateway",
+      "envMissing": "Set GATEWAY_ENABLED and GATEWAY_URL in .env"
+    },
     "searchAria": "Search chats",
     "searchPlaceholder": "Search chats",
     "searchResults": "Results",
@@ -406,6 +413,14 @@
     "messageTooBig": {
       "title": "Message too large",
       "body": "The server rejected your last message because it exceeded the size limit. Remove some images or try smaller files, then send again."
+    },
+    "gatewayExecutorOffline": {
+      "title": "Desktop agent not connected",
+      "body": "Gateway could not forward your message (503). Start pnpm gateway:dev, then run the desktop app with GATEWAY_ENABLED=true and the same GATEWAY_SECRET in .env."
+    },
+    "generic": {
+      "title": "Something went wrong",
+      "body": "Please try again."
     }
   }
 }

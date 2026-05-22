@@ -24,6 +24,7 @@ const IPC = {
   SESSION_DELETE: 'session:delete',
   SESSION_CLEAR: 'session:clear',
   SESSION_NEW: 'session:new',
+  SESSION_CREATED: 'session:created',
   CONFIG_GET: 'config:get',
   CONFIG_UPDATE: 'config:update',
   CONFIG_LIST_MODELS: 'config:list-models',
@@ -63,6 +64,11 @@ const api = {
   deleteSession: (key) => ipcRenderer.invoke(IPC.SESSION_DELETE, { key }),
   clearSession: (key) => ipcRenderer.invoke(IPC.SESSION_CLEAR, { key }),
   newSession: () => ipcRenderer.invoke(IPC.SESSION_NEW),
+  onSessionCreated: (cb) => {
+    const h = (_, d) => cb(d)
+    ipcRenderer.on(IPC.SESSION_CREATED, h)
+    return () => ipcRenderer.removeListener(IPC.SESSION_CREATED, h)
+  },
 
   // ── Config ──
   getConfig: () => ipcRenderer.invoke(IPC.CONFIG_GET),
@@ -87,6 +93,10 @@ const api = {
   getRelayStatus: () => ipcRenderer.invoke(IPC.RELAY_STATUS),
   relaySubscribeSession: (payload) => ipcRenderer.invoke(IPC.RELAY_SUBSCRIBE, payload),
   relaySyncAllSessions: () => ipcRenderer.invoke(IPC.RELAY_SYNC_ALL),
+
+  getGatewayRemoteEnabled: () => ipcRenderer.invoke('gateway:get-remote-enabled'),
+  setGatewayRemoteEnabled: (enabled) =>
+    ipcRenderer.invoke('gateway:set-remote-enabled', { enabled }),
 }
 
 contextBridge.exposeInMainWorld('learnbuddy', api)

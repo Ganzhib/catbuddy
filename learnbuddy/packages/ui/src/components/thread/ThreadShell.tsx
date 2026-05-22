@@ -19,7 +19,7 @@ import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
 import { uselearnbuddyStream, type SendImage, type SendOptions } from "@/hooks/uselearnbuddyStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { listSlashCommands } from "@learnbuddy/platform";
+import { hasLearnbuddyIpc, listSlashCommands, useLearnbuddyGateway } from "@learnbuddy/platform";
 import type { ChatSummary, SlashCommand, UIMessage } from "@learnbuddy/shared";
 import { normalizeLegacyLongTaskMessages } from "@/lib/thread-display-compat";
 import { scrubSubagentUiMessages } from "@/lib/subagent-channel-display";
@@ -95,6 +95,7 @@ export function ThreadShell({
     version: historyVersion,
   } = useSessionHistory(historyKey);
   const { client, modelName, token } = useClient();
+  const gatewayWebOnly = useLearnbuddyGateway() && !hasLearnbuddyIpc();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
   const [heroImageMode, setHeroImageMode] = useState(false);
@@ -131,6 +132,11 @@ export function ThreadShell({
   useEffect(() => {
     if (chatId && historyKey) sessionKeyByChatIdRef.current.set(chatId, historyKey);
   }, [chatId, historyKey]);
+
+  useEffect(() => {
+    if (!chatId) return;
+    client.attach(chatId);
+  }, [chatId, client]);
 
   useEffect(() => {
     if (!historyKey || !window.learnbuddy?.relaySubscribeSession) return;
@@ -182,10 +188,11 @@ export function ThreadShell({
     return client.onSessionUpdate((updatedChatId, scope) => {
       if (updatedChatId !== chatId) return;
       if (scope === "metadata") return;
+      if (gatewayWebOnly) return;
       pendingCanonicalHydrateRef.current.add(chatId);
       refreshHistory();
     });
-  }, [chatId, client, refreshHistory]);
+  }, [chatId, client, refreshHistory, gatewayWebOnly]);
 
   useEffect(() => {
     if (!chatId || loading) return;

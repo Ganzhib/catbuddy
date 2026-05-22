@@ -24,10 +24,22 @@ export class SessionManager {
     const existing = this.get(key)
     if (existing) return existing
 
+    // 仅占内存，首条 addMessage 时才落盘，避免 Web 频繁「新建」产生空 JSONL
     const info = this._createEmptyInfo(key)
-    this._save(info, [])
     this._cache.set(key, info)
     return info
+  }
+
+  /** 是否有至少一条对话消息（非仅元数据行）。 */
+  hasMessages(key: string): boolean {
+    const fp = this._filePath(key)
+    if (!fs.existsSync(fp)) return false
+    try {
+      const lines = fs.readFileSync(fp, 'utf-8').split('\n').filter(Boolean)
+      return lines.length > 1
+    } catch {
+      return false
+    }
   }
 
   get(key: string): SessionInfo | null {
@@ -117,6 +129,58 @@ export class SessionManager {
     return false
   }
 
+  /** Import gateway / webui-thread payload into local JSONL (desktop ← gateway sync). */
+  importWebuiThread(
+    sessionKey: string,
+    payload: { messages?: Array<Record<string, unknown>>; savedAt?: string },
+  ): void {
+    const raw = payload?.messages
+    if (!Array.isArray(raw) || raw.length === 0) return
+
+    const local = this.getDetail(sessionKey)
+    const localUpdated = local?.updatedAt ?? ''
+    const incomingAt =
+      typeof payload.savedAt === 'string' ? payload.savedAt : ''
+    if (local && localUpdated && incomingAt && incomingAt <= localUpdated) {
+      return
+    }
+
+    const { info, messages } = this._initSession(sessionKey)
+    let id = 1
+    for (const m of raw) {
+      const role = String(m.role ?? 'assistant')
+      const content = String(m.content ?? '')
+      const ts =
+        typeof m.createdAt === 'number'
+          ? new Date(m.createdAt).toISOString()
+          : new Date().toISOString()
+      if (m.kind === 'trace') {
+        const traces = Array.isArray(m.traces) ? m.traces.map(String) : [content]
+        messages.push({
+          id: id++,
+          sessionKey,
+          role: 'tool',
+          content: traces.join('\n'),
+          name: 'trace',
+          timestamp: ts,
+        })
+      } else if (role === 'user' || role === 'assistant' || role === 'system') {
+        messages.push({
+          id: id++,
+          sessionKey,
+          role: role as MessageRecord['role'],
+          content,
+          timestamp: ts,
+        })
+      }
+    }
+    if (messages.length === 0) return
+    info.updatedAt = incomingAt || messages[messages.length - 1].timestamp
+    info.preview = this._extractPreview(messages)
+    this._save(info, messages)
+    this._cache.set(sessionKey, info)
+  }
+
   list(): SessionInfo[] {
     const results: SessionInfo[] = []
     const files = fs.readdirSync(this._dir).filter((f) => f.endsWith('.jsonl'))
@@ -124,7 +188,9 @@ export class SessionManager {
     for (const f of files) {
       const fp = path.join(this._dir, f)
       try {
-        const info = this._readInfoLine(fp)
+        const lines = fs.readFileSync(fp, 'utf-8').split('\n').filter(Boolean)
+        if (lines.length <= 1) continue
+        const info = this._parseInfoLine(lines[0])
         if (info) results.push(info)
       } catch {
         // 跳过损坏文件

@@ -1,6 +1,7 @@
 import type { AgentTransport, CreateTransportOptions } from "./types";
 export type { CreateTransportOptions } from "./types";
 import { IpcTransport } from "./ipc-transport";
+import { RelayTransport } from "./relay-transport";
 import { WsTransport } from "./ws-transport";
 
 export function hasLearnbuddyIpc(): boolean {
@@ -21,6 +22,14 @@ export function createAgentTransport(
 
   if (mode === "desktop") {
     return new IpcTransport();
+  }
+
+  if (mode === "gateway" || mode === "relay") {
+    const httpBase = (options.gatewayHttpBase ?? options.relayHttpBase)?.trim() || "";
+    return new RelayTransport({
+      httpBase,
+      viewerToken: options.token,
+    });
   }
 
   return new WsTransport(options.token, options.wsPath);

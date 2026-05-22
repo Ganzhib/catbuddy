@@ -6,15 +6,25 @@
   "scripts": {
     "dev": "pnpm --filter @learnbuddy/desktop dev",
     "dev:desktop": "pnpm --filter @learnbuddy/desktop dev",
+    "dev:desktop:gateway": "pnpm --filter @learnbuddy/desktop dev",
     "dev:web": "pnpm --filter @learnbuddy/web dev",
+    "dev:web:full": "concurrently -k -n gateway,web \"pnpm gateway:dev\" \"pnpm --filter @learnbuddy/web dev\"",
     "build": "pnpm --filter @learnbuddy/desktop build",
     "build:desktop": "pnpm --filter @learnbuddy/desktop build",
     "build:web": "pnpm --filter @learnbuddy/web build",
     "lint": "pnpm -r lint",
-    "relay:dev": "pnpm --filter @learnbuddy/desktop relay:dev",
-    "relay:test": "pnpm --filter @learnbuddy/desktop relay:test"
+    "clean:packages": "node scripts/clean-package-emit.mjs",
+    "gateway:dev": "cd gateway && pnpm install && pnpm run start:dev",
+    "gateway:build": "cd gateway && pnpm install && pnpm run build && pnpm start",
+    "gateway:test": "cd gateway && node test-e2e.mjs",
+    "gateway:test:acceptance": "cd gateway && node test-acceptance.mjs",
+    "gateway:test:all": "cd gateway && node test-all.mjs",
+    "relay:dev": "pnpm gateway:dev",
+    "relay:web": "pnpm --filter @learnbuddy/web relay:web",
+    "relay:test": "pnpm gateway:test"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "typescript": "^5.7.2"
   },
   "pnpm": {

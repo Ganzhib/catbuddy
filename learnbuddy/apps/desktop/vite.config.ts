@@ -5,6 +5,7 @@ import electronRenderer from "vite-plugin-electron-renderer";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ignorePackageEmit } from "../../scripts/vite-ignore-package-emit.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -73,7 +74,21 @@ export default defineConfig({
     ],
   },
   server: {
+    watch: {
+      ignored: [ignorePackageEmit],
+    },
     proxy: {
+      "/gateway-api": {
+        target: "http://127.0.0.1:18765",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/gateway-api/, ""),
+      },
+      "/gateway-ws": {
+        target: "http://127.0.0.1:18765",
+        ws: true,
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
+      },
       "/relay-api": {
         target: "http://127.0.0.1:18765",
         changeOrigin: true,

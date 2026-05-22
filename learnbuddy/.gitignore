@@ -13,6 +13,21 @@ release/
 docs/superpowers/
 docs/plans/
 .env
+# learnbuddy packages — accidental `tsc` emit beside sources (use Vite aliases, not dist/)
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+!packages/shared/src/brand.mjs
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+!packages/shared/src/brand.d.ts
+!packages/platform/src/preload-api.d.ts
+!packages/ui/vite-env.d.ts
+!packages/ui/src/types/react-syntax-highlighter-subpaths.d.ts
+
+# relay-server — stray shell/node eval artifacts
+relay-server/console.log*
+relay-server/r.json*
+
 # webui (monorepo frontend)
 webui/node_modules/
 webui/dist/

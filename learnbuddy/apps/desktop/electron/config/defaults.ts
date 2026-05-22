@@ -9,7 +9,7 @@ export function getDefaultConfig(): learnbuddyConfig {
     workspace: `${home}/.learnbuddy-desktop/workspace`,
     agents: {
       defaults: {
-        model: 'deepseek-chat',
+        model: 'deepseek-v4-flash',
         provider: 'deepseek',
         maxToolIterations: 50,
         contextWindowTokens: 128_000,
@@ -43,6 +43,9 @@ export function getDefaultConfig(): learnbuddyConfig {
       sendToolHints: true,
       showReasoning: true,
       sendMaxRetries: 3,
+    },
+    gateway: {
+      remoteEnabled: false,
     },
     tools: {
       restrictToWorkspace: false,

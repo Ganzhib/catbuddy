@@ -9,7 +9,13 @@ import {
   listSessions,
 } from "@learnbuddy/platform";
 import { deriveTitle } from "@/lib/format";
-import type { ChatSummary, UIMessage } from "@learnbuddy/shared";
+import {
+  mergeChatSummaries,
+  normalizeChatSummary,
+  toSessionKey,
+  type ChatSummary,
+  type UIMessage,
+} from "@learnbuddy/shared";
 
 const EMPTY_MESSAGES: UIMessage[] = [];
 
@@ -33,7 +39,7 @@ export function useSessions(): {
     try {
       setLoading(true);
       const rows = await listSessions(tokenRef.current);
-      setSessions(rows);
+      setSessions((prev) => mergeChatSummaries(rows, prev));
       setError(null);
     } catch (e) {
       const msg =
@@ -44,32 +50,43 @@ export function useSessions(): {
     }
   }, []);
 
+  const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     void refresh();
+    return () => {
+      if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current);
+    };
   }, [refresh]);
 
   useEffect(() => {
-    return client.onSessionUpdate(() => {
-      void refresh();
+    return client.onSessionUpdate((_chatId, scope) => {
+      // Gateway 列表推送（metadata）；避免与 GET /api/sessions RPC 形成死循环
+      if (scope !== "metadata") return;
+      if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current);
+      refreshDebounceRef.current = setTimeout(() => {
+        refreshDebounceRef.current = null;
+        void refresh();
+      }, 600);
     });
   }, [client, refresh]);
 
   const createChat = useCallback(async (): Promise<string> => {
+    // Gateway 模式也不在「新建」时 POST 桌面，避免产生大量空会话；首条消息发送时再注册
     const chatId = await client.newChat();
-    const key = `desktop:${chatId}`;  // 带 prefix，匹配 JSONL session key
-    // Optimistic insert; a subsequent refresh will replace it with the
-    // authoritative row once the server persists the session.
+    const row = normalizeChatSummary({
+      key: toSessionKey(chatId),
+      channel: "desktop",
+      chatId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      title: "",
+      preview: "",
+    });
+    client.attach(row.chatId);
     setSessions((prev) => [
-      {
-        key,
-        channel: "desktop",
-        chatId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        title: "",
-        preview: "",
-      },
-      ...prev.filter((s) => s.key !== key),
+      row,
+      ...prev.filter((s) => toSessionKey(s.key) !== row.key),
     ]);
     return chatId;
   }, [client]);

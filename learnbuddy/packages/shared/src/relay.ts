@@ -25,6 +25,21 @@ export type RelayClientMessage =
     }
   | {
       type: "ping";
+    }
+  | {
+      type: "sessions_sync";
+      requestId?: string;
+      sessions: RelaySessionRow[];
+    }
+  | {
+      type: "thread_response";
+      requestId: string;
+      payload: Record<string, unknown> | null;
+    }
+  | {
+      type: "thread_snapshot";
+      sessionKey: string;
+      payload: Record<string, unknown> | null;
     };
 
 /** Server → client */
@@ -42,6 +57,26 @@ export type RelayServerMessage =
       content: string;
       media?: string[];
       source: "web" | "relay";
+    }
+  | {
+      type: "create_session";
+      sessionKey: string;
+      chatId: string;
+    }
+  | {
+      type: "request_sessions";
+      requestId: string;
+    }
+  | {
+      type: "request_thread";
+      requestId: string;
+      sessionKey: string;
+    }
+  | {
+      /** Gateway → desktop on connect: merge local JSONL into desktop workspace. */
+      type: "sync_push";
+      sessions: RelaySessionRow[];
+      threads?: Record<string, Record<string, unknown> | null>;
     }
   | {
       type: "ui_event";
@@ -74,6 +109,8 @@ export interface RelayHttpSendBody {
 export interface RelayHttpSendResponse {
   ok: boolean;
   queued?: boolean;
+  /** True when message stored on gateway but desktop executor is offline. */
+  offline?: boolean;
   error?: string;
 }
 
@@ -90,3 +127,14 @@ export interface RelayHttpPairResponse {
 }
 
 export const RELAY_DEFAULT_PORT = 18765;
+
+/** Session row pushed by desktop executor for Web sidebar sync. */
+export interface RelaySessionRow {
+  key: string;
+  channel: string;
+  chatId: string;
+  createdAt: string;
+  updatedAt: string;
+  title?: string;
+  preview: string;
+}

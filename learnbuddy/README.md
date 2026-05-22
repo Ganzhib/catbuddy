@@ -34,7 +34,7 @@ learnbuddy/
 
 │   └── ui/          # React 应用主体
 
-├── gateway/         # @learnbuddy/gateway — Web↔桌面 + 开发垫片（NestJS）
+├── gateway/         # Web↔桌面 Gateway（packages: common, gateway, sdk-web, sdk-desktop）
 
 └── scripts/         # 品牌资源等工具脚本
 
@@ -67,7 +67,7 @@ pnpm install
 | `pnpm dev:web` | Web SPA（需已运行 `pnpm gateway:dev`） |
 | `pnpm dev:web:full` | **一键**：gateway + Web 同启 |
 
-| `pnpm gateway:dev` | 启动 `gateway`（`:18765`，NestJS） |
+| `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
 
 | `pnpm relay:web` | 仅打开远程对话页 `/relay-web.html` |
 

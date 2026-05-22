@@ -141,7 +141,7 @@ VITE_RELAY_VIEWER_TOKEN=my-web-viewer-token
 
 | 路径 | 说明 |
 |------|------|
-| `gateway/` (`@learnbuddy/gateway`) | NestJS 中转 + Gateway 垫片；应急 `server.mjs` |
+| `gateway/` (`@learnbuddy/gateway`) | Fastify 中转 + Gateway 垫片；`packages/sdk-web` / `sdk-desktop` |
 | `electron/sync/relay-client.ts` | 桌面 WS 客户端 |
 | `electron/channels/relay.ts` | 出站 fan-out → `ui_event` |
 | `electron/channels/manager.ts` | `desktop` 出站同时投递 `relay` |

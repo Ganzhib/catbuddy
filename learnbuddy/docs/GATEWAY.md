@@ -1,13 +1,13 @@
 # learnbuddy Gateway
 
-`learnbuddy/gateway`（`@learnbuddy/gateway`）是 **Web ↔ 桌面 Executor** 的中转服务，兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。
+`learnbuddy/gateway`（`@learnbuddy/gateway`）是 **Web ↔ 桌面 Executor** 的中转服务（Fastify + WebSocket），兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。包结构见 [gateway/README.md](../gateway/README.md)。
 
 与 nanobot 自带的 `nanobot gateway`（:8765）不同；learnbuddy Web 默认连 **本服务**（:18765）。
 
 ## 架构
 
 ```text
-apps/web  ──HTTP/WS──►  gateway (NestJS)  ──WS──►  apps/desktop (executor)
+apps/web  ──HTTP/WS──►  gateway (Fastify)  ──WS──►  apps/desktop (executor)
                          │
                          ├─ POST /api/sessions/:key/messages  (Web 发消息)
                          ├─ WS ui_event                         (桌面 Agent 回流)
@@ -61,7 +61,7 @@ POST /auth/email/verify        { "email": "...", "code": "123456" }
 
 | 命令 | 说明 |
 |------|------|
-| `pnpm gateway:dev` | Nest watch 模式 |
+| `pnpm gateway:dev` | tsx watch（`@learnbuddy/gateway`） |
 | `pnpm gateway:build` | 编译并运行 |
 | `pnpm gateway:test` | HTTP + executor 冒烟 |
 | `pnpm gateway:test:acceptance` | §6 `InboundEvent` 清单 |

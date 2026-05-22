@@ -66,6 +66,7 @@ export class AgentRunner {
     let stopReason = 'completed'
     let emptyRetries = 0
     let lengthRecoveries = 0
+    let lastReasoningContent: string | undefined
     // 重复外部查询计数
     const externalLookupCounts = new Map<string, number>()
 
@@ -90,6 +91,9 @@ export class AgentRunner {
       // 2. 累加 usage
       usage.inputTokens += response.usage.inputTokens
       usage.outputTokens += response.usage.outputTokens
+      if (response.reasoningContent) {
+        lastReasoningContent = response.reasoningContent
+      }
 
       // 3. 工具调用
       if (response.toolCalls.length > 0 && response.finishReason !== 'error') {
@@ -116,6 +120,13 @@ export class AgentRunner {
         if (activeCalls.length === 0) continue
 
         toolsUsed.push(...activeCalls.map(tc => tc.name))
+
+        messages.push({
+          role: 'assistant',
+          content: response.content ?? null,
+          toolCalls: activeCalls,
+          reasoningContent: response.reasoningContent ?? '',
+        })
 
         for (const toolCall of activeCalls) {
           const t0 = Date.now()
@@ -152,12 +163,6 @@ export class AgentRunner {
             })
           }
 
-          // 注入 tool call + result
-          messages.push({
-            role: 'assistant',
-            content: null,
-            toolCalls: [toolCall],
-          })
           messages.push({
             role: 'tool',
             toolCallId: toolCall.id,
@@ -203,6 +208,7 @@ export class AgentRunner {
       toolsUsed: [...new Set(toolsUsed)],
       usage,
       stopReason,
+      lastReasoningContent,
       toolEvents,
       hadInjections: false,
     }

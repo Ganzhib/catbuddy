@@ -82,6 +82,7 @@ export class SessionManager {
       toolCallId: msg.toolCallId,
       name: msg.name,
       media: msg.media,
+      reasoningContent: msg.reasoningContent,
       timestamp: now,
     })
 

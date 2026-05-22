@@ -167,6 +167,7 @@ export class ContextBuilder {
         toolCalls: m.toolCalls,
         toolCallId: m.toolCallId,
         name: m.name,
+        reasoningContent: m.reasoningContent,
       })
     }
 

@@ -24,7 +24,7 @@ export class OpenAICompatProvider extends LLMProvider {
     try {
       const response = await this.client.chat.completions.create({
         model: opts.model ?? this.defaultModel,
-        messages: this.toOpenAIMessages(opts.messages),
+        messages: this.toOpenAIMessages(opts.messages) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
         tools: opts.tools?.map(t => ({ type: 'function' as const, function: t.function })),
         tool_choice: opts.toolChoice as any,
         max_tokens: opts.maxTokens ?? this.generation.maxTokens,
@@ -40,7 +40,7 @@ export class OpenAICompatProvider extends LLMProvider {
     try {
       const stream = await this.client.chat.completions.create({
         model: opts.model ?? this.defaultModel,
-        messages: this.toOpenAIMessages(opts.messages),
+        messages: this.toOpenAIMessages(opts.messages) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
         tools: opts.tools?.map(t => ({ type: 'function' as const, function: t.function })),
         tool_choice: opts.toolChoice as any,
         max_tokens: opts.maxTokens ?? this.generation.maxTokens,
@@ -49,18 +49,24 @@ export class OpenAICompatProvider extends LLMProvider {
       })
 
       let content = ''
+      let reasoningContent = ''
       const toolCallMap = new Map<number, { id: string; name: string; args: string }>()
 
       for await (const chunk of stream) {
         const delta = chunk.choices?.[0]?.delta
         if (!delta) continue
 
+        const reasoningDelta = (delta as { reasoning_content?: string }).reasoning_content
+        if (reasoningDelta) {
+          reasoningContent += reasoningDelta
+          await opts.onThinkingDelta?.(reasoningDelta)
+        }
+
         if (delta.content) {
           content += delta.content
           await opts.onContentDelta?.(delta.content)
         }
 
-        // 绱Н tool_calls delta
         if (delta.tool_calls) {
           for (const tc of delta.tool_calls) {
             const idx = tc.index
@@ -88,6 +94,7 @@ export class OpenAICompatProvider extends LLMProvider {
         toolCalls,
         finishReason: toolCalls.length > 0 ? 'tool_calls' : 'stop',
         usage: { inputTokens: 0, outputTokens: 0 },
+        reasoningContent: reasoningContent || undefined,
       }
     } catch (err: any) {
       return this.errorResponse(err)
@@ -95,17 +102,27 @@ export class OpenAICompatProvider extends LLMProvider {
   }
 
   private toOpenAIMessages(messages: import('@learnbuddy/shared').LLMMessage[]) {
-    return this.enforceRoleAlternation(messages).map(m => ({
-      role: m.role as any,
-      content: m.content as any,
-      tool_calls: m.toolCalls?.map(tc => ({
-        id: tc.id,
-        type: 'function' as const,
-        function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-      })),
-      tool_call_id: m.toolCallId,
-      name: m.name,
-    }))
+    return this.enforceRoleAlternation(messages).map((m) => {
+      const row: Record<string, unknown> = {
+        role: m.role,
+        content: m.content as string | null,
+        tool_calls: m.toolCalls?.map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+        })),
+        tool_call_id: m.toolCallId,
+        name: m.name,
+      }
+      if (m.role === 'assistant') {
+        const hasTools = (m.toolCalls?.length ?? 0) > 0
+        const reasoning = m.reasoningContent ?? ''
+        if (hasTools || reasoning) {
+          row.reasoning_content = reasoning
+        }
+      }
+      return row
+    })
   }
 
   private parseResponse(response: any): LLMResponse {
@@ -118,6 +135,11 @@ export class OpenAICompatProvider extends LLMProvider {
       arguments: safeParseJSON(tc.function?.arguments ?? '{}', {}),
     }))
 
+    const reasoningContent =
+      typeof (msg as { reasoning_content?: string })?.reasoning_content === 'string'
+        ? (msg as { reasoning_content: string }).reasoning_content
+        : undefined
+
     return {
       content: msg?.content ?? null,
       toolCalls,
@@ -126,6 +148,7 @@ export class OpenAICompatProvider extends LLMProvider {
         inputTokens: response.usage?.prompt_tokens ?? 0,
         outputTokens: response.usage?.completion_tokens ?? 0,
       },
+      reasoningContent: reasoningContent || undefined,
     }
   }
 

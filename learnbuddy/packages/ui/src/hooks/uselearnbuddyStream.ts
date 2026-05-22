@@ -502,10 +502,6 @@ export function uselearnbuddyStream(
    * backend changes. */
   const streamEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return client.onError((err) => setStreamError(err));
-  }, [client]);
-
   const dismissStreamError = useCallback(() => setStreamError(null), []);
 
   const clearPendingStreamWork = useCallback(() => {
@@ -649,6 +645,21 @@ export function uselearnbuddyStream(
       return next;
     });
   }, [applyPendingStreamEvents, closeActiveAssistantStream]);
+
+  useEffect(() => {
+    return client.onError((err) => {
+      setStreamError(err);
+      setIsStreaming(false);
+      flushPendingStreamEvents();
+      buffer.current = null;
+      activeAssistantRef.current = null;
+      closedAssistantStreamIdsRef.current.clear();
+      if (streamEndTimerRef.current !== null) {
+        clearTimeout(streamEndTimerRef.current);
+        streamEndTimerRef.current = null;
+      }
+    });
+  }, [client, flushPendingStreamEvents]);
 
   const schedulePendingStreamFlush = useCallback(() => {
     if (streamFrameRef.current !== null) return;

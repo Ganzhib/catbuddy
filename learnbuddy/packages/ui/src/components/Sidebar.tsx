@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ChatList } from "@/components/ChatList";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
+import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ export function Sidebar(props: SidebarProps) {
             )}
           />
         </label>
+        <GatewayRemoteSwitch />
         <Button
           onClick={props.onNewChat}
           className="h-8 w-full justify-start gap-2 rounded-full px-3 text-[12.5px] font-medium text-sidebar-foreground/92 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"

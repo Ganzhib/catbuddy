@@ -1,7 +1,7 @@
 /**
  * Electron 主进程入口
  */
-import { app, BrowserWindow , Menu } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "node:path";
 import { loadEnvFile } from "./utils";
 import { fileURLToPath } from "node:url";
@@ -27,6 +27,70 @@ let sessions: SessionManager | null = null;
 let bus: MessageBus | null = null;
 let channelManager: ChannelManager | null = null;
 let relayClient: RelayClient | null = null;
+let appConfig: any = null;
+let appConfigFile = "";
+let appSessions: SessionManager | null = null;
+let appBus: MessageBus | null = null;
+let appChannelManager: ChannelManager | null = null;
+
+function applyGatewayRelay(): void {
+  if (relayClient) {
+    relayClient.stop();
+    appChannelManager?.unregister("relay");
+    relayClient = null;
+  }
+  const relayCfg = loadRelayConfigFromEnv();
+  const remoteEnabled = appConfig?.gateway?.remoteEnabled === true;
+  if (!relayCfg || !remoteEnabled || !appChannelManager || !appSessions || !appBus) {
+    if (relayCfg && !remoteEnabled) {
+      console.log("[main] Gateway env set but remote control is off");
+    }
+    return;
+  }
+  relayClient = new RelayClient(relayCfg, appBus);
+  relayClient.setSessionProvider({
+    list: () => appSessions!.list(),
+    getDetail: (key) => appSessions!.getDetail(key),
+    getOrCreate: (key) => appSessions!.getOrCreate(key),
+    importWebuiThread: (key, payload) =>
+      appSessions!.importWebuiThread(key, payload),
+  });
+  relayClient.setCreateSessionHandler((sessionKey, chatId) => {
+    appSessions!.getOrCreate(sessionKey);
+    console.log("[main] Relay create_session:", sessionKey);
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send("session:created", { sessionKey, chatId });
+    }
+  });
+  relayClient.start();
+  appChannelManager.register(new RelayChannel(relayClient));
+  const rows = appSessions.list();
+  relayClient.syncSessions(rows.map((r) => r.key));
+  console.log("[main] Gateway remote enabled:", relayCfg.url);
+}
+
+function registerGatewayRemoteIpc(): void {
+  ipcMain.handle("gateway:get-remote-enabled", async () => ({
+    enabled: appConfig?.gateway?.remoteEnabled === true,
+    envConfigured: !!loadRelayConfigFromEnv(),
+    connected: relayClient?.status.connected ?? false,
+  }));
+
+  ipcMain.handle(
+    "gateway:set-remote-enabled",
+    async (_event, { enabled }: { enabled?: boolean }) => {
+      if (!appConfig.gateway) appConfig.gateway = {};
+      appConfig.gateway.remoteEnabled = !!enabled;
+      const fs = await import("node:fs");
+      fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), "utf-8");
+      applyGatewayRelay();
+      return {
+        enabled: appConfig.gateway.remoteEnabled === true,
+        connected: relayClient?.status.connected ?? false,
+      };
+    },
+  );
+}
 
 function getPreloadPath(): string {
   return path.join(__dirname, "./preload.cjs");
@@ -99,19 +163,19 @@ async function initAgent() {
   console.log("[main] Workspace:", workspace);
 
   sessions = new SessionManager(workspace);
+  appConfig = config;
+  appConfigFile = configFile;
+  appSessions = sessions;
 
   // ── Bus + ChannelDispatcher（未来多管道的基础设施） ──
   bus = new MessageBus();
+  appBus = bus;
   channelManager = new ChannelManager(bus);
+  appChannelManager = channelManager;
   channelManager.register(new DesktopChannel());
 
-  const relayCfg = loadRelayConfigFromEnv();
-  if (relayCfg) {
-    relayClient = new RelayClient(relayCfg, bus);
-    relayClient.start();
-    channelManager.register(new RelayChannel(relayClient));
-    console.log("[main] Relay enabled:", relayCfg.url);
-  }
+  applyGatewayRelay();
+  registerGatewayRemoteIpc();
 
   const provider = createProvider(config);
   agentLoop = new AgentLoop({
@@ -128,12 +192,6 @@ async function initAgent() {
   });
   registerIpcHandlers(agentLoop, sessions, config, configFile, relayClient);
 
-  if (relayClient) {
-    const rows = sessions.list();
-    relayClient.syncSessions(rows.map((r) => r.key));
-    console.log("[main] Relay subscribed sessions:", rows.length);
-  }
-
   // 启动 bus 驱动的后台循环
   channelManager.start();
   agentLoop.run().catch((err) =>
@@ -143,7 +201,8 @@ async function initAgent() {
 }
 
 app.whenReady().then(async () => {
-  // 0. 加载 .env
+  // 0. 加载 .env（dist-electron → ../../../ = learnbuddy 根；../ = apps/desktop）
+  loadEnvFile(path.join(__dirname, "../../../.env"));
   loadEnvFile(path.join(__dirname, "../.env"));
   loadEnvFile(path.join(app.getPath("home"), ".learnbuddy.env"));
 

@@ -12,3 +12,4 @@ export {
 } from "./create-transport";
 export { IpcTransport } from "./ipc-transport";
 export { WsTransport } from "./ws-transport";
+export { RelayTransport, type RelayTransportConfig } from "./relay-transport";

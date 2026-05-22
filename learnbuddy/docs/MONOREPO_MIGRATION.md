@@ -264,7 +264,7 @@ export function createPlatformApi(): PlatformApi
 **协议对齐**
 
 - [ ] 对照 gateway 实际帧格式，调整 `WsTransport` 或增加 `gateway-adapter.ts`
-- [ ] 事件清单验收表（见 §6）逐项打勾
+- [x] 事件清单验收表（见 §6）：自动化 `pnpm gateway:test:acceptance` 已通过（[GATEWAY_ACCEPTANCE.md](./GATEWAY_ACCEPTANCE.md)）；真机桌面 E2E 待手动勾选
 
 **UI 差异处理**
 

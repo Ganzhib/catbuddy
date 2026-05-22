@@ -7,7 +7,7 @@
     },
     "error": {
       "title": "无法连接到 learnbuddy",
-      "gatewayHint": "请确认 gateway 已启动（`learnbuddy gateway`），并且当前页面与 gateway 运行在同一台机器上。"
+      "gatewayHint": "开发模式请运行 `pnpm relay:dev` 与桌面（RELAY_ENABLED=true），或启动 nanobot gateway；并确认本页与后端在同一台机器。"
     },
     "system": {
       "section": "系统",
@@ -33,6 +33,13 @@
     "toggleTheme": "切换主题",
     "home": "首页",
     "newChat": "新建对话",
+    "remote": {
+      "label": "远程控制",
+      "off": "仅本机对话，不同步 Web",
+      "connected": "已连接 Gateway，与 Web 同步",
+      "waitingDesktop": "已开启，等待桌面连接 Gateway",
+      "envMissing": "请在 .env 配置 GATEWAY_ENABLED 与 GATEWAY_URL"
+    },
     "searchAria": "搜索会话",
     "searchPlaceholder": "搜索会话",
     "searchResults": "搜索结果",
@@ -394,6 +401,14 @@
     "messageTooBig": {
       "title": "消息过大",
       "body": "服务端因超过大小限制拒收了上一条消息。可移除部分图片或使用更小的图片后重试。"
+    },
+    "gatewayExecutorOffline": {
+      "title": "桌面端未连接 Gateway",
+      "body": "Gateway 无法转发消息（503）。请先运行 pnpm gateway:dev，再在 .env 中设置 GATEWAY_ENABLED=true、GATEWAY_URL=ws://127.0.0.1:18765/ws、GATEWAY_SECRET=dev-secret 后启动桌面端。"
+    },
+    "generic": {
+      "title": "出错了",
+      "body": "请稍后重试。"
     }
   }
 }

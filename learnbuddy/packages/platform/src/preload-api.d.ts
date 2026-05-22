@@ -27,6 +27,7 @@ export interface LearnbuddyPreloadApi {
   onSystemMessage(cb: (data: { chatId: string; text: string }) => void): () => void
   onAssistantMessage(cb: (data: { chatId: string; text: string }) => void): () => void
   onRelayInbound(cb: (data: { chatId: string; sessionKey: string; content: string }) => void): () => void
+  onSessionCreated(cb: (data: { sessionKey: string; chatId: string }) => void): () => void
 
   listSessions(): Promise<SessionInfo[]>
   getSession(key: string): Promise<SessionDetail | null>

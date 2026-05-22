@@ -12,6 +12,11 @@ export function loadEnvFile(filePath: string) {
       const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
       if (!process.env[key]) process.env[key] = val
     }
-    console.log('[main] .env loaded, DEEPSEEK_KEY=', process.env.DEEPSEEK_KEY ? 'SET' : 'NOT SET')
+    console.log(
+      '[main] .env loaded, DEEPSEEK_KEY=',
+      process.env.DEEPSEEK_KEY ? 'SET' : 'NOT SET',
+      'GATEWAY_ENABLED=',
+      process.env.GATEWAY_ENABLED ?? '(unset)',
+    )
   } catch (err: any) { console.log('[main] No .env:', err.message) }
 }

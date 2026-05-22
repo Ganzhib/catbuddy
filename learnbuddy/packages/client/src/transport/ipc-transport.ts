@@ -128,6 +128,12 @@ export class IpcTransport implements AgentTransport {
           text: data.content,
         });
       }),
+
+      api.onSessionCreated?.((data) => {
+        const chat_id = data.chatId?.trim();
+        if (!chat_id) return;
+        callbacks.onSessionUpdate?.(chat_id, "metadata");
+      }),
     ];
 
     callbacks.onStatus("open");

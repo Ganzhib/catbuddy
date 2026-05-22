@@ -118,6 +118,8 @@ export class RelayChannel implements BaseChannel {
       chat_id: chatId,
       status: "idle",
     });
+    this.relay.publishSessionsSync();
+    this.relay.publishThreadSnapshot(this.sessionKey(chatId));
   }
 
   private sessionKey(chatId: string): string {

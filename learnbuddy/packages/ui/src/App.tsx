@@ -138,6 +138,16 @@ function Shell({
     if (id) client.attach(id)
   }, [activeSession?.chatId, client])
 
+  // Desktop 新建/切换对话并发消息时，跟随到对应 sessionKey（见 session_updated scope=focus）
+  useEffect(() => {
+    return client.onSessionUpdate((chatId, scope) => {
+      if (scope !== 'focus' || !chatId || chatId === 'metadata') return
+      const key = toSessionKey(chatId)
+      setActiveKey((prev) => (prev === key ? prev : key))
+      setView('chat')
+    })
+  }, [client])
+
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => onModelNameChange(modelName))
   }, [client, onModelNameChange])

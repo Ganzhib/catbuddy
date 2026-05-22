@@ -105,6 +105,8 @@ export async function sendGatewayMessage(
 
 export type GatewayWebCallbacks = {
   onEvent: (ev: InboundEvent) => void
+  /** Desktop switched to another session (session_updated scope=focus). */
+  onSessionFocus?: (sessionKey: string) => void
   onOpen?: () => void
   onClose?: () => void
   onError?: (message: string) => void
@@ -117,6 +119,13 @@ export function connectGatewayWeb(
   callbacks: GatewayWebCallbacks,
 ): () => void {
   const ws = new WebSocket(config.wsUrl)
+  let activeKey = sessionKey.trim()
+
+  const subscribe = (key: string) => {
+    const sk = key.trim()
+    if (!sk || ws.readyState !== WebSocket.OPEN) return
+    ws.send(JSON.stringify({ type: 'subscribe', sessionKey: sk }))
+  }
 
   ws.onopen = () => {
     ws.send(
@@ -137,7 +146,7 @@ export function connectGatewayWeb(
       return
     }
     if (msg.type === 'registered') {
-      ws.send(JSON.stringify({ type: 'subscribe', sessionKey }))
+      subscribe(activeKey)
       callbacks.onOpen?.()
       return
     }
@@ -146,7 +155,21 @@ export function connectGatewayWeb(
       return
     }
     if (msg.type === 'ui_event') {
-      callbacks.onEvent(msg.event as InboundEvent)
+      const ev = msg.event as InboundEvent
+      const wireKey = msg.sessionKey.trim()
+      if (
+        ev.event === 'session_updated'
+        && ev.scope === 'focus'
+        && wireKey
+      ) {
+        activeKey = wireKey
+        subscribe(wireKey)
+        callbacks.onSessionFocus?.(wireKey)
+        return
+      }
+      if (ev.event === 'session_updated') return
+      if (wireKey && activeKey && wireKey !== activeKey) return
+      callbacks.onEvent(ev)
     }
   }
 

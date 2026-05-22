@@ -45,6 +45,11 @@ export function registerIpcHandlers(
       sessionKeyOverride: sessionKey,
     });
     gatewayWsClient?.subscribeSession(sessionKey);
+    gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
+      event: "session_updated",
+      chat_id: bareChatId(sessionKey),
+      scope: "focus",
+    });
     if (content.trim()) {
       gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
         event: "user_inbound",

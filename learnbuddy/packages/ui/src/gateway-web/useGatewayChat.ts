@@ -196,6 +196,15 @@ export function useGatewayChat() {
             setConnecting(false);
             setError(null);
           },
+          onSessionFocus: (key) => {
+            setSessionKey(key);
+            setMessages([]);
+            saveGatewayWebPrefs({
+              httpBase,
+              webToken: cfg.webToken,
+              sessionKey: key,
+            });
+          },
           onEvent: (ev) => {
             setMessages((prev) => applyGatewayInbound(prev, ev));
           },

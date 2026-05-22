@@ -108,6 +108,8 @@ pnpm run gateway:web
 
 **桌面实时流式**：Web 发消息时，请在桌面**打开同一条对话**（`sessionKey` 对应的会话）。流式 delta 会按 `chatId` 投递到该会话，而不是误发到上次在桌面本地发送过的会话。
 
+**桌面新建对话**：桌面在本机新建并发首条消息时，会向 Gateway 推送 `session_updated`（`scope: focus`）。Web（`apps/web` 或 `gateway-web`）应**自动切到该 `sessionKey`** 并 `subscribe`，无需手改 Session Key。若桌面只新建未发消息，Web 仍停留在原会话，需手动切换或等首条消息。
+
 **双向同步（实时）**：
 
 | 方向 | 机制 |
@@ -131,7 +133,7 @@ VITE_GATEWAY_WEB_TOKEN=my-web-token
 | C→S | `register` | `desktop`（token=GATEWAY_SECRET）或 `web`（token=配对后的 Web token） |
 | C→S | `subscribe` | desktop / web 订阅 `sessionKey` |
 | S→C | `inbound_message` | 仅 desktop 收到，触发本地 Agent |
-| S→C | `ui_event` | 该 session 所有 web 客户端收到 |
+| S→C | `ui_event` | 该 session 所有 web 客户端收到；`event.session_updated` + `scope: focus` 表示桌面切到该会话，Web 应跟随 |
 | HTTP | `POST .../messages` | Web 发用户消息（Bearer = Web token） |
 | HTTP | `POST /api/pair` | 用配对码绑定 Web token 到 desktop |
 

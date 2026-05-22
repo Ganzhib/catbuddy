@@ -3,7 +3,7 @@ import {
   BootstrapAuthRequired,
   hasAuthToken,
   loadAuthToken,
-  requiresWebLogin,
+  requiresEmailLogin,
 } from './auth'
 import { loadSavedSecret, saveSecret } from './secrets'
 
@@ -14,11 +14,11 @@ export async function fetchBootstrapHttp(
   baseUrl: string = '',
   secret: string = '',
 ): Promise<BootstrapResponse> {
-  if (requiresWebLogin() && !hasAuthToken()) {
+  if (requiresEmailLogin() && !hasAuthToken()) {
     throw new BootstrapAuthRequired()
   }
 
-  const loginRequired = requiresWebLogin()
+  const loginRequired = requiresEmailLogin()
   const saved = loginRequired ? '' : (secret || loadSavedSecret())
   const authToken = loadAuthToken()
   const base = (baseUrl || '').replace(/\/$/, '')

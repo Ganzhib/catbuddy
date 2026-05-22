@@ -1,6 +1,16 @@
 import { Body, Controller, Post } from '@nestjs/common'
-import { IsEmail, IsString, Length } from 'class-validator'
+import { IsEmail, IsString, Length, MinLength } from 'class-validator'
 import { AuthService } from './auth.service'
+
+class EmailPasswordDto {
+  @IsEmail()
+  email!: string
+
+  @IsString()
+  @MinLength(8)
+  @Length(8, 128)
+  password!: string
+}
 
 class RequestCodeDto {
   @IsEmail()
@@ -16,16 +26,28 @@ class VerifyCodeDto {
   code!: string
 }
 
-@Controller('auth/email')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  @Post('request-code')
+  @Post('register')
+  register(@Body() body: EmailPasswordDto) {
+    return this.auth.registerWithPassword(body.email, body.password)
+  }
+
+  @Post('login')
+  login(@Body() body: EmailPasswordDto) {
+    return this.auth.loginWithPassword(body.email, body.password)
+  }
+
+  /** @deprecated OTP flow — prefer password login */
+  @Post('email/request-code')
   requestCode(@Body() body: RequestCodeDto) {
     return this.auth.requestEmailCode(body.email)
   }
 
-  @Post('verify')
+  /** @deprecated OTP flow — prefer password login */
+  @Post('email/verify')
   verify(@Body() body: VerifyCodeDto) {
     return this.auth.verifyEmailCode(body.email, body.code)
   }

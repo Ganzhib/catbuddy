@@ -1,10 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { randomInt } from 'node:crypto'
 import { gatewayEnv } from '../config/env'
 import { GatewayStateService } from '../gateway/gateway-state.service'
 import { isDevAuthBypass, isViewerLoginRequired } from './auth-policy'
 import { EmailService } from './email.service'
+import { hashPassword, isPasswordStrongEnough, verifyPassword } from './password.util'
+import { UserStore } from './user-store'
 
 interface OtpEntry {
   code: string
@@ -25,6 +31,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly email: EmailService,
     private readonly gateway: GatewayStateService,
+    private readonly users: UserStore,
   ) {}
 
   isEmailAuthRequired(): boolean {
@@ -84,6 +91,65 @@ export class AuthService {
     return { ok: true, expiresIn: Math.floor(gatewayEnv.otpTtlMs / 1000) }
   }
 
+  private normalizeEmail(email: string): string {
+    const normalized = email.trim().toLowerCase()
+    if (!normalized.includes('@')) {
+      throw new UnauthorizedException('invalid_email')
+    }
+    return normalized
+  }
+
+  private async issueViewerToken(
+    email: string,
+  ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
+    const access_token = await this.jwt.signAsync({
+      sub: email,
+      role: 'viewer',
+      typ: 'gateway_viewer',
+    } satisfies JwtViewerPayload)
+    this.gateway.registerViewerToken(access_token)
+    const expires_in = 7 * 24 * 3600
+    return { access_token, token_type: 'bearer', expires_in, email }
+  }
+
+  async registerWithPassword(
+    email: string,
+    password: string,
+  ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
+    const normalized = this.normalizeEmail(email)
+    if (!isPasswordStrongEnough(password)) {
+      throw new UnauthorizedException('weak_password')
+    }
+    if (this.users.findByEmail(normalized)) {
+      throw new ConflictException('email_taken')
+    }
+    const passwordHash = await hashPassword(password)
+    try {
+      this.users.create(normalized, passwordHash)
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'email_taken') {
+        throw new ConflictException('email_taken')
+      }
+      throw err
+    }
+    return this.issueViewerToken(normalized)
+  }
+
+  async loginWithPassword(
+    email: string,
+    password: string,
+  ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
+    const normalized = this.normalizeEmail(email)
+    const user = this.users.findByEmail(normalized)
+    if (!user) {
+      throw new UnauthorizedException('account_not_found')
+    }
+    if (!(await verifyPassword(password, user.passwordHash))) {
+      throw new UnauthorizedException('invalid_password')
+    }
+    return this.issueViewerToken(normalized)
+  }
+
   async verifyEmailCode(
     email: string,
     code: string,
@@ -97,14 +163,7 @@ export class AuthService {
       throw new UnauthorizedException('otp_invalid')
     }
     this.otpByEmail.delete(normalized)
-    const access_token = await this.jwt.signAsync({
-      sub: normalized,
-      role: 'viewer',
-      typ: 'gateway_viewer',
-    } satisfies JwtViewerPayload)
-    this.gateway.registerViewerToken(access_token)
-    const expires_in = 7 * 24 * 3600
-    return { access_token, token_type: 'bearer', expires_in, email: normalized }
+    return this.issueViewerToken(normalized)
   }
 
   async registerTokenFromJwt(token: string): Promise<boolean> {

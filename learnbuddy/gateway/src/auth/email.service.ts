@@ -30,12 +30,18 @@ export class EmailService {
       this.log.warn(`[dev] OTP for ${email}: ${code}`)
       return
     }
-    await transport.sendMail({
-      from: gatewayEnv.smtpFrom,
-      to: email,
-      subject,
-      text,
-    })
-    this.log.log(`OTP sent to ${email}`)
+    try {
+      await transport.sendMail({
+        from: gatewayEnv.smtpFrom,
+        to: email,
+        subject,
+        text,
+      })
+      this.log.log(`OTP sent to ${email}`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.log.error(`SMTP send failed for ${email}: ${msg}`)
+      throw err
+    }
   }
 }

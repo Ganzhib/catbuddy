@@ -3,7 +3,8 @@ export function resolveGatewayHttpBase(stored?: string): string {
   const raw = stored?.trim()
   if (typeof window !== 'undefined' && import.meta.env?.DEV) {
     const port = window.location.port
-    const devPorts = new Set(['5173', '4173'])
+    // Web + Electron dev servers (Vite) proxy /gateway-api → :18765
+    const devPorts = new Set(['5173', '5174', '4173'])
     if (devPorts.has(port)) {
       const direct =
         !raw

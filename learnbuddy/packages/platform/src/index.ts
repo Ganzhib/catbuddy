@@ -8,6 +8,22 @@ export {
   ApiError,
   type PlatformApi,
 } from './create-platform'
+export {
+  resolveGatewayHttpBase,
+  resolveRelayHttpBase,
+  useLearnbuddyGateway,
+  useRelayGateway,
+} from './gateway-http'
+export {
+  BootstrapAuthRequired,
+  clearAuthToken,
+  hasAuthToken,
+  loadAuthToken,
+  requestEmailCode,
+  requiresWebLogin,
+  saveAuthToken,
+  verifyEmailCode,
+} from './auth'
 
 import { createPlatformApi } from './create-platform'
 
@@ -19,6 +35,8 @@ function platform() {
 
 export const listSessions = (...args: Parameters<ReturnType<typeof createPlatformApi>['listSessions']>) =>
   platform().listSessions(...args)
+export const createSession = (...args: Parameters<ReturnType<typeof createPlatformApi>['createSession']>) =>
+  platform().createSession(...args)
 export const fetchWebuiThread = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchWebuiThread']>) =>
   platform().fetchWebuiThread(...args)
 export const deleteSession = (...args: Parameters<ReturnType<typeof createPlatformApi>['deleteSession']>) =>

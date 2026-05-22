@@ -7,10 +7,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "vite-env.d.ts"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../client" },
-    { "path": "../platform" }
-  ]
+  "include": ["src/**/*", "vite-env.d.ts"]
 }

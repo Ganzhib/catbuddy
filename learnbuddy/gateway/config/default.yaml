@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+
+auth:
+  secret: "dev-secret"
+  tokenExpiryMs: 86400000  # 24h
+
+heartbeat:
+  web:
+    intervalMs: 30000
+    maxMissed: 3
+  desktop:
+    intervalMs: 60000
+    maxMissed: 3
+
+delivery:
+  ackTimeoutMs: 10000
+  maxRetries: 3
+  retryBaseMs: 5000
+
+redis:
+  host: "localhost"
+  port: 6379
+  keyPrefix: "gateway:"

@@ -154,6 +154,7 @@
     "loadingConversation": "Cargando conversación…",
     "empty": {
       "description": "Haz preguntas, continúa tu trabajo local o inicia un nuevo hilo.",
+      "hiLead": "Hi, ",
       "greeting": "¿Qué puedo hacer por ti?",
       "quickActions": {
         "plan": {

@@ -1,6 +1,6 @@
 import { resolveGatewayHttpBase } from '../gateway-http'
 import { mapAuthError } from './map-auth-error'
-import { saveAuthToken } from './session'
+import { saveAuthEmail, saveAuthToken } from './session'
 import type { OtpDelivery } from './email-client'
 
 export type AuthTokenResponse = {
@@ -28,6 +28,7 @@ async function postAuth(
   }
   const data = (await res.json()) as AuthTokenResponse
   if (data.access_token) saveAuthToken(data.access_token)
+  if (data.email) saveAuthEmail(data.email)
   return data
 }
 
@@ -80,6 +81,7 @@ export async function verifyRegister(
   }
   const data = (await res.json()) as AuthTokenResponse
   if (data.access_token) saveAuthToken(data.access_token)
+  if (data.email) saveAuthEmail(data.email)
   return data
 }
 

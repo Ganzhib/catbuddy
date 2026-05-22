@@ -1,6 +1,18 @@
 export { BootstrapAuthRequired } from './errors'
 export { requiresEmailLogin, requiresWebLogin } from './policy'
-export { clearAuthToken, hasAuthToken, loadAuthToken, saveAuthToken } from './session'
+export {
+  clearAuthToken,
+  hasAuthToken,
+  loadAuthEmail,
+  loadAuthToken,
+  saveAuthEmail,
+  saveAuthToken,
+} from './session'
+export {
+  emailPrefixFromEmail,
+  resolveAuthEmail,
+  resolveAuthEmailPrefix,
+} from './email-utils'
 export { requestEmailCode, verifyEmailCode } from './email-client'
 export {
   loginWithPassword,

@@ -1,6 +1,6 @@
 import { resolveGatewayHttpBase } from '../gateway-http'
 import { mapAuthError } from './map-auth-error'
-import { saveAuthToken } from './session'
+import { saveAuthEmail, saveAuthToken } from './session'
 
 export type OtpDelivery = 'email' | 'console'
 
@@ -46,7 +46,13 @@ export async function verifyEmailCode(
     const text = await res.text().catch(() => res.statusText)
     throw new Error(mapAuthError(text, res.status))
   }
-  const data = await res.json()
+  const data = await res.json() as {
+    access_token: string
+    token_type: string
+    expires_in: number
+    email: string
+  }
   if (data.access_token) saveAuthToken(data.access_token)
+  if (data.email) saveAuthEmail(data.email)
   return data
 }

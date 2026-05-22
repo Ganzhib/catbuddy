@@ -154,6 +154,7 @@
     "loadingConversation": "Đang tải cuộc trò chuyện…",
     "empty": {
       "description": "Hãy đặt câu hỏi, tiếp tục công việc cục bộ hoặc bắt đầu một luồng mới.",
+      "hiLead": "Hi, ",
       "greeting": "Tôi có thể giúp gì cho bạn?",
       "quickActions": {
         "plan": {

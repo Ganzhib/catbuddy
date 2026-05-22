@@ -190,6 +190,7 @@
   "thread": {
     "loadingConversation": "正在加载对话…",
     "empty": {
+      "hiLead": "Hi，",
       "greeting": "我可以帮你做什么？",
       "quickActions": {
         "plan": {

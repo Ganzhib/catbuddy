@@ -202,6 +202,7 @@
   "thread": {
     "loadingConversation": "Loading conversation…",
     "empty": {
+      "hiLead": "Hi, ",
       "greeting": "What can I do for you?",
       "quickActions": {
         "plan": {

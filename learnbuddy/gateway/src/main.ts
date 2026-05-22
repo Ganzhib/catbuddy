@@ -1,3 +1,4 @@
+import './load-env'
 import 'reflect-metadata'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
@@ -18,6 +19,11 @@ async function bootstrap() {
   console.log(
     `[gateway] GATEWAY_SECRET=${gatewayEnv.executorSecret ? '(set)' : '(default)'}`,
   )
+  if (gatewayEnv.smtpHost) {
+    console.log(`[gateway] SMTP=${gatewayEnv.smtpHost}:${gatewayEnv.smtpPort} (real email OTP enabled)`)
+  } else {
+    console.log('[gateway] SMTP not configured — OTP codes print to this console only')
+  }
 }
 
 bootstrap().catch((err) => {

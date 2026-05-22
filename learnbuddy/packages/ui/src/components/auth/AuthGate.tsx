@@ -7,7 +7,8 @@ import {
   clearSavedSecret,
   fetchBootstrap,
   hasAuthToken,
-  requiresWebLogin,
+  hasLearnbuddyIpc,
+  requiresEmailLogin,
   resolveGatewayHttpBase,
 } from '@learnbuddy/platform'
 import { createLearnbuddyClient, type learnbuddyClient } from '@learnbuddy/client'
@@ -19,6 +20,8 @@ export interface AuthGateSession {
   onLogout: () => void
 }
 
+type BootSession = Pick<AuthGateSession, 'client' | 'token' | 'modelName'>
+
 export function AuthGate({
   children,
   onLogout,
@@ -26,16 +29,16 @@ export function AuthGate({
   children: (session: AuthGateSession) => ReactNode
   onLogout?: () => void
 }) {
-  const [session, setSession] = useState<AuthGateSession | null>(null)
+  const [session, setSession] = useState<BootSession | null>(null)
   const [bootError, setBootError] = useState<string | null>(null)
   const [bootAttempts, setBootAttempts] = useState(0)
   const [needsLogin, setNeedsLogin] = useState(
-    () => requiresWebLogin() && !hasAuthToken(),
+    () => requiresEmailLogin() && !hasAuthToken(),
   )
 
   const doBootstrap = useCallback(async () => {
     setBootError(null)
-    if (requiresWebLogin() && !hasAuthToken()) {
+    if (requiresEmailLogin() && !hasAuthToken()) {
       setNeedsLogin(true)
       setSession(null)
       return
@@ -43,7 +46,9 @@ export function AuthGate({
     setNeedsLogin(false)
     try {
       const boot = await fetchBootstrap()
-      const useGateway = boot.gateway_mode === 'gateway' || boot.gateway_mode === 'relay'
+      const useGateway =
+        !hasLearnbuddyIpc()
+        && (boot.gateway_mode === 'gateway' || boot.gateway_mode === 'relay')
       const client = createLearnbuddyClient({
         token: boot.token,
         wsPath: boot.ws_path,
@@ -84,7 +89,7 @@ export function AuthGate({
     clearAuthToken()
     setSession(null)
     setBootError(null)
-    if (requiresWebLogin()) {
+    if (requiresEmailLogin()) {
       setNeedsLogin(true)
     } else {
       setBootAttempts((n) => n + 1)

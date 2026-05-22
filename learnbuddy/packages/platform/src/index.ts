@@ -20,9 +20,12 @@ export {
   hasAuthToken,
   loadAuthToken,
   requestEmailCode,
+  requiresEmailLogin,
   requiresWebLogin,
   saveAuthToken,
   verifyEmailCode,
+  loginWithPassword,
+  registerWithPassword,
 } from './auth'
 
 import { createPlatformApi } from './create-platform'

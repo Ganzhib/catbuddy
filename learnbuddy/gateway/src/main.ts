@@ -1,5 +1,7 @@
 import './load-env'
 import 'reflect-metadata'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { WsAdapter } from '@nestjs/platform-ws'
@@ -19,10 +21,19 @@ async function bootstrap() {
   console.log(
     `[gateway] GATEWAY_SECRET=${gatewayEnv.executorSecret ? '(set)' : '(default)'}`,
   )
-  if (gatewayEnv.smtpHost) {
-    console.log(`[gateway] SMTP=${gatewayEnv.smtpHost}:${gatewayEnv.smtpPort} (real email OTP enabled)`)
+  const envPath = path.join(__dirname, '..', '.env')
+  console.log(
+    `[gateway] env: gateway/.env ${fs.existsSync(envPath) ? '(loaded)' : '(missing — copy .env.example)'}`,
+  )
+  if (gatewayEnv.smtpHost && gatewayEnv.smtpUser && gatewayEnv.smtpPass) {
+    const mode = gatewayEnv.smtpPort === 465 || gatewayEnv.smtpSecure === 'true' ? 'SSL' : 'STARTTLS'
+    console.log(
+      `[gateway] SMTP=${gatewayEnv.smtpHost}:${gatewayEnv.smtpPort} (${mode}, registration codes sent by email)`,
+    )
   } else {
-    console.log('[gateway] SMTP not configured — OTP codes print to this console only')
+    console.log(
+      '[gateway] SMTP not configured — registration OTP prints HERE only (set SMTP_* in gateway/.env)',
+    )
   }
 }
 

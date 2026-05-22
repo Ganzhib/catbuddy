@@ -5,6 +5,7 @@ import {
   loadAuthToken,
   requiresEmailLogin,
 } from './auth'
+import { resolveGatewayHttpBase } from './gateway-http'
 import { loadSavedSecret, saveSecret } from './secrets'
 
 export { loadSavedSecret, saveSecret, clearSavedSecret } from './secrets'
@@ -21,7 +22,7 @@ export async function fetchBootstrapHttp(
   const loginRequired = requiresEmailLogin()
   const saved = loginRequired ? '' : (secret || loadSavedSecret())
   const authToken = loadAuthToken()
-  const base = (baseUrl || '').replace(/\/$/, '')
+  const base = (baseUrl || resolveGatewayHttpBase()).replace(/\/$/, '')
   const q = saved ? `?secret=${encodeURIComponent(saved)}` : ''
   const url = `${base}/webui/bootstrap${q}`
   const headers: Record<string, string> = {}
@@ -40,7 +41,19 @@ export async function fetchBootstrapHttp(
     const text = await res.text().catch(() => res.statusText)
     throw new Error(`Bootstrap failed (${res.status}): ${text}`)
   }
-  const data = (await res.json()) as BootstrapResponse
+  const raw = await res.text()
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('<')) {
+    throw new Error(
+      `Bootstrap 返回了 HTML 而非 JSON（请确认 Gateway 已启动，且请求地址为 ${url}）`,
+    )
+  }
+  let data: BootstrapResponse
+  try {
+    data = JSON.parse(trimmed) as BootstrapResponse
+  } catch {
+    throw new Error(`Bootstrap 响应不是有效 JSON: ${trimmed.slice(0, 120)}`)
+  }
   if (saved) saveSecret(saved)
   return data
 }

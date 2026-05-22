@@ -5,22 +5,25 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   loginWithPassword,
-  registerWithPassword,
+  requestEmailCode,
+  requestRegister,
   resolveGatewayHttpBase,
+  verifyRegister,
 } from '@learnbuddy/platform'
 
 type AuthMode = 'login' | 'register'
+type RegisterStep = 'form' | 'verify'
 
 const FEATURES = [
   {
     icon: ShieldCheck,
     title: '安全省心',
-    desc: '邮箱与密码登录，账号信息安全保存。',
+    desc: '注册需邮箱验证码；日常登录使用邮箱与密码。',
   },
   {
     icon: Mail,
     title: '登录 · 注册',
-    desc: '已有账号用密码登录；新用户注册时需设置密码。',
+    desc: '新用户注册后验证邮箱；下次登录输入邮箱与密码即可。',
   },
   {
     icon: Sparkles,
@@ -31,35 +34,90 @@ const FEATURES = [
 
 export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
   const [mode, setMode] = useState<AuthMode>('login')
+  const [registerStep, setRegisterStep] = useState<RegisterStep>('form')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [code, setCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
 
   const base = resolveGatewayHttpBase()
 
-  const canSubmit =
+  const canSubmitLogin =
+    email.includes('@') && password.length >= 8
+
+  const canSubmitRegisterForm =
     email.includes('@')
     && password.length >= 8
-    && (mode === 'login' || password === confirmPassword)
+    && password === confirmPassword
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const canSubmitVerify = email.includes('@') && code.trim().length >= 4
+
+  const resetRegister = () => {
+    setRegisterStep('form')
+    setCode('')
+    setHint(null)
+  }
+
+  const onLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (mode === 'register' && password !== confirmPassword) {
+    setBusy(true)
+    try {
+      await loginWithPassword(email.trim(), password, base)
+      onSuccess()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onRegisterFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setHint(null)
+    if (password !== confirmPassword) {
       setError('两次输入的密码不一致')
       return
     }
     setBusy(true)
     try {
-      if (mode === 'login') {
-        await loginWithPassword(email.trim(), password, base)
-      } else {
-        await registerWithPassword(email.trim(), password, base)
-      }
+      const res = await requestRegister(email.trim(), password, base)
+      setHint(
+        `验证码已提交（${res.expiresIn} 秒内有效）。若邮箱未收到，请检查 gateway/.env 的 SMTP 配置，或查看 Gateway 终端是否打印了 [dev] OTP。`,
+      )
+      setRegisterStep('verify')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setBusy(true)
+    try {
+      await verifyRegister(email.trim(), code.trim(), base)
       onSuccess()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resendCode = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      const res = await requestEmailCode(email.trim(), base)
+      setHint(`验证码已重新发送（${res.expiresIn} 秒内有效）。`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -131,73 +189,91 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             邮箱登录 · 注册
           </p>
           <h2 className="mt-2 text-center text-2xl font-semibold tracking-tight">
-            {mode === 'login' ? '登录' : '注册'}
+            {mode === 'login'
+              ? '登录'
+              : registerStep === 'verify'
+                ? '验证邮箱'
+                : '注册'}
           </h2>
 
-          <ModeTabs
-            mode={mode}
-            onChange={(m) => {
-              setMode(m)
-              setError(null)
-            }}
-          />
+          {mode === 'register' && registerStep === 'verify' ? null : (
+            <ModeTabs
+              mode={mode}
+              onChange={(m) => {
+                setMode(m)
+                setError(null)
+                setHint(null)
+                resetRegister()
+              }}
+            />
+          )}
 
           <p className="mb-5 mt-5 text-sm text-muted-foreground">
             {mode === 'login'
-              ? '使用已注册邮箱与密码登录。未注册或密码错误将提示具体原因。'
-              : '填写邮箱并设置密码（至少 8 位），注册成功后自动进入应用。'}
+              ? '使用已注册邮箱与密码登录。登录过期后重新输入即可。'
+              : registerStep === 'verify'
+                ? `请输入发送到 ${email.trim()} 的 6 位验证码，验证通过后将自动登录。`
+                : '填写邮箱并设置密码（至少 8 位），我们将向邮箱发送验证码。'}
           </p>
 
-          <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-            <div className="space-y-2">
-              <label htmlFor="login-email" className="text-sm font-medium">
-                邮箱地址
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={glassInput}
-                autoFocus
+          {mode === 'login' ? (
+            <form className="space-y-4" onSubmit={(e) => void onLoginSubmit(e)}>
+              <EmailField id="login-email" value={email} onChange={setEmail} />
+              <PasswordField
+                id="login-password"
+                label="密码"
+                autoComplete="current-password"
+                placeholder="请输入密码"
+                value={password}
+                onChange={setPassword}
+                showPassword={showPassword}
+                onToggleShow={() => setShowPassword((v) => !v)}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="login-password" className="text-sm font-medium">
-                密码
-              </label>
-              <div className="relative">
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  placeholder={mode === 'register' ? '至少 8 位' : '请输入密码'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={cn(glassInput, 'pr-10')}
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"
-                  onClick={() => setShowPassword((v) => !v)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {mode === 'register' ? (
+              <AuthAlerts error={error} hint={null} />
+              <Button
+                type="submit"
+                className="w-full shadow-md"
+                size="lg"
+                disabled={busy || !canSubmitLogin}
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    登录中…
+                  </>
+                ) : (
+                  '登录'
+                )}
+              </Button>
+              <SwitchModeLink
+                label="还没有账号？"
+                action="去注册"
+                onClick={() => {
+                  setMode('register')
+                  setError(null)
+                  resetRegister()
+                }}
+              />
+            </form>
+          ) : registerStep === 'form' ? (
+            <form className="space-y-4" onSubmit={(e) => void onRegisterFormSubmit(e)}>
+              <EmailField id="register-email" value={email} onChange={setEmail} />
+              <PasswordField
+                id="register-password"
+                label="密码"
+                autoComplete="new-password"
+                placeholder="至少 8 位"
+                value={password}
+                onChange={setPassword}
+                showPassword={showPassword}
+                onToggleShow={() => setShowPassword((v) => !v)}
+              />
               <div className="space-y-2">
-                <label htmlFor="login-password-confirm" className="text-sm font-medium">
+                <label htmlFor="register-password-confirm" className="text-sm font-medium">
                   确认密码
                 </label>
                 <input
-                  id="login-password-confirm"
+                  id="register-password-confirm"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder="再次输入密码"
@@ -206,59 +282,92 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   className={glassInput}
                 />
               </div>
-            ) : null}
-
-            {error ? (
-              <p
-                role="alert"
-                className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs text-destructive backdrop-blur-sm"
+              <AuthAlerts error={error} hint={null} />
+              <Button
+                type="submit"
+                className="w-full shadow-md"
+                size="lg"
+                disabled={busy || !canSubmitRegisterForm}
               >
-                {error}
-              </p>
-            ) : null}
-
-            <Button type="submit" className="w-full shadow-md" size="lg" disabled={busy || !canSubmit}>
-              {busy ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === 'login' ? '登录中…' : '注册中…'}
-                </>
-              ) : (
-                mode === 'login' ? '登录' : '注册'
-              )}
-            </Button>
-
-            {mode === 'login' ? (
-              <p className="text-center text-xs text-muted-foreground">
-                还没有账号？
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    发送验证码…
+                  </>
+                ) : (
+                  '获取验证码'
+                )}
+              </Button>
+              <SwitchModeLink
+                label="已有账号？"
+                action="去登录"
+                onClick={() => {
+                  setMode('login')
+                  setError(null)
+                  resetRegister()
+                  setConfirmPassword('')
+                }}
+              />
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={(e) => void onVerifySubmit(e)}>
+              <div className="space-y-2">
+                <label htmlFor="register-code" className="text-sm font-medium">
+                  验证码
+                </label>
+                <input
+                  id="register-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="6 位数字"
+                  maxLength={8}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className={cn(glassInput, 'text-center tracking-[0.35em]')}
+                  autoFocus
+                />
+              </div>
+              <AuthAlerts error={error} hint={hint} />
+              <Button
+                type="submit"
+                className="w-full shadow-md"
+                size="lg"
+                disabled={busy || !canSubmitVerify}
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    验证中…
+                  </>
+                ) : (
+                  '验证并登录'
+                )}
+              </Button>
+              <div className="flex flex-col gap-2 text-center text-xs text-muted-foreground">
                 <button
                   type="button"
-                  className="ml-1 font-medium text-foreground underline-offset-2 hover:underline"
-                  onClick={() => {
-                    setMode('register')
-                    setError(null)
-                  }}
+                  className="font-medium text-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                  disabled={busy}
+                  onClick={() => void resendCode()}
                 >
-                  去注册
+                  重新发送验证码
                 </button>
-              </p>
-            ) : (
-              <p className="text-center text-xs text-muted-foreground">
-                已有账号？
                 <button
                   type="button"
-                  className="ml-1 font-medium text-foreground underline-offset-2 hover:underline"
+                  className="underline-offset-2 hover:underline"
                   onClick={() => {
-                    setMode('login')
                     setError(null)
-                    setConfirmPassword('')
+                    setHint(null)
+                    setRegisterStep('form')
+                    setCode('')
                   }}
                 >
-                  去登录
+                  修改邮箱或密码
                 </button>
-              </p>
-            )}
-          </form>
+              </div>
+            </form>
+          )}
         </div>
 
         <p className="mt-6 max-w-[420px] text-center text-[11px] leading-relaxed text-muted-foreground/90">
@@ -266,6 +375,125 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
         </p>
       </main>
     </div>
+  )
+}
+
+function EmailField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        邮箱地址
+      </label>
+      <input
+        id={id}
+        type="email"
+        autoComplete="email"
+        placeholder="you@email.com"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={glassInput}
+        autoFocus
+      />
+    </div>
+  )
+}
+
+function PasswordField({
+  id,
+  label,
+  autoComplete,
+  placeholder,
+  value,
+  onChange,
+  showPassword,
+  onToggleShow,
+}: {
+  id: string
+  label: string
+  autoComplete: string
+  placeholder: string
+  value: string
+  onChange: (v: string) => void
+  showPassword: boolean
+  onToggleShow: () => void
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={showPassword ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(glassInput, 'pr-10')}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={showPassword ? '隐藏密码' : '显示密码'}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"
+          onClick={onToggleShow}
+        >
+          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AuthAlerts({ error, hint }: { error: string | null; hint: string | null }) {
+  return (
+    <>
+      {hint ? (
+        <p className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground backdrop-blur-sm">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs text-destructive backdrop-blur-sm"
+        >
+          {error}
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+function SwitchModeLink({
+  label,
+  action,
+  onClick,
+}: {
+  label: string
+  action: string
+  onClick: () => void
+}) {
+  return (
+    <p className="text-center text-xs text-muted-foreground">
+      {label}
+      <button
+        type="button"
+        className="ml-1 font-medium text-foreground underline-offset-2 hover:underline"
+        onClick={onClick}
+      >
+        {action}
+      </button>
+    </p>
   )
 }
 

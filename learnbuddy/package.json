@@ -14,7 +14,7 @@
     "build:web": "pnpm --filter @learnbuddy/web build",
     "lint": "pnpm -r lint",
     "clean:packages": "node scripts/clean-package-emit.mjs",
-    "gateway:dev": "cd gateway && pnpm install && pnpm run start:dev",
+    "dev:gateway": "cd gateway && pnpm install && pnpm run start:dev",
     "gateway:build": "cd gateway && pnpm install && pnpm run build && pnpm start",
     "gateway:test": "cd gateway && node test-e2e.mjs",
     "gateway:test:acceptance": "cd gateway && node test-acceptance.mjs",

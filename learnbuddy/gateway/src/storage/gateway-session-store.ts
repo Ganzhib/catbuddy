@@ -2,6 +2,11 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { buildWebuiThreadFromDetail } from './webui-thread'
+import {
+  normalizeOwnerEmail,
+  readOwnerEmail,
+  SESSION_OWNER_KEY,
+} from './session-ownership'
 import type { GatewaySessionRow, MessageRecord, SessionDetail, SessionInfo } from './session-types'
 
 const MAX_MESSAGES = 2000
@@ -207,6 +212,37 @@ export class GatewaySessionStore {
 
   listRows(): GatewaySessionRow[] {
     return this.list().map((info) => this.infoToRow(info))
+  }
+
+  getSessionOwner(sessionKey: string): string | null {
+    const info = this.get(sessionKey) ?? this.cache.get(sessionKey)
+    return info ? readOwnerEmail(info.metadata) : null
+  }
+
+  setSessionOwner(sessionKey: string, ownerEmail: string): void {
+    const owner = normalizeOwnerEmail(ownerEmail)
+    const fp = this.filePath(sessionKey)
+    const { info, messages } = fs.existsSync(fp)
+      ? this.load(fp)
+      : this.initSession(sessionKey)
+    info.metadata = { ...info.metadata, [SESSION_OWNER_KEY]: owner }
+    this.save(info, messages)
+    this.cache.set(sessionKey, info)
+  }
+
+  isSessionOwnedBy(sessionKey: string, ownerEmail: string): boolean {
+    const owner = this.getSessionOwner(sessionKey)
+    if (!owner) return false
+    return owner === normalizeOwnerEmail(ownerEmail)
+  }
+
+  /** Only sessions explicitly tagged for this user (Web/cloud). */
+  listRowsForOwner(ownerEmail: string): GatewaySessionRow[] {
+    const want = normalizeOwnerEmail(ownerEmail)
+    return this.listRows().filter((row) => {
+      const info = this.get(row.key)
+      return info ? readOwnerEmail(info.metadata) === want : false
+    })
   }
 
   buildWebuiThread(sessionKey: string): Record<string, unknown> | null {

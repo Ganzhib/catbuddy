@@ -45,7 +45,9 @@ export function AuthGate({
     }
     setNeedsLogin(false)
     try {
-      const boot = await fetchBootstrap()
+      const boot = await fetchBootstrap(
+        hasLearnbuddyIpc() ? undefined : resolveGatewayHttpBase(),
+      )
       const useGateway =
         !hasLearnbuddyIpc()
         && (boot.gateway_mode === 'gateway' || boot.gateway_mode === 'relay')

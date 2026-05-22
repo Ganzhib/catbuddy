@@ -26,6 +26,8 @@ export {
   verifyEmailCode,
   loginWithPassword,
   registerWithPassword,
+  requestRegister,
+  verifyRegister,
 } from './auth'
 
 import { createPlatformApi } from './create-platform'

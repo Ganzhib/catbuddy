@@ -1,19 +1,19 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-/** Load `learnbuddy/.env` and `gateway/.env` before `config/env` reads process.env. */
+/**
+ * Load env before `config/env` reads process.env.
+ * - `gateway/.env` is the primary config (standalone backend).
+ * - `learnbuddy/.env` only fills keys not set in gateway (desktop shared vars).
+ */
 export function loadGatewayEnvFiles(): void {
   const gatewayRoot = path.resolve(__dirname, '..')
   const monorepoRoot = path.resolve(gatewayRoot, '..')
-  for (const file of [
-    path.join(monorepoRoot, '.env'),
-    path.join(gatewayRoot, '.env'),
-  ]) {
-    loadEnvFile(file)
-  }
+  loadEnvFile(path.join(monorepoRoot, '.env'), false)
+  loadEnvFile(path.join(gatewayRoot, '.env'), true)
 }
 
-function loadEnvFile(filePath: string): void {
+function loadEnvFile(filePath: string, override: boolean): void {
   try {
     if (!fs.existsSync(filePath)) return
     const text = fs.readFileSync(filePath, 'utf-8')
@@ -30,7 +30,9 @@ function loadEnvFile(filePath: string): void {
       ) {
         val = val.slice(1, -1)
       }
-      if (process.env[key] === undefined) process.env[key] = val
+      if (override || process.env[key] === undefined) {
+        process.env[key] = val
+      }
     }
   } catch {
     /* ignore */

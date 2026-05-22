@@ -11,7 +11,10 @@
     "lint": "tsc --noEmit -p tsconfig.json",
     "test": "node test-e2e.mjs",
     "test:acceptance": "node test-acceptance.mjs",
-    "test:all": "node test-all.mjs"
+    "test:all": "node test-all.mjs",
+    "clear:users": "node scripts/clear-auth-users.mjs",
+    "clear:users:sessions": "node scripts/clear-auth-users.mjs --sessions",
+    "test:smtp": "node scripts/test-smtp.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

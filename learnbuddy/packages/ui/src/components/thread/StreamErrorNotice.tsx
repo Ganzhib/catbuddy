@@ -62,11 +62,12 @@ function resolveCopy(
         title: t("errors.messageTooBig.title"),
         body: t("errors.messageTooBig.body"),
       };
-    default: {
-      // Exhaustiveness guard: if a new StreamError kind is added, TS will
-      // complain here until we add a corresponding i18n branch.
-      const _exhaustive: never = error.kind;
-      return { title: String(_exhaustive), body: "" };
-    }
+    case "gateway_executor_offline":
+      return {
+        title: t("errors.gatewayExecutorOffline.title"),
+        body: t("errors.gatewayExecutorOffline.body"),
+      };
+    default:
+      return { title: t("errors.generic.title"), body: t("errors.generic.body") };
   }
 }

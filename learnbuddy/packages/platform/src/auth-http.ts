@@ -11,4 +11,6 @@ export {
   verifyEmailCode,
   loginWithPassword,
   registerWithPassword,
+  requestRegister,
+  verifyRegister,
 } from './auth'

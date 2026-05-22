@@ -29,6 +29,8 @@ export const gatewayEnv = {
   jwtExpiresIn: env('GATEWAY_JWT_EXPIRES', 'RELAY_JWT_EXPIRES', '7d'),
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: envInt('SMTP_PORT', 587),
+  /** ``true`` = SSL (465); ``false`` = STARTTLS (587); empty = auto from port */
+  smtpSecure: env('SMTP_SECURE', undefined, ''),
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
   smtpFrom: process.env.SMTP_FROM || 'learnbuddy <noreply@learnbuddy.local>',

@@ -8,6 +8,7 @@ import type {
   WebSearchSettingsUpdate,
 } from '@learnbuddy/shared'
 import { ApiError } from './ipc-api'
+import { resolveGatewayHttpBase } from './gateway-http'
 
 async function apiFetch<T>(
   path: string,
@@ -15,7 +16,7 @@ async function apiFetch<T>(
   base: string,
   init?: RequestInit,
 ): Promise<T> {
-  const root = (base || '').replace(/\/$/, '')
+  const root = (base || resolveGatewayHttpBase()).replace(/\/$/, '')
   const url = `${root}${path.startsWith('/') ? path : `/${path}`}`
   const res = await fetch(url, {
     ...init,

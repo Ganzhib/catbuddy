@@ -61,8 +61,8 @@ export class GatewayShimController {
 
   @Get('api/sessions')
   async listSessions(@Headers('authorization') authorization?: string) {
-    await this.auth.resolveViewerToken(authorization)
-    return this.state.fetchSessionsFromExecutor()
+    const email = await this.auth.resolveViewerEmail(authorization)
+    return this.state.fetchSessionsForViewer(email)
   }
 
   /** Web 新建对话 → 通知桌面 executor 创建 JSONL 会话并订阅 relay。 */
@@ -72,7 +72,7 @@ export class GatewayShimController {
     @Body() body: { chatId?: string },
     @Res() res: Response,
   ) {
-    await this.auth.resolveViewerToken(authorization)
+    const email = await this.auth.resolveViewerEmail(authorization)
     const raw = String(body.chatId || '').trim()
     const bare = raw.startsWith('desktop:') ? raw.slice('desktop:'.length) : raw
     const chatId = bare || `${Date.now()}_${randomBytes(3).toString('hex')}`
@@ -80,6 +80,7 @@ export class GatewayShimController {
     const result = this.state.forwardCreateSessionToExecutor(
       sessionKey,
       chatId,
+      email,
     )
     if (!result.ok) {
       return res.status(503).json({ ok: false, error: result.error })
@@ -101,17 +102,20 @@ export class GatewayShimController {
     @Query('key') key: string | undefined,
     @Headers('authorization') authorization?: string,
   ) {
-    await this.auth.resolveViewerToken(authorization)
+    const email = await this.auth.resolveViewerEmail(authorization)
     const sessionKey = decodeURIComponent(String(key || '').trim())
     if (!sessionKey) return null
-    return this.state.fetchThreadFromExecutor(sessionKey)
+    return this.state.fetchThreadForViewer(email, sessionKey)
   }
 
   @Delete('api/sessions/:sessionKey')
   async deleteSession(
+    @Param('sessionKey') sessionKeyRaw: string,
     @Headers('authorization') authorization?: string,
   ) {
-    await this.auth.resolveViewerToken(authorization)
+    const email = await this.auth.resolveViewerEmail(authorization)
+    const sessionKey = decodeURIComponent(sessionKeyRaw)
+    this.state.assertViewerOwnsSession(email, sessionKey)
     return { ok: true }
   }
 

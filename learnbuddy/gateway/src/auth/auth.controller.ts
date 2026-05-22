@@ -30,9 +30,16 @@ class VerifyCodeDto {
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  /** Register step 1: send email verification code (account created after verify). */
   @Post('register')
   register(@Body() body: EmailPasswordDto) {
-    return this.auth.registerWithPassword(body.email, body.password)
+    return this.auth.startRegistration(body.email, body.password)
+  }
+
+  /** Register step 2: verify code → create account and return JWT. */
+  @Post('register/verify')
+  registerVerify(@Body() body: VerifyCodeDto) {
+    return this.auth.verifyRegistration(body.email, body.code)
   }
 
   @Post('login')
@@ -40,15 +47,15 @@ export class AuthController {
     return this.auth.loginWithPassword(body.email, body.password)
   }
 
-  /** @deprecated OTP flow — prefer password login */
+  /** Resend registration OTP (same body as register). */
   @Post('email/request-code')
   requestCode(@Body() body: RequestCodeDto) {
     return this.auth.requestEmailCode(body.email)
   }
 
-  /** @deprecated OTP flow — prefer password login */
+  /** Alias of register/verify for older clients. */
   @Post('email/verify')
   verify(@Body() body: VerifyCodeDto) {
-    return this.auth.verifyEmailCode(body.email, body.code)
+    return this.auth.verifyRegistration(body.email, body.code)
   }
 }

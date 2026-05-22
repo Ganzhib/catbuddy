@@ -12,9 +12,10 @@ import { EmailService } from './email.service'
 import { hashPassword, isPasswordStrongEnough, verifyPassword } from './password.util'
 import { UserStore } from './user-store'
 
-interface OtpEntry {
+interface PendingRegistration {
   code: string
   expiresAt: number
+  passwordHash: string
 }
 
 export interface JwtViewerPayload {
@@ -25,7 +26,7 @@ export interface JwtViewerPayload {
 
 @Injectable()
 export class AuthService {
-  private readonly otpByEmail = new Map<string, OtpEntry>()
+  private readonly pendingRegisterByEmail = new Map<string, PendingRegistration>()
 
   constructor(
     private readonly jwt: JwtService,
@@ -78,15 +79,15 @@ export class AuthService {
   }
 
   async requestEmailCode(email: string): Promise<{ ok: true; expiresIn: number }> {
-    const normalized = email.trim().toLowerCase()
-    if (!normalized.includes('@')) {
-      throw new UnauthorizedException('invalid_email')
+    const normalized = this.normalizeEmail(email)
+    const pending = this.pendingRegisterByEmail.get(normalized)
+    if (!pending) {
+      throw new UnauthorizedException('no_pending_registration')
     }
     const code = String(randomInt(100_000, 999_999))
-    this.otpByEmail.set(normalized, {
-      code,
-      expiresAt: Date.now() + gatewayEnv.otpTtlMs,
-    })
+    pending.code = code
+    pending.expiresAt = Date.now() + gatewayEnv.otpTtlMs
+    this.pendingRegisterByEmail.set(normalized, pending)
     await this.email.sendOtp(normalized, code)
     return { ok: true, expiresIn: Math.floor(gatewayEnv.otpTtlMs / 1000) }
   }
@@ -107,15 +108,16 @@ export class AuthService {
       role: 'viewer',
       typ: 'gateway_viewer',
     } satisfies JwtViewerPayload)
-    this.gateway.registerViewerToken(access_token)
+    this.gateway.registerViewerToken(access_token, email)
     const expires_in = 7 * 24 * 3600
     return { access_token, token_type: 'bearer', expires_in, email }
   }
 
-  async registerWithPassword(
+  /** Step 1: validate password, send email OTP; account created after verify. */
+  async startRegistration(
     email: string,
     password: string,
-  ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
+  ): Promise<{ ok: true; expiresIn: number }> {
     const normalized = this.normalizeEmail(email)
     if (!isPasswordStrongEnough(password)) {
       throw new UnauthorizedException('weak_password')
@@ -123,9 +125,37 @@ export class AuthService {
     if (this.users.findByEmail(normalized)) {
       throw new ConflictException('email_taken')
     }
+    const code = String(randomInt(100_000, 999_999))
     const passwordHash = await hashPassword(password)
+    this.pendingRegisterByEmail.set(normalized, {
+      code,
+      expiresAt: Date.now() + gatewayEnv.otpTtlMs,
+      passwordHash,
+    })
+    await this.email.sendOtp(normalized, code)
+    return { ok: true, expiresIn: Math.floor(gatewayEnv.otpTtlMs / 1000) }
+  }
+
+  /** Step 2: verify OTP, create account, issue JWT (auto login). */
+  async verifyRegistration(
+    email: string,
+    code: string,
+  ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
+    const normalized = this.normalizeEmail(email)
+    const pending = this.pendingRegisterByEmail.get(normalized)
+    if (!pending || pending.expiresAt < Date.now()) {
+      this.pendingRegisterByEmail.delete(normalized)
+      throw new UnauthorizedException('otp_expired')
+    }
+    if (pending.code !== code.trim()) {
+      throw new UnauthorizedException('otp_invalid')
+    }
+    this.pendingRegisterByEmail.delete(normalized)
+    if (this.users.findByEmail(normalized)) {
+      throw new ConflictException('email_taken')
+    }
     try {
-      this.users.create(normalized, passwordHash)
+      this.users.create(normalized, pending.passwordHash)
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'email_taken') {
         throw new ConflictException('email_taken')
@@ -150,20 +180,12 @@ export class AuthService {
     return this.issueViewerToken(normalized)
   }
 
+  /** @deprecated Use verifyRegistration — OTP login without password is disabled. */
   async verifyEmailCode(
     email: string,
     code: string,
   ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
-    const normalized = email.trim().toLowerCase()
-    const entry = this.otpByEmail.get(normalized)
-    if (!entry || entry.expiresAt < Date.now()) {
-      throw new UnauthorizedException('otp_expired')
-    }
-    if (entry.code !== code.trim()) {
-      throw new UnauthorizedException('otp_invalid')
-    }
-    this.otpByEmail.delete(normalized)
-    return this.issueViewerToken(normalized)
+    return this.verifyRegistration(email, code)
   }
 
   async registerTokenFromJwt(token: string): Promise<boolean> {
@@ -176,7 +198,11 @@ export class AuthService {
       ) {
         return false
       }
-      this.gateway.registerViewerToken(token)
+      const email = payload.sub?.trim().toLowerCase()
+      this.gateway.registerViewerToken(
+        token,
+        email?.includes('@') ? email : undefined,
+      )
       return true
     } catch {
       return false
@@ -187,6 +213,19 @@ export class AuthService {
     if (!header) return ''
     const m = /^Bearer\s+(.+)$/i.exec(header)
     return m?.[1]?.trim() || ''
+  }
+
+  /** Logged-in user id (email from JWT ``sub``). */
+  async resolveViewerEmail(authorization?: string): Promise<string> {
+    const token = await this.resolveViewerToken(authorization)
+    try {
+      const payload = await this.jwt.verifyAsync<JwtViewerPayload>(token)
+      const email = payload.sub?.trim().toLowerCase()
+      if (email?.includes('@')) return email
+    } catch {
+      /* dev viewer token etc. */
+    }
+    return 'local-viewer'
   }
 
   ensureDevViewerRegistered(): void {

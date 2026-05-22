@@ -7,24 +7,35 @@ export class EmailService {
   private readonly log = new Logger(EmailService.name)
   private transporter: nodemailer.Transporter | null = null
 
+  private smtpSecure(): boolean {
+    const raw = gatewayEnv.smtpSecure.trim().toLowerCase()
+    if (raw === 'true' || raw === '1' || raw === 'yes') return true
+    if (raw === 'false' || raw === '0' || raw === 'no') return false
+    return gatewayEnv.smtpPort === 465
+  }
+
   private getTransporter(): nodemailer.Transporter | null {
     if (!gatewayEnv.smtpHost) return null
+    if (!gatewayEnv.smtpUser || !gatewayEnv.smtpPass) {
+      this.log.warn('SMTP_HOST is set but SMTP_USER/SMTP_PASS missing — OTP will print to console')
+      return null
+    }
     if (!this.transporter) {
+      const secure = this.smtpSecure()
       this.transporter = nodemailer.createTransport({
         host: gatewayEnv.smtpHost,
         port: gatewayEnv.smtpPort,
-        secure: gatewayEnv.smtpPort === 465,
-        auth: gatewayEnv.smtpUser
-          ? { user: gatewayEnv.smtpUser, pass: gatewayEnv.smtpPass }
-          : undefined,
+        secure,
+        requireTLS: !secure && gatewayEnv.smtpPort === 587,
+        auth: { user: gatewayEnv.smtpUser, pass: gatewayEnv.smtpPass },
       })
     }
     return this.transporter
   }
 
   async sendOtp(email: string, code: string): Promise<void> {
-    const subject = 'learnbuddy 登录验证码'
-    const text = `您的 learnbuddy 验证码是：${code}\n10 分钟内有效。`
+    const subject = 'learnbuddy 注册验证码'
+    const text = `您的 learnbuddy 注册验证码是：${code}\n10 分钟内有效。如非本人操作请忽略此邮件。`
     const transport = this.getTransporter()
     if (!transport) {
       this.log.warn(`[dev] OTP for ${email}: ${code}`)

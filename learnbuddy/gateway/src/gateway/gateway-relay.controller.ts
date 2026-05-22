@@ -49,6 +49,7 @@ export class GatewayRelayController {
     @Body() body: { content?: string; media?: unknown[] },
     @Res() res: Response,
   ) {
+    const email = await this.auth.resolveViewerEmail(authorization)
     const token = await this.auth.resolveViewerToken(authorization)
     const sessionKey = decodeURIComponent(sessionKeyRaw)
     const content = String(body.content || '')
@@ -57,7 +58,8 @@ export class GatewayRelayController {
     }
     this.state.ensureViewerSubscribedForToken(token, sessionKey)
     const chatId = this.state.chatIdFromSessionKey(sessionKey)
-    const result = this.state.handleWebInbound(
+    const result = this.state.handleWebInboundForViewer(
+      email,
       sessionKey,
       chatId,
       content,

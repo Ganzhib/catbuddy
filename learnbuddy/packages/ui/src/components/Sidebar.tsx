@@ -95,7 +95,7 @@ export function Sidebar(props: SidebarProps) {
           className="h-9 w-full justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-medium text-sidebar-foreground/92 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"
           variant="ghost"
         >
-          <SquarePen className="h-4 w-4" />
+          <SquarePen className="h-4 w-4 shrink-0 text-[#4f9de8] dark:text-[#6eb3f5]" />
           {t("sidebar.newChat")}
         </Button>
       </div>

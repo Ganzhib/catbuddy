@@ -22,7 +22,7 @@ import {
 
 const SIDEBAR_STORAGE_KEY = 'learnbuddy-webui.sidebar'
 const RESTART_STARTED_KEY = 'learnbuddy-webui.restartStartedAt'
-const SIDEBAR_WIDTH = 272
+const SIDEBAR_WIDTH = 296
 type ShellView = 'chat' | 'settings'
 
 function readSidebarOpen(): boolean {

@@ -31,7 +31,7 @@ export function ChatList({
   const { t } = useTranslation();
   if (loading && sessions.length === 0) {
     return (
-      <div className="px-3 py-6 text-[12px] text-muted-foreground">
+      <div className="px-4 py-8 text-[13px] text-muted-foreground">
         {t("chat.loading")}
       </div>
     );
@@ -39,7 +39,7 @@ export function ChatList({
 
   if (sessions.length === 0) {
     return (
-      <div className="px-3 py-6 text-[12px] leading-5 text-muted-foreground/80">
+      <div className="px-4 py-8 text-[13px] leading-6 text-muted-foreground/80">
         {emptyLabel ?? t("chat.noSessions")}
       </div>
     );
@@ -53,13 +53,13 @@ export function ChatList({
 
   return (
     <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-subtle">
-      <div className="min-w-0 space-y-3 px-2 py-1.5">
+      <div className="min-w-0 space-y-4 px-3 py-2.5">
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>
-            <div className="px-2 pb-1 text-[12px] font-medium text-muted-foreground/65">
+            <div className="px-2.5 pb-2 text-[13px] font-medium text-muted-foreground/65">
               {group.label}
             </div>
-            <ul className="space-y-0.5">
+            <ul className="space-y-1">
               {group.sessions.map((s) => {
                 const active = s.key === activeKey;
                 const fallbackTitle = t("chat.fallbackTitle", {
@@ -74,7 +74,7 @@ export function ChatList({
                   <li key={s.key} className="min-w-0">
                     <div
                       className={cn(
-                        "group flex min-h-8 min-w-0 max-w-full items-center gap-2 rounded-xl px-2 text-[13px] transition-colors",
+                        "group flex min-h-9 min-w-0 max-w-full items-center gap-2.5 rounded-xl px-2.5 text-[13.5px] transition-colors",
                         active
                           ? "bg-sidebar-accent/70 text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border)/0.28)]"
                           : "text-sidebar-foreground/82 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
@@ -84,14 +84,14 @@ export function ChatList({
                         type="button"
                         onClick={() => onSelect(s.key)}
                         title={tooltipTitle}
-                        className="min-w-0 flex-1 overflow-hidden py-1.5 text-left"
+                        className="min-w-0 flex-1 overflow-hidden py-2 text-left"
                       >
-                        <span className="block w-full truncate font-medium leading-5">{title}</span>
+                        <span className="block w-full truncate font-medium leading-[1.35]">{title}</span>
                       </button>
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger
                           className={cn(
-                            "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/75 opacity-40 transition-opacity",
+                            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/75 opacity-40 transition-opacity",
                             "hover:bg-sidebar-accent hover:text-sidebar-foreground group-hover:opacity-100",
                             "focus-visible:opacity-100",
                             active && "opacity-100",

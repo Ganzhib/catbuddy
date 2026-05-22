@@ -83,6 +83,8 @@ interface TurnCtx {
   finalContent: string | null;
   toolsUsed: string[];
   allMessages: LLMMessage[];
+  /** Index into ``allMessages`` where this turn's new rows start (for SAVE). */
+  persistFromIndex: number;
   stopReason: string;
   outbound: OutboundMessage | null;
   startedAt: number;
@@ -380,6 +382,7 @@ export class AgentLoop {
       finalContent: null,
       toolsUsed: [],
       allMessages: [],
+      persistFromIndex: 0,
       stopReason: "",
       outbound: null,
       startedAt: performance.now(),
@@ -585,6 +588,7 @@ export class AgentLoop {
         ? async (edit) => { await cbs.onFileEdit!(edit) }
         : undefined,
     );
+    const persistFromIndex = ctx.allMessages.length
     let result;
     try {
       result = await this.runner.run({
@@ -601,6 +605,7 @@ export class AgentLoop {
         progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
         retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
         onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
+        onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
       });
     } finally {
       this.tools.setFileEditCallback(undefined);
@@ -609,6 +614,7 @@ export class AgentLoop {
     ctx.finalContent = result.finalContent;
     ctx.toolsUsed = result.toolsUsed;
     ctx.allMessages = result.messages;
+    ctx.persistFromIndex = persistFromIndex;
     ctx.stopReason = result.stopReason;
 
     // 通知流结束
@@ -618,16 +624,18 @@ export class AgentLoop {
   }
 
   private async _state_save(ctx: TurnCtx): Promise<string> {
-    if (ctx.finalContent && ctx.stopReason !== "empty_final_response") {
-      this.sessions.addMessage(ctx.sessionKey, {
-        role: "assistant",
-        content: ctx.finalContent,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    const now = new Date().toISOString()
 
-    // 持久化 tool results
-    for (const msg of ctx.allMessages) {
+    for (const msg of ctx.allMessages.slice(ctx.persistFromIndex)) {
+      if (msg.role === "assistant" && msg.toolCalls?.length) {
+        this.sessions.addMessage(ctx.sessionKey, {
+          role: "assistant",
+          content: typeof msg.content === "string" ? msg.content : "",
+          toolCalls: msg.toolCalls,
+          reasoningContent: msg.reasoningContent ?? "",
+          timestamp: now,
+        });
+      }
       if (msg.role === "tool") {
         this.sessions.addMessage(ctx.sessionKey, {
           role: "tool",
@@ -636,9 +644,17 @@ export class AgentLoop {
             : JSON.stringify(msg.content),
           toolCallId: msg.toolCallId,
           name: msg.name,
-          timestamp: new Date().toISOString(),
+          timestamp: now,
         });
       }
+    }
+
+    if (ctx.finalContent && ctx.stopReason !== "empty_final_response") {
+      this.sessions.addMessage(ctx.sessionKey, {
+        role: "assistant",
+        content: ctx.finalContent,
+        timestamp: now,
+      });
     }
 
     return "ok";

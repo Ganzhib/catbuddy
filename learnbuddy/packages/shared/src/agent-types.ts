@@ -133,6 +133,8 @@ export interface MessageRecord {
   toolCallId?: string
   name?: string
   media?: string[]
+  /** DeepSeek thinking mode: must round-trip on tool-call turns. */
+  reasoningContent?: string
   timestamp: string
 }
 
@@ -143,6 +145,8 @@ export interface AgentRunResult {
   toolsUsed: string[]
   usage: TokenUsage
   stopReason: string
+  /** Last model turn reasoning (DeepSeek thinking mode). */
+  lastReasoningContent?: string
   error?: string
   toolEvents: ToolEvent[]
   hadInjections: boolean

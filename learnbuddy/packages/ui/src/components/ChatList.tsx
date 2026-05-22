@@ -52,7 +52,7 @@ export function ChatList({
   });
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain">
+    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-subtle">
       <div className="min-w-0 space-y-3 px-2 py-1.5">
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>

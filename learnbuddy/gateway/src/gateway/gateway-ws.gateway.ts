@@ -75,7 +75,7 @@ export class GatewayWsGateway {
       }
 
       if (msg.type === 'subscribe') {
-        this.state.subscribe(ws, String(msg.sessionKey || ''), clientKey)
+        void this.state.subscribe(ws, String(msg.sessionKey || ''), clientKey)
         return
       }
 
@@ -107,7 +107,7 @@ export class GatewayWsGateway {
           preview: String(s.preview || ''),
         }))
         const requestId = msg.requestId ? String(msg.requestId) : ''
-        this.state.applySessionsSync(deviceId, rows, {
+        void this.state.applySessionsSync(deviceId, rows, {
           notifyViewers: !requestId,
         })
         if (requestId) this.state.resolveSessionsRpc(requestId, rows)
@@ -125,7 +125,7 @@ export class GatewayWsGateway {
       if (msg.type === 'thread_snapshot' && clientKey.startsWith('executor:')) {
         const sessionKey = String(msg.sessionKey || '')
         const payload = (msg.payload as Record<string, unknown> | null) ?? null
-        this.state.persistThreadSnapshot(sessionKey, payload)
+        void this.state.persistThreadSnapshot(sessionKey, payload)
       }
     })
 

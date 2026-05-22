@@ -1,6 +1,6 @@
 import type { MessageRecord, SessionDetail } from './session-types'
 
-/** Build Web UI thread replay payload from gateway JSONL session. */
+/** Build Web UI thread replay payload from gateway session storage. */
 export function buildWebuiThreadFromDetail(
   session: SessionDetail | null,
 ): Record<string, unknown> | null {

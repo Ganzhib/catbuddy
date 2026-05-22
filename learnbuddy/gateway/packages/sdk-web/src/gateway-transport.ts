@@ -157,10 +157,28 @@ export class GatewayTransport implements AgentTransport {
           const bare = bareChatId(ev.chat_id)
           if (bare !== ev.chat_id) ev = { ...ev, chat_id: bare } as InboundEvent
         }
-        callbacks.onEvent(ev)
+        const wireKey = msg.sessionKey.trim()
+        if (
+          ev.event === 'session_updated'
+          && ev.scope === 'focus'
+          && wireKey
+        ) {
+          this.ensureSubscribed(wireKey)
+          if (this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'subscribe', sessionKey: wireKey }))
+          }
+          const focusId = bareChatId(ev.chat_id) || bareChatId(wireKey)
+          if (focusId) callbacks.onSessionUpdate?.(focusId, 'focus')
+          return
+        }
         if (ev.event === 'session_updated' && 'chat_id' in ev) {
           callbacks.onSessionUpdate?.(ev.chat_id, ev.scope)
+          return
         }
+        const activeId = bareChatId(callbacks.getActiveChatId())
+        const activeKey = activeId ? toSessionKey(activeId) : ''
+        if (wireKey && activeKey && wireKey !== activeKey) return
+        callbacks.onEvent(ev)
       }
     }
 

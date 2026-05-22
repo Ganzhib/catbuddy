@@ -2,7 +2,7 @@ import type { ConnectionStatus, InboundEvent } from './ui-types.js'
 
 export type TransportKind = 'ipc' | 'websocket'
 
-export type SessionUpdateScope = 'metadata' | 'thread' | string
+export type SessionUpdateScope = 'metadata' | 'thread' | 'focus' | string
 
 /** Callbacks from a transport into learnbuddyClient. */
 export interface TransportCallbacks {

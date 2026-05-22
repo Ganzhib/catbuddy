@@ -233,7 +233,10 @@ export class learnbuddyClient {
       }
     }
     if (delivered) return;
+    // Remote gateway: do not paint another chat's stream into the active thread.
+    const routed = bareChatId(chatId);
     const active = bareChatId(this._activeChatId);
+    if (routed && active && routed !== active) return;
     const fallback =
       this.chatHandlers.get(active) ?? this.chatHandlers.get(this._activeChatId);
     if (!fallback?.size) return;

@@ -170,7 +170,7 @@ export class IpcTransport implements AgentTransport {
       api.onSessionCreated?.((data: SessionCreatedPayload) => {
         const chat_id = data.chatId?.trim();
         if (!chat_id) return;
-        callbacks.onSessionUpdate?.(chat_id, "metadata");
+        callbacks.onSessionUpdate?.(chat_id, "focus");
       }),
     ];
 
@@ -182,5 +182,11 @@ export class IpcTransport implements AgentTransport {
 
   sendMessage(chatId: string, content: string, mediaUrls?: string[]): void {
     window.learnbuddy?.sendMessage(chatId, content, mediaUrls);
+  }
+
+  ensureSession(chatId: string): void {
+    const id = chatId.trim();
+    if (!id) return;
+    void window.learnbuddy?.gatewaySubscribeSession({ chatId: id });
   }
 }

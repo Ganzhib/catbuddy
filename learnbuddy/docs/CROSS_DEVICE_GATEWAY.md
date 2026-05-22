@@ -108,7 +108,15 @@ pnpm run gateway:web
 
 **桌面实时流式**：Web 发消息时，请在桌面**打开同一条对话**（`sessionKey` 对应的会话）。流式 delta 会按 `chatId` 投递到该会话，而不是误发到上次在桌面本地发送过的会话。
 
-**桌面新建对话**：桌面在本机新建并发首条消息时，会向 Gateway 推送 `session_updated`（`scope: focus`）。Web（`apps/web` 或 `gateway-web`）应**自动切到该 `sessionKey`** 并 `subscribe`，无需手改 Session Key。若桌面只新建未发消息，Web 仍停留在原会话，需手动切换或等首条消息。
+**桌面 → Web 跟随**（`session_updated` + `scope: focus`）：
+
+| 桌面动作 | 经 Gateway 通知 Web |
+|----------|---------------------|
+| 侧栏切换 / `client.attach` | `gatewaySubscribeSession` → `focusSession` |
+| 新建对话（`session:new` 或首条 `agent:send`） | 同上 |
+| Agent 流式回复 | `ui_event`（仅当前 subscribe 的 `sessionKey`） |
+
+Web（`apps/web` / `gateway-web`）收到 `focus` 后自动切换 `sessionKey` 并 `subscribe`；Gateway 对 `focus` **广播给所有已连接 Web**（不依赖事先 subscribe），并 `sessions_sync` + `metadata` 刷新侧栏。桌面 `SessionManager.list()` 含内存中新建会话，避免「桌面已新建、Web 列表里没有」。
 
 **双向同步（实时）**：
 

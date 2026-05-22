@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common'
@@ -10,7 +11,8 @@ import { GatewayStateService } from '../gateway/gateway-state.service'
 import { isDevAuthBypass, isViewerLoginRequired } from './auth-policy'
 import { EmailService } from './email.service'
 import { hashPassword, isPasswordStrongEnough, verifyPassword } from './password.util'
-import { UserStore } from './user-store'
+import type { UserStore } from '../storage/ports/user-store.port'
+import { USER_STORE } from '../storage/storage.tokens'
 
 interface PendingRegistration {
   code: string
@@ -32,7 +34,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly email: EmailService,
     private readonly gateway: GatewayStateService,
-    private readonly users: UserStore,
+    @Inject(USER_STORE) private readonly users: UserStore,
   ) {}
 
   isEmailAuthRequired(): boolean {
@@ -122,7 +124,7 @@ export class AuthService {
     if (!isPasswordStrongEnough(password)) {
       throw new UnauthorizedException('weak_password')
     }
-    if (this.users.findByEmail(normalized)) {
+    if (await this.users.findByEmail(normalized)) {
       throw new ConflictException('email_taken')
     }
     const code = String(randomInt(100_000, 999_999))
@@ -151,11 +153,11 @@ export class AuthService {
       throw new UnauthorizedException('otp_invalid')
     }
     this.pendingRegisterByEmail.delete(normalized)
-    if (this.users.findByEmail(normalized)) {
+    if (await this.users.findByEmail(normalized)) {
       throw new ConflictException('email_taken')
     }
     try {
-      this.users.create(normalized, pending.passwordHash)
+      await this.users.create(normalized, pending.passwordHash)
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'email_taken') {
         throw new ConflictException('email_taken')
@@ -170,7 +172,7 @@ export class AuthService {
     password: string,
   ): Promise<{ access_token: string; token_type: string; expires_in: number; email: string }> {
     const normalized = this.normalizeEmail(email)
-    const user = this.users.findByEmail(normalized)
+    const user = await this.users.findByEmail(normalized)
     if (!user) {
       throw new UnauthorizedException('account_not_found')
     }

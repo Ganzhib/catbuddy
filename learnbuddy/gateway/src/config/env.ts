@@ -35,8 +35,14 @@ export const gatewayEnv = {
   smtpPass: process.env.SMTP_PASS || '',
   smtpFrom: process.env.SMTP_FROM || 'learnbuddy <noreply@learnbuddy.local>',
   otpTtlMs: envInt('GATEWAY_OTP_TTL_MS', 10 * 60 * 1000, 'RELAY_OTP_TTL_MS'),
-  /** JSONL workspace root (default ``~/.learnbuddy-gateway/workspace``). */
-  dataDir: env('GATEWAY_DATA_DIR', 'RELAY_DATA_DIR', ''),
+  databaseUrl: env('DATABASE_URL', 'GATEWAY_DATABASE_URL', ''),
+  mysql: {
+    host: env('MYSQL_HOST', 'GATEWAY_MYSQL_HOST', '127.0.0.1'),
+    port: envInt('MYSQL_PORT', 3306, 'GATEWAY_MYSQL_PORT'),
+    user: env('MYSQL_USER', 'GATEWAY_MYSQL_USER', 'learnbuddy'),
+    password: env('MYSQL_PASSWORD', 'GATEWAY_MYSQL_PASSWORD', 'learnbuddy'),
+    database: env('MYSQL_DATABASE', 'GATEWAY_MYSQL_DATABASE', 'learnbuddy_gateway'),
+  },
 }
 
 /** @deprecated use gatewayEnv */

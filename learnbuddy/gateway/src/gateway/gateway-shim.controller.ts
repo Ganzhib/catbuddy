@@ -65,7 +65,7 @@ export class GatewayShimController {
     return this.state.fetchSessionsForViewer(email)
   }
 
-  /** Web 新建对话 → 通知桌面 executor 创建 JSONL 会话并订阅 relay。 */
+  /** Web 新建对话 → 通知桌面 executor 创建会话并订阅 relay。 */
   @Post('api/sessions')
   async createSession(
     @Headers('authorization') authorization: string | undefined,
@@ -77,7 +77,7 @@ export class GatewayShimController {
     const bare = raw.startsWith('desktop:') ? raw.slice('desktop:'.length) : raw
     const chatId = bare || `${Date.now()}_${randomBytes(3).toString('hex')}`
     const sessionKey = `desktop:${chatId}`
-    const result = this.state.forwardCreateSessionToExecutor(
+    const result = await this.state.forwardCreateSessionToExecutor(
       sessionKey,
       chatId,
       email,
@@ -115,7 +115,7 @@ export class GatewayShimController {
   ) {
     const email = await this.auth.resolveViewerEmail(authorization)
     const sessionKey = decodeURIComponent(sessionKeyRaw)
-    this.state.assertViewerOwnsSession(email, sessionKey)
+    await this.state.assertViewerOwnsSession(email, sessionKey)
     return { ok: true }
   }
 

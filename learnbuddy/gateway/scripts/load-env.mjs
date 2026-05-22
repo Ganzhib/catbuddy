@@ -1,5 +1,4 @@
 import * as fs from 'node:fs'
-import * as os from 'node:os'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,21 +36,21 @@ function loadEnvFile(filePath, override) {
   }
 }
 
-export function resolveGatewayDataPaths() {
-  const homedir = os.homedir()
-  const dataDir = (
-    process.env.GATEWAY_DATA_DIR
-    || process.env.RELAY_DATA_DIR
+/** MySQL 连接配置（与 `config/env.ts` 默认一致）。 */
+export function resolveMysqlConfig() {
+  const url = (
+    process.env.DATABASE_URL
+    || process.env.GATEWAY_DATABASE_URL
     || ''
   ).trim()
-
-  const usersBase = dataDir || path.join(homedir, '.learnbuddy-gateway')
-  const workspaceBase =
-    dataDir || path.join(homedir, '.learnbuddy-gateway', 'workspace')
-
+  if (url) return { url }
   return {
-    dataDir: dataDir || null,
-    usersFile: path.join(usersBase, 'users.json'),
-    sessionsDir: path.join(workspaceBase, 'sessions'),
+    host: process.env.MYSQL_HOST || process.env.GATEWAY_MYSQL_HOST || '127.0.0.1',
+    port: Number(process.env.MYSQL_PORT || process.env.GATEWAY_MYSQL_PORT || 3306),
+    user: process.env.MYSQL_USER || process.env.GATEWAY_MYSQL_USER || 'learnbuddy',
+    password:
+      process.env.MYSQL_PASSWORD || process.env.GATEWAY_MYSQL_PASSWORD || 'learnbuddy',
+    database:
+      process.env.MYSQL_DATABASE || process.env.GATEWAY_MYSQL_DATABASE || 'learnbuddy_gateway',
   }
 }

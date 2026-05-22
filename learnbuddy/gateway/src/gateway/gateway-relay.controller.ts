@@ -28,7 +28,7 @@ export class GatewayRelayController {
       executors: ex.total,
       online: ex.online > 0,
       executor_online: ex.online > 0,
-      storage: 'jsonl',
+      storage: 'mysql',
     }
   }
 
@@ -58,7 +58,7 @@ export class GatewayRelayController {
     }
     this.state.ensureViewerSubscribedForToken(token, sessionKey)
     const chatId = this.state.chatIdFromSessionKey(sessionKey)
-    const result = this.state.handleWebInboundForViewer(
+    const result = await this.state.handleWebInboundForViewer(
       email,
       sessionKey,
       chatId,

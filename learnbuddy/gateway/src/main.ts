@@ -25,6 +25,10 @@ async function bootstrap() {
   console.log(
     `[gateway] env: gateway/.env ${fs.existsSync(envPath) ? '(loaded)' : '(missing — copy .env.example)'}`,
   )
+  const db = gatewayEnv.databaseUrl
+    ? '(DATABASE_URL)'
+    : `${gatewayEnv.mysql.host}:${gatewayEnv.mysql.port}/${gatewayEnv.mysql.database}`
+  console.log(`[gateway] storage=mysql ${db}`)
   if (gatewayEnv.smtpHost && gatewayEnv.smtpUser && gatewayEnv.smtpPass) {
     const mode = gatewayEnv.smtpPort === 465 || gatewayEnv.smtpSecure === 'true' ? 'SSL' : 'STARTTLS'
     console.log(

@@ -1,4 +1,4 @@
-/** Minimal session types for gateway JSONL (aligned with desktop ``@learnbuddy/shared``). */
+/** Minimal session types for gateway storage (aligned with desktop ``@learnbuddy/shared``). */
 
 export interface SessionInfo {
   key: string

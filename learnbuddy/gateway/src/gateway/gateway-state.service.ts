@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable } from '@nestjs/common'
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common'
 import { randomBytes } from 'node:crypto'
 import type WebSocket from 'ws'
 import { isViewerLoginRequired } from '../auth/auth-policy'
 import { gatewayEnv } from '../config/env'
-import { GatewaySessionStore } from '../storage/gateway-session-store'
+import type { SessionStore } from '../storage/ports/session-store.port'
+import { SESSION_STORE } from '../storage/storage.tokens'
 
 export const GATEWAY_OFFLINE_REPLY =
   '桌面端未连接或未开启「远程控制」，无法执行 Agent。请启动 learnbuddy 桌面应用，在侧栏打开远程控制开关后重试。'
@@ -39,8 +40,6 @@ export interface GatewayClient {
 
 @Injectable()
 export class GatewayStateService {
-  readonly store: GatewaySessionStore
-
   private readonly clients = new Map<string, GatewayClient>()
   private readonly pairingByCode = new Map<string, string>()
   private readonly viewerTokens = new Set<string>()
@@ -57,9 +56,7 @@ export class GatewayStateService {
   /** Web 拉历史时的缓存（由桌面 thread_snapshot / thread_response 写入）。 */
   private readonly threadCache = new Map<string, Record<string, unknown>>()
 
-  constructor() {
-    this.store = new GatewaySessionStore(gatewayEnv.dataDir || undefined)
-  }
+  constructor(@Inject(SESSION_STORE) private readonly store: SessionStore) {}
 
   registerViewerToken(token: string, viewerEmail?: string): void {
     if (!token) return
@@ -91,26 +88,6 @@ export class GatewayStateService {
     return gatewayEnv.devViewerToken
   }
 
-  chatIdFromSessionKey(sessionKey: string): string {
-    const idx = sessionKey.indexOf(':')
-    return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
-  }
-
-  channelFromSessionKey(sessionKey: string): string {
-    const idx = sessionKey.indexOf(':')
-    return idx === -1 ? 'desktop' : sessionKey.slice(0, idx)
-  }
-
-  collectSessionKeys(): string[] {
-    const keys = new Set(this.sessionExecutor.keys())
-    for (const c of this.clients.values()) {
-      if (c.role === 'executor') {
-        for (const sk of c.sessions) keys.add(sk)
-      }
-    }
-    return [...keys]
-  }
-
   private getExecutor(deviceId: string): GatewayClient | null {
     for (const c of this.clients.values()) {
       if (c.role === 'executor' && c.deviceId === deviceId) return c
@@ -139,6 +116,26 @@ export class GatewayStateService {
     return null
   }
 
+  channelFromSessionKey(sessionKey: string): string {
+    const idx = sessionKey.indexOf(':')
+    return idx === -1 ? 'desktop' : sessionKey.slice(0, idx)
+  }
+
+  chatIdFromSessionKey(sessionKey: string): string {
+    const idx = sessionKey.indexOf(':')
+    return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
+  }
+
+  collectSessionKeys(): string[] {
+    const keys = new Set(this.sessionExecutor.keys())
+    for (const c of this.clients.values()) {
+      if (c.role === 'executor') {
+        for (const sk of c.sessions) keys.add(sk)
+      }
+    }
+    return [...keys]
+  }
+
   /** 将 viewer WS 记入 session，避免仅 HTTP 发消息时尚未 subscribe 而收不到流式事件。 */
   ensureViewerSubscribedForToken(viewerToken: string, sessionKey: string): void {
     if (!viewerToken || !sessionKey) return
@@ -156,19 +153,26 @@ export class GatewayStateService {
   }
 
   broadcastUiEvent(sessionKey: string, chatId: string, event: Record<string, unknown>): void {
+    void this.broadcastUiEventAsync(sessionKey, chatId, event)
+  }
+
+  private async broadcastUiEventAsync(
+    sessionKey: string,
+    chatId: string,
+    event: Record<string, unknown>,
+  ): Promise<void> {
     const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
     const targeted = this.sessionViewers.get(sessionKey)
     const sent = new Set<WebSocket>()
     if (targeted) {
       for (const ws of targeted) {
         if (ws.readyState !== 1 || sent.has(ws)) continue
-        if (!this.viewerWsMayReceiveSession(ws, sessionKey)) continue
+        if (!(await this.viewerWsMayReceiveSession(ws, sessionKey))) continue
         ws.send(payload)
         sent.add(ws)
       }
     }
     if (isViewerLoginRequired()) return
-    // 开发期：HTTP 已转发、WS subscribe 尚未到达 → 兜底发给所有 viewer
     for (const client of this.clients.values()) {
       if (client.role !== 'viewer' || client.ws.readyState !== 1) continue
       if (sent.has(client.ws)) continue
@@ -183,27 +187,27 @@ export class GatewayStateService {
     }
   }
 
-  private viewerWsMayReceiveSession(ws: WebSocket, sessionKey: string): boolean {
+  private async viewerWsMayReceiveSession(ws: WebSocket, sessionKey: string): Promise<boolean> {
     if (!isViewerLoginRequired()) return true
-    const owner = this.store.getSessionOwner(sessionKey)
+    const owner = await this.store.getSessionOwner(sessionKey)
     if (!owner) return false
     for (const client of this.clients.values()) {
       if (client.role !== 'viewer' || client.ws !== ws) continue
       const email =
         client.viewerEmail
         || this.getViewerEmailForToken(this.viewerTokenFromClientKey(client.clientKey))
-      return !!email && this.store.isSessionOwnedBy(sessionKey, email)
+      return !!email && (await this.store.isSessionOwnedBy(sessionKey, email))
     }
     return false
   }
 
-  applySessionsSync(
+  async applySessionsSync(
     deviceId: string,
     sessions: GatewaySessionRow[],
     options?: { notifyViewers?: boolean },
-  ): void {
+  ): Promise<void> {
     this.sessionCatalogByDevice.set(deviceId, sessions)
-    this.store.mergeSessionRows(sessions)
+    await this.store.mergeSessionRows(sessions)
     for (const row of sessions) {
       this.sessionExecutor.set(row.key, deviceId)
     }
@@ -271,11 +275,11 @@ export class GatewayStateService {
       const exec = this.pickOnlineExecutor()
       if (exec) {
         const cached = this.sessionCatalogByDevice.get(exec.deviceId)
-        if (cached?.length) this.store.mergeSessionRows(cached)
+        if (cached?.length) await this.store.mergeSessionRows(cached)
         else {
           const rows = await this.requestSessionsRpc(exec)
           if (rows?.length) {
-            this.applySessionsSync(exec.deviceId, rows, { notifyViewers: false })
+            await this.applySessionsSync(exec.deviceId, rows, { notifyViewers: false })
           }
         }
       }
@@ -285,35 +289,35 @@ export class GatewayStateService {
     const owner = ownerEmail.trim().toLowerCase()
     if (!owner.includes('@')) return []
 
-    const owned = this.store.listRowsForOwner(owner)
+    const owned = await this.store.listRowsForOwner(owner)
     const exec = this.pickOnlineExecutor()
     if (!exec) return owned
 
     const cached = this.sessionCatalogByDevice.get(exec.deviceId)
     if (cached?.length) {
-      this.store.mergeSessionRows(cached)
+      await this.store.mergeSessionRows(cached)
     } else {
       const rows = await this.requestSessionsRpc(exec)
       if (rows?.length) {
-        this.applySessionsSync(exec.deviceId, rows, { notifyViewers: false })
+        await this.applySessionsSync(exec.deviceId, rows, { notifyViewers: false })
       }
     }
     return this.store.listRowsForOwner(owner)
   }
 
-  assertViewerOwnsSession(ownerEmail: string, sessionKey: string): void {
+  async assertViewerOwnsSession(ownerEmail: string, sessionKey: string): Promise<void> {
     if (!isViewerLoginRequired()) return
     const key = sessionKey.trim()
     if (!key) throw new ForbiddenException('forbidden')
-    if (!this.store.isSessionOwnedBy(key, ownerEmail)) {
+    if (!(await this.store.isSessionOwnedBy(key, ownerEmail))) {
       throw new ForbiddenException('forbidden')
     }
   }
 
-  tagSessionForViewer(ownerEmail: string, sessionKey: string): void {
+  async tagSessionForViewer(ownerEmail: string, sessionKey: string): Promise<void> {
     if (!sessionKey.trim() || !ownerEmail.trim()) return
-    this.store.getOrCreate(sessionKey)
-    this.store.setSessionOwner(sessionKey, ownerEmail)
+    await this.store.getOrCreate(sessionKey)
+    await this.store.setSessionOwner(sessionKey, ownerEmail)
   }
 
   /** 仅写入 Gateway 缓存，不通知 Web（避免 webui-thread ↔ session_updated 死循环）。 */
@@ -330,14 +334,14 @@ export class GatewayStateService {
     ownerEmail: string,
     sessionKey: string,
   ): Promise<Record<string, unknown> | null> {
-    this.assertViewerOwnsSession(ownerEmail, sessionKey)
+    await this.assertViewerOwnsSession(ownerEmail, sessionKey)
     return this.fetchThreadFromExecutor(sessionKey)
   }
 
   async fetchThreadFromExecutor(
     sessionKey: string,
   ): Promise<Record<string, unknown> | null> {
-    const persisted = this.store.buildWebuiThread(sessionKey)
+    const persisted = await this.store.buildWebuiThread(sessionKey)
     if (
       persisted
       && Array.isArray(persisted.messages)
@@ -364,14 +368,14 @@ export class GatewayStateService {
     ).catch(() => null)
     if (fresh) {
       this.putThreadCache(sessionKey, fresh)
-      this.store.importWebuiPayload(sessionKey, fresh)
+      await this.store.importWebuiPayload(sessionKey, fresh)
       return fresh
     }
     return cached ?? persisted
   }
 
-  private fallbackSessionRows(): GatewaySessionRow[] {
-    const fromStore = this.store.listRows()
+  private async fallbackSessionRows(): Promise<GatewaySessionRow[]> {
+    const fromStore = await this.store.listRows()
     if (fromStore.length) return fromStore
     const now = new Date().toISOString()
     return this.collectSessionKeys().map((key) => ({
@@ -385,14 +389,14 @@ export class GatewayStateService {
     }))
   }
 
-  forwardCreateSessionToExecutor(
+  async forwardCreateSessionToExecutor(
     sessionKey: string,
     chatId: string,
     ownerEmail?: string,
-  ): { ok: boolean; error?: string; offline?: boolean } {
-    this.store.getOrCreate(sessionKey)
+  ): Promise<{ ok: boolean; error?: string; offline?: boolean }> {
+    await this.store.getOrCreate(sessionKey)
     if (ownerEmail?.trim()) {
-      this.store.setSessionOwner(sessionKey, ownerEmail)
+      await this.store.setSessionOwner(sessionKey, ownerEmail)
     }
     const exec = this.pickOnlineExecutor()
     if (!exec) return { ok: true, offline: true }
@@ -402,32 +406,32 @@ export class GatewayStateService {
     return { ok: true }
   }
 
-  handleWebInboundForViewer(
+  async handleWebInboundForViewer(
     ownerEmail: string,
     sessionKey: string,
     chatId: string,
     content: string,
     media: unknown[] | undefined,
     source: 'web' | 'relay',
-  ): { ok: boolean; queued?: boolean; offline?: boolean; error?: string } {
-    this.assertViewerOwnsSession(ownerEmail, sessionKey)
+  ): Promise<{ ok: boolean; queued?: boolean; offline?: boolean; error?: string }> {
+    await this.assertViewerOwnsSession(ownerEmail, sessionKey)
     return this.handleWebInbound(sessionKey, chatId, content, media, source)
   }
 
-  /** Web 发消息：先写 Gateway JSONL，再转发桌面；无 executor 时返回离线系统提示。 */
-  handleWebInbound(
+  /** Web 发消息：先写 Gateway 存储，再转发桌面；无 executor 时返回离线系统提示。 */
+  async handleWebInbound(
     sessionKey: string,
     chatId: string,
     content: string,
     media: unknown[] | undefined,
     source: 'web' | 'relay',
-  ): { ok: boolean; queued?: boolean; offline?: boolean; error?: string } {
-    this.store.getOrCreate(sessionKey)
-    this.store.addUserMessage(sessionKey, content)
+  ): Promise<{ ok: boolean; queued?: boolean; offline?: boolean; error?: string }> {
+    await this.store.getOrCreate(sessionKey)
+    await this.store.addUserMessage(sessionKey, content)
 
     const exec = this.pickOnlineExecutor()
     if (!exec) {
-      this.emitOfflineAssistantReply(sessionKey, chatId)
+      await this.emitOfflineAssistantReply(sessionKey, chatId)
       return { ok: true, offline: true, queued: false }
     }
 
@@ -446,9 +450,9 @@ export class GatewayStateService {
     return { ok: true, queued: true }
   }
 
-  private emitOfflineAssistantReply(sessionKey: string, chatId: string): void {
+  private async emitOfflineAssistantReply(sessionKey: string, chatId: string): Promise<void> {
     const text = GATEWAY_OFFLINE_REPLY
-    this.store.addAssistantMessage(sessionKey, text)
+    await this.store.addAssistantMessage(sessionKey, text)
     this.broadcastUiEvent(sessionKey, chatId, {
       event: 'message',
       chat_id: chatId,
@@ -462,31 +466,31 @@ export class GatewayStateService {
     this.notifyViewersSessionListChanged()
   }
 
-  forwardInboundToExecutor(
+  async forwardInboundToExecutor(
     sessionKey: string,
     chatId: string,
     content: string,
     media: unknown[] | undefined,
     source: 'web' | 'relay',
-  ): { ok: boolean; queued?: boolean; error?: string } {
+  ): Promise<{ ok: boolean; queued?: boolean; error?: string }> {
     return this.handleWebInbound(sessionKey, chatId, content, media, source)
   }
 
-  /** 桌面连接后：把 Gateway JSONL 会话推送给 executor 合并。 */
-  pushSyncToExecutor(ws: WebSocket): void {
+  /** 桌面连接后：把 Gateway 会话推送给 executor 合并。 */
+  async pushSyncToExecutor(ws: WebSocket): Promise<void> {
     if (ws.readyState !== 1) return
-    const sessions = this.store.listRows()
-    const threads = this.store.collectSyncThreads()
+    const sessions = await this.store.listRows()
+    const threads = await this.store.collectSyncThreads()
     ws.send(JSON.stringify({ type: 'sync_push', sessions, threads }))
   }
 
-  persistThreadSnapshot(
+  async persistThreadSnapshot(
     sessionKey: string,
     payload: Record<string, unknown> | null,
-  ): void {
+  ): Promise<void> {
     if (!sessionKey || !payload) return
     this.putThreadCache(sessionKey, payload)
-    this.store.importWebuiPayload(sessionKey, payload)
+    await this.store.importWebuiPayload(sessionKey, payload)
   }
 
   pairViewer(pairingCode: string, token: string): { ok: boolean; deviceId?: string; error?: string } {
@@ -515,7 +519,7 @@ export class GatewayStateService {
       sessions: new Set(),
       clientKey,
     })
-    this.pushSyncToExecutor(ws)
+    void this.pushSyncToExecutor(ws)
     return { ok: true, pairingCode }
   }
 
@@ -539,14 +543,14 @@ export class GatewayStateService {
     return { ok: true }
   }
 
-  subscribe(ws: WebSocket, sessionKey: string, clientKey: string): void {
+  async subscribe(ws: WebSocket, sessionKey: string, clientKey: string): Promise<void> {
     const client = this.clients.get(clientKey)
     if (!client || !sessionKey) return
     if (client.role === 'viewer' && isViewerLoginRequired()) {
       const email =
         client.viewerEmail
         || this.getViewerEmailForToken(this.viewerTokenFromClientKey(clientKey))
-      if (!email || !this.store.isSessionOwnedBy(sessionKey, email)) {
+      if (!email || !(await this.store.isSessionOwnedBy(sessionKey, email))) {
         ws.send(JSON.stringify({ type: 'error', message: 'forbidden' }))
         return
       }

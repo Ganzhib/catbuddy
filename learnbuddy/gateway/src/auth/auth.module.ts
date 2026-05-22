@@ -5,8 +5,6 @@ import { GatewayCoreModule } from '../gateway/gateway-core.module'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { EmailService } from './email.service'
-import { UserStore } from './user-store'
-
 @Module({
   imports: [
     GatewayCoreModule,
@@ -16,7 +14,7 @@ import { UserStore } from './user-store'
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService, UserStore],
+  providers: [AuthService, EmailService],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

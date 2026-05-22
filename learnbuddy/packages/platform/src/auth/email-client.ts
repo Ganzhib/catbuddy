@@ -1,29 +1,34 @@
 import { resolveGatewayHttpBase } from '../gateway-http'
+import { mapAuthError } from './map-auth-error'
 import { saveAuthToken } from './session'
 
-export async function requestEmailCode(email: string, baseUrl?: string): Promise<{
+export type OtpDelivery = 'email' | 'console'
+
+export type RequestEmailCodeResponse = {
   ok: boolean
   expiresIn: number
-}> {
+  delivery?: OtpDelivery
+}
+
+export async function requestEmailCode(
+  email: string,
+  baseUrl?: string,
+  password?: string,
+): Promise<RequestEmailCodeResponse> {
   const base = (baseUrl ?? resolveGatewayHttpBase()).replace(/\/$/, '')
+  const body: { email: string; password?: string } = { email: email.trim() }
+  if (password) body.password = password
+
   const res = await fetch(`${base}/auth/email/request-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    let msg = `request-code failed (${res.status})`
-    try {
-      const j = JSON.parse(text) as { message?: string | string[] }
-      const raw = Array.isArray(j.message) ? j.message[0] : j.message
-      if (raw === 'no_pending_registration') {
-        msg = '请先填写邮箱与密码并获取验证码'
-      } else if (raw) msg = String(raw)
-    } catch { /* ignore */ }
-    throw new Error(msg)
+    throw new Error(mapAuthError(text, res.status))
   }
-  return res.json()
+  return res.json() as Promise<RequestEmailCodeResponse>
 }
 
 export async function verifyEmailCode(
@@ -35,11 +40,11 @@ export async function verifyEmailCode(
   const res = await fetch(`${base}/auth/register/verify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify({ email: email.trim(), code: code.trim() }),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    throw new Error(`verify failed (${res.status}): ${text}`)
+    throw new Error(mapAuthError(text, res.status))
   }
   const data = await res.json()
   if (data.access_token) saveAuthToken(data.access_token)

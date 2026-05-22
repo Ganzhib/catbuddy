@@ -9,9 +9,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "@types/uuid": "^9.0.0"
+    "@learnbuddy/shared": "workspace:*"
   }
 }

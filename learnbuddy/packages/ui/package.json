@@ -7,7 +7,7 @@
     ".": "./src/index.ts",
     "./globals.css": "./src/globals.css",
     "./i18n": "./src/i18n/index.ts",
-    "./relay-web/*": "./src/relay-web/*"
+    "./gateway-web/*": "./src/gateway-web/*"
   },
   "dependencies": {
     "@learnbuddy/client": "workspace:*",

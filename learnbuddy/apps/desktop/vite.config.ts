@@ -89,16 +89,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
       },
-      "/relay-api": {
+      "/gateway-api": {
         target: "http://127.0.0.1:18765",
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/relay-api/, ""),
+        rewrite: (p) => p.replace(/^\/gateway-api/, ""),
       },
-      "/relay-ws": {
+      "/gateway-ws": {
         target: "http://127.0.0.1:18765",
         ws: true,
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/relay-ws/, ""),
+        rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
       },
     },
   },
@@ -108,7 +108,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        "relay-web": path.resolve(__dirname, "relay-web.html"),
+        "gateway-web": path.resolve(__dirname, "gateway-web.html"),
       },
     },
   },

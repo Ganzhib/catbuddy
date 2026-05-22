@@ -9,3 +9,4 @@ export {
   verifyRegister,
 } from './password-client'
 export type { AuthTokenResponse, RegisterPendingResponse } from './password-client'
+export type { OtpDelivery, RequestEmailCodeResponse } from './email-client'

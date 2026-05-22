@@ -11,15 +11,11 @@ const uiRoot = path.resolve(repoRoot, "packages/ui/src");
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
-  // Dev defaults to relay gateway unless explicitly disabled.
   const useLearnbuddyGateway =
     env.VITE_USE_GATEWAY === "true"
-    || env.VITE_USE_RELAY_GATEWAY === "true"
-    || (mode === "development"
-      && env.VITE_USE_GATEWAY !== "false"
-      && env.VITE_USE_RELAY_GATEWAY !== "false");
+    || (mode === "development" && env.VITE_USE_GATEWAY !== "false");
   const learnbuddyGatewayTarget =
-    env.VITE_GATEWAY_HTTP_URL ?? env.VITE_RELAY_URL ?? "http://127.0.0.1:18765";
+    env.VITE_GATEWAY_HTTP_URL ?? env.VITE_GATEWAY_URL ?? "http://127.0.0.1:18765";
   const nanobotTarget = env.VITE_GATEWAY_URL ?? "http://127.0.0.1:8765";
   const gatewayTarget = useLearnbuddyGateway ? learnbuddyGatewayTarget : nanobotTarget;
   const wsTarget = gatewayTarget.replace(/^http/, "ws");
@@ -59,20 +55,6 @@ export default defineConfig(({ mode }) => {
       ws: true,
       changeOrigin: true,
       rewrite: (p: string) => p.replace(/^\/gateway-ws/, ""),
-      configure: (proxy) => {
-        proxy.on("error", onGatewayWsProxyError);
-      },
-    },
-    "/relay-api": {
-      target: learnbuddyGatewayTarget,
-      changeOrigin: true,
-      rewrite: (p: string) => p.replace(/^\/relay-api/, ""),
-    },
-    "/relay-ws": {
-      target: learnbuddyGatewayTarget,
-      ws: true,
-      changeOrigin: true,
-      rewrite: (p: string) => p.replace(/^\/relay-ws/, ""),
       configure: (proxy) => {
         proxy.on("error", onGatewayWsProxyError);
       },
@@ -124,7 +106,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, "index.html"),
-          "relay-web": path.resolve(__dirname, "relay-web.html"),
+          "gateway-web": path.resolve(__dirname, "gateway-web.html"),
         },
       },
     },

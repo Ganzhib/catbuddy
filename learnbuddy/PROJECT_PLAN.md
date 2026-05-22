@@ -25,7 +25,7 @@ learnbuddy/
 │   ├── client/         # learnbuddyClient + transport
 │   ├── platform/       # IPC / HTTP bootstrap & API
 │   └── ui/             # React 应用
-├── relay-server/       # 跨端 relay
+├── gateway-legacy-removed/       # 跨端 relay
 └── docs/
 ```
 

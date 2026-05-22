@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ConnectionManager } from '../../packages/gateway/src/push/connection-manager.js';
-import { Connection, ConnectionType } from '@learnbuddy/gateway-common';
+import {
+  Connection,
+  ConnectionType,
+  GatewayConnectionStatus,
+} from '@learnbuddy/shared';
 
 function createMockConn(id: string, userId: string, type: ConnectionType): Connection {
   return {

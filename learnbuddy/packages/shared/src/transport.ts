@@ -1,0 +1,24 @@
+import type { ConnectionStatus, InboundEvent } from './ui-types.js'
+
+export type TransportKind = 'ipc' | 'websocket'
+
+export type SessionUpdateScope = 'metadata' | 'thread' | string
+
+/** Callbacks from a transport into learnbuddyClient. */
+export interface TransportCallbacks {
+  getActiveChatId: () => string
+  onEvent: (ev: InboundEvent) => void
+  onStatus: (status: ConnectionStatus) => void
+  onSessionUpdate?: (chatId: string, scope?: SessionUpdateScope) => void
+  onGoHome?: () => void
+  onSendError?: (code: string) => void
+}
+
+/** Pluggable agent event pipe (IPC, gateway session WS, nanobot WS). */
+export interface AgentTransport {
+  readonly kind: TransportKind
+  attach(callbacks: TransportCallbacks): () => void
+  sendMessage(chatId: string, content: string, mediaUrls?: string[]): void
+  ensureSession?(chatId: string): void
+  updateUrl?(url: string): void
+}

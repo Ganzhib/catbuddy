@@ -9,7 +9,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@learnbuddy/gateway-common": "workspace:*",
     "@learnbuddy/shared": "workspace:*"
   }
 }

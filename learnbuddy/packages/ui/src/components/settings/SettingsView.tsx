@@ -490,7 +490,7 @@ function SettingsSidebar({
   );
 }
 
-function RelayRemoteSettings() {
+function GatewayRemoteSettings() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<{
     enabled: boolean;
@@ -501,11 +501,11 @@ function RelayRemoteSettings() {
   } | null>(null);
 
   useEffect(() => {
-    if (!window.learnbuddy?.getRelayStatus) return;
+    if (!window.learnbuddy?.getGatewayStatus) return;
     let cancelled = false;
     const poll = async () => {
       try {
-        const st = await window.learnbuddy!.getRelayStatus!();
+        const st = await window.learnbuddy!.getGatewayStatus!();
         if (!cancelled) setStatus(st);
       } catch {
         if (!cancelled) setStatus(null);
@@ -533,11 +533,11 @@ function RelayRemoteSettings() {
 
   return (
     <section>
-      <SettingsSectionTitle>{t("settings.relay.section")}</SettingsSectionTitle>
+      <SettingsSectionTitle>{t("settings.gatewayRemote.section")}</SettingsSectionTitle>
       <SettingsGroup>
         <SettingsRow
-          title={t("settings.relay.connection")}
-          description={t("settings.relay.connectionHelp")}
+          title={t("settings.gatewayRemote.connection")}
+          description={t("settings.gatewayRemote.connectionHelp")}
         >
           <span
             className={cn(
@@ -546,13 +546,13 @@ function RelayRemoteSettings() {
             )}
           >
             {status.connected
-              ? t("settings.relay.connected")
-              : t("settings.relay.disconnected")}
+              ? t("settings.gatewayRemote.connected")
+              : t("settings.gatewayRemote.disconnected")}
           </span>
         </SettingsRow>
         <SettingsRow
-          title={t("settings.relay.pairingCode")}
-          description={t("settings.relay.pairingHelp")}
+          title={t("settings.gatewayRemote.pairingCode")}
+          description={t("settings.gatewayRemote.pairingHelp")}
         >
           <div className="flex items-center gap-2">
             <code className="rounded-md bg-muted px-2.5 py-1 text-[13px] font-semibold tracking-widest">
@@ -560,13 +560,13 @@ function RelayRemoteSettings() {
             </code>
             {status.pairingCode ? (
               <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => void copyPairing()}>
-                {t("settings.relay.copy")}
+                {t("settings.gatewayRemote.copy")}
               </Button>
             ) : null}
           </div>
         </SettingsRow>
         {status.lastError ? (
-          <SettingsRow title={t("settings.relay.lastError")}>
+          <SettingsRow title={t("settings.gatewayRemote.lastError")}>
             <span className="max-w-[420px] text-right text-xs text-destructive break-all">
               {status.lastError}
             </span>
@@ -792,7 +792,7 @@ function GeneralSettings({
         </section>
       )}
 
-      <RelayRemoteSettings />
+      <GatewayRemoteSettings />
       <CompactionSettings />
     </div>
   );

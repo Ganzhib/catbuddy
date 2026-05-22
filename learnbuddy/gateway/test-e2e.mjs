@@ -1,110 +1,124 @@
 /**
- * E2E smoke test: executor WS + viewer HTTP without Electron.
+ * E2E smoke test: desktop WS + web HTTP without Electron.
+ * Requires gateway on :18765. Restart gateway after changing gateway/.env.
  */
-import { WebSocket } from "ws";
+const HTTP = process.env.GATEWAY_HTTP || "http://127.0.0.1:18765";
+const WS_URL = process.env.GATEWAY_WS || "ws://127.0.0.1:18765/ws";
+const SECRET = process.env.GATEWAY_SECRET || "dev-secret";
+const SESSION = "desktop:gateway-test";
 
-const HTTP = process.env.GATEWAY_HTTP || process.env.RELAY_HTTP || "http://127.0.0.1:18765";
-const WS_URL = process.env.GATEWAY_WS || process.env.RELAY_WS || "ws://127.0.0.1:18765/ws";
-const SECRET = process.env.GATEWAY_SECRET || process.env.RELAY_SECRET || "dev-secret";
-const SESSION = "desktop:relay-test";
-
-async function httpJson(path, opts = {}) {
-  const res = await fetch(`${HTTP}${path}`, opts);
-  const body = await res.json().catch(() => ({}));
-  return { status: res.status, body };
+function authHint(health) {
+  return (
+    "当前 Gateway 进程: "
+    + `web_login_required=${health.web_login_required} `
+    + `(require_email=${health.auth_require_email}, dev_bypass=${health.auth_dev_bypass}). `
+    + "请确认 gateway/.env 后 **重启** `pnpm gateway:dev`（仅改文件不会生效）。"
+    + "E2E 需要 web_login_required=false。"
+  );
 }
 
 async function main() {
+  const { default: WebSocket } = await import("ws");
+
   console.log("[test] 1. health");
-  const health = await httpJson("/health");
-  if (!health.body.ok) throw new Error(`health failed: ${JSON.stringify(health)}`);
-  console.log("[test] health ok", health.body);
+  const health = await fetch(`${HTTP}/health`).then((r) => r.json());
+  if (!health.ok) throw new Error("health not ok");
+  console.log("[test] health", health);
+
+  if (health.web_login_required === true) {
+    throw new Error(authHint(health));
+  }
+
+  console.log("[test] 1b. bootstrap (dev token)");
+  const bootRes = await fetch(
+    `${HTTP}/webui/bootstrap?secret=${encodeURIComponent(SECRET)}`,
+  );
+  const bootBody = await bootRes.json().catch(() => ({}));
+  if (!bootRes.ok) {
+    if (bootBody.requires_auth) {
+      throw new Error(
+        `${authHint(health)} bootstrap 仍返回 requires_auth — 几乎一定是未重启 Gateway。`,
+      );
+    }
+    throw new Error(`bootstrap failed (${bootRes.status}): ${JSON.stringify(bootBody)}`);
+  }
+  const webToken = String(bootBody.token || "");
+  if (!webToken) throw new Error("bootstrap missing token");
 
   let pairingCode = "";
-  let inboundPromise;
-  let inboundResolve;
-  let inboundReject;
-
-  console.log("[test] 2. executor connect");
-  const ws = new WebSocket(WS_URL);
+  console.log("[test] 2. desktop connect");
+  const desktopWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("executor register timeout")), 8000);
-    ws.on("open", () => {
-      ws.send(
+    const t = setTimeout(() => reject(new Error("desktop register timeout")), 8000);
+    desktopWs.onopen = () => {
+      desktopWs.send(
         JSON.stringify({
           type: "register",
-          role: "executor",
-          deviceId: "test-executor",
+          role: "desktop",
+          deviceId: "test-desktop",
           token: SECRET,
         }),
       );
-    });
-    ws.on("message", (raw) => {
-      const msg = JSON.parse(String(raw));
+    };
+    desktopWs.onmessage = (ev) => {
+      const msg = JSON.parse(String(ev.data));
       if (msg.type === "registered") {
-        pairingCode = msg.pairingCode || "";
-        console.log("[test] executor registered pairing=", pairingCode);
-        ws.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
+        pairingCode = msg.pairingCode;
         clearTimeout(t);
+        console.log("[test] desktop registered pairing=", pairingCode);
         resolve();
       }
-      if (msg.type === "inbound_message") {
-        console.log("[test] executor got inbound:", msg.content);
-        inboundResolve?.(msg);
-      }
-    });
-    ws.on("error", reject);
+    };
+    desktopWs.onerror = reject;
   });
 
-  if (!pairingCode) throw new Error("no pairing code from server");
+  desktopWs.on("message", (raw) => {
+    const msg = JSON.parse(String(raw));
+    if (msg.type === "inbound_message") {
+      console.log("[test] desktop got inbound:", msg.content);
+    }
+  });
 
-  const viewerToken = `test-viewer-${Date.now()}`;
-  console.log("[test] 3. pair viewer");
-  const pair = await httpJson("/api/pair", {
+  console.log("[test] 3. pair web");
+  const pairRes = await fetch(`${HTTP}/api/pair`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pairingCode, token: viewerToken }),
+    body: JSON.stringify({ pairingCode, token: webToken }),
   });
-  if (!pair.body.ok) throw new Error(`pair failed: ${JSON.stringify(pair)}`);
+  const pairBody = await pairRes.json();
+  if (!pairBody.ok) throw new Error(`pair failed: ${JSON.stringify(pairBody)}`);
 
-  console.log("[test] 3b. reject RELAY_SECRET as HTTP Bearer");
-  const badBearer = await httpJson(`/api/sessions/${encodeURIComponent(SESSION)}/messages`, {
+  const badBearer = await fetch(`${HTTP}/api/sessions/${encodeURIComponent(SESSION)}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SECRET}`,
+      Authorization: "Bearer e2e-unregistered-token",
     },
     body: JSON.stringify({ content: "should fail" }),
   });
   if (badBearer.status !== 401) {
-    throw new Error(`expected 401 for executor secret as Bearer, got ${badBearer.status}`);
+    throw new Error(`expected 401 for unregistered Bearer, got ${badBearer.status}`);
   }
 
-  inboundPromise = new Promise((resolve, reject) => {
-    inboundResolve = resolve;
-    inboundReject = reject;
-    setTimeout(() => reject(new Error("inbound_message timeout")), 5000);
-  });
-
-  console.log("[test] 4. send message via HTTP");
-  const encoded = encodeURIComponent(SESSION);
-  const send = await httpJson(`/api/sessions/${encoded}/messages`, {
+  console.log("[test] 4. HTTP send");
+  const sendRes = await fetch(`${HTTP}/api/sessions/${encodeURIComponent(SESSION)}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${viewerToken}`,
+      Authorization: `Bearer ${webToken}`,
     },
-    body: JSON.stringify({ content: "relay e2e ping from web" }),
+    body: JSON.stringify({ content: "gateway e2e ping from web" }),
   });
-  if (!send.body.ok) throw new Error(`send failed: ${JSON.stringify(send)}`);
+  const sendBody = await sendRes.json();
+  if (!sendBody.ok) throw new Error(`send failed: ${JSON.stringify(sendBody)}`);
+  console.log("[test] send ok", sendBody);
 
-  await inboundPromise;
-  ws.close();
-
-  console.log("[test] PASS — gateway path works");
+  await new Promise((r) => setTimeout(r, 500));
+  desktopWs.close();
+  console.log("[test] done");
 }
 
 main().catch((err) => {
-  console.error("[test] FAIL", err.message || err);
+  console.error(err);
   process.exit(1);
 });

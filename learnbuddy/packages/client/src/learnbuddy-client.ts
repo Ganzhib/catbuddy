@@ -25,7 +25,7 @@ type GoHomeHandler = () => void;
 
 export type StreamError =
   | { kind: "message_too_big" }
-  | { kind: "gateway_executor_offline"; code?: string };
+  | { kind: "gateway_desktop_offline"; code?: string };
 
 type ErrorHandler = (error: StreamError) => void;
 
@@ -113,7 +113,7 @@ export class learnbuddyClient {
           }
         }
       },
-      onSendError: (code) => this._notifyError({ kind: "gateway_executor_offline", code }),
+      onSendError: (code) => this._notifyError({ kind: "gateway_desktop_offline", code }),
     });
   }
 
@@ -266,7 +266,6 @@ export interface CreateLearnbuddyClientOptions {
   /** learnbuddy gateway HTTP base (``/gateway-api`` in Vite dev). */
   gatewayHttpBase?: string;
   /** @deprecated Use gatewayHttpBase */
-  relayHttpBase?: string;
 }
 
 /** Bootstrap entry: pluggable transport, same learnbuddyClient API for UI. */
@@ -279,8 +278,7 @@ export function createLearnbuddyClient(
       mode: options.transportMode ?? "auto",
       token: options.token,
       wsPath: options.wsPath,
-      gatewayHttpBase: options.gatewayHttpBase ?? options.relayHttpBase,
-      relayHttpBase: options.gatewayHttpBase ?? options.relayHttpBase,
+      gatewayHttpBase: options.gatewayHttpBase,
     });
   return new learnbuddyClient(transport);
 }

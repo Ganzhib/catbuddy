@@ -1,33 +1,13 @@
 import { resolveGatewayHttpBase } from '../gateway-http'
+import { mapAuthError } from './map-auth-error'
 import { saveAuthToken } from './session'
+import type { OtpDelivery } from './email-client'
 
 export type AuthTokenResponse = {
   access_token: string
   token_type: string
   expires_in: number
   email: string
-}
-
-function mapAuthError(body: string, status: number): string {
-  try {
-    const j = JSON.parse(body) as { message?: string | string[]; error?: string }
-    const raw = Array.isArray(j.message) ? j.message[0] : j.message ?? j.error
-    const code = String(raw ?? '')
-    const labels: Record<string, string> = {
-      invalid_email: '请输入有效的邮箱地址',
-      weak_password: '密码至少需要 8 位',
-      email_taken: '该邮箱已注册，请切换到登录',
-      account_not_found: '该邮箱尚未注册，请先注册',
-      invalid_password: '密码不正确，请重试',
-      invalid_credentials: '邮箱或密码不正确',
-      otp_expired: '验证码已过期，请重新获取',
-      otp_invalid: '验证码不正确，请重试',
-      no_pending_registration: '请先填写邮箱与密码并获取验证码',
-    }
-    if (labels[code]) return labels[code]
-    if (code) return code
-  } catch { /* ignore */ }
-  return `请求失败 (${status})`
 }
 
 async function postAuth(
@@ -59,7 +39,11 @@ export function loginWithPassword(
   return postAuth('login', email, password, baseUrl)
 }
 
-export type RegisterPendingResponse = { ok: true; expiresIn: number }
+export type RegisterPendingResponse = {
+  ok: true
+  expiresIn: number
+  delivery?: OtpDelivery
+}
 
 export async function requestRegister(
   email: string,

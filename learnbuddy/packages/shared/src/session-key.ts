@@ -1,4 +1,4 @@
-import type { ChatSummary } from './ui-types'
+import type { ChatSummary } from './ui-types.js'
 
 const DEFAULT_CHANNEL = 'desktop'
 

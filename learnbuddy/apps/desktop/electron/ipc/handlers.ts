@@ -6,14 +6,14 @@ import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
 import type { learnbuddyConfig } from "@learnbuddy/shared"
-import type { RelayClient } from '../sync/relay-client.js'
+import type { GatewayWsClient } from '../sync/gateway-ws-client.js'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
   config: learnbuddyConfig,
   configFile: string,
-  relayClient: RelayClient | null = null,
+  gatewayWsClient: GatewayWsClient | null = null,
 ) {
   const persistConfig = () => saveConfig(configFile, config)
 
@@ -44,9 +44,9 @@ export function registerIpcHandlers(
       metadata: {},
       sessionKeyOverride: sessionKey,
     });
-    relayClient?.subscribeSession(sessionKey);
+    gatewayWsClient?.subscribeSession(sessionKey);
     if (content.trim()) {
-      relayClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
+      gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
         event: "user_inbound",
         chat_id: bareChatId(sessionKey),
         text: content,
@@ -55,29 +55,29 @@ export function registerIpcHandlers(
     return { ok: true, sessionKey };
   })
 
-  ipcMain.handle('relay:status', async () => {
-    const st = relayClient?.status;
+  ipcMain.handle('gateway:status', async () => {
+    const st = gatewayWsClient?.status;
     return {
-      enabled: !!relayClient,
+      enabled: !!gatewayWsClient,
       connected: st?.connected ?? false,
       deviceId: st?.deviceId,
       pairingCode: st?.pairingCode,
       lastError: st?.lastError,
-      subscribedSessions: relayClient?.subscribedSessionKeys ?? [],
+      subscribedSessions: gatewayWsClient?.subscribedSessionKeys ?? [],
     };
   })
 
-  ipcMain.handle('relay:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
+  ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
     const key = sessionKey?.trim() || toSessionKey(chatId)
-    relayClient?.subscribeSession(key)
-    return { sessionKey: key, subscribed: relayClient?.subscribedSessionKeys ?? [] }
+    gatewayWsClient?.subscribeSession(key)
+    return { sessionKey: key, subscribed: gatewayWsClient?.subscribedSessionKeys ?? [] }
   })
 
-  ipcMain.handle('relay:sync-all-sessions', async () => {
+  ipcMain.handle('gateway:sync-all-sessions', async () => {
     const list = await sessions.list()
     const keys = list.map((row) => row.key)
-    relayClient?.syncSessions(keys)
-    return { keys, subscribed: relayClient?.subscribedSessionKeys ?? [] }
+    gatewayWsClient?.syncSessions(keys)
+    return { keys, subscribed: gatewayWsClient?.subscribedSessionKeys ?? [] }
   })
 
   ipcMain.handle('agent:stop', async (_event, { sessionKey }: { sessionKey: string }) => {
@@ -180,9 +180,9 @@ export function registerIpcHandlers(
   // ═══ Channels ═══
   ipcMain.handle('channels:status', async () => ({
     desktop: { enabled: true, running: true },
-    relay: {
-      enabled: !!relayClient,
-      running: relayClient?.status.connected ?? false,
+    gateway: {
+      enabled: !!gatewayWsClient,
+      running: gatewayWsClient?.status.connected ?? false,
     },
   }))
 }

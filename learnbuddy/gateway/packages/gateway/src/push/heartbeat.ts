@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { ConnectionManager } from './connection-manager';
-import { Connection, ConnectionStatus } from '@learnbuddy/gateway-common';
+import { Connection, GatewayConnectionStatus } from '@learnbuddy/shared';
 
 interface HeartbeatConfig {
   /** 检测间�?(ms) */

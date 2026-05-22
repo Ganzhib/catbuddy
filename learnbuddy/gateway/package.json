@@ -2,7 +2,7 @@
   "name": "@learnbuddy/gateway-workspace",
   "private": true,
   "version": "1.0.0",
-  "description": "Web ⇄ Gateway ⇄ Desktop — relay + push (monorepo)",
+  "description": "Web ⇄ Gateway ⇄ Desktop — session WS + push (monorepo)",
   "scripts": {
     "dev": "pnpm --filter @learnbuddy/gateway dev",
     "build": "pnpm --filter @learnbuddy/gateway build",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "vitest": "^1.2.0"
+    "vitest": "^1.2.0",
+    "ws": "^8.18.0"
   }
 }

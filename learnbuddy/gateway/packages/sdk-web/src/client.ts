@@ -1,4 +1,8 @@
-import { MessageFrame, ConnectionType, createMessageFrame } from '@learnbuddy/gateway-common';
+import {
+  type MessageFrame,
+  type GatewayConnectionType as ConnectionType,
+  createMessageFrame,
+} from '@learnbuddy/shared'
 
 export interface WebClientConfig {
   url: string;

@@ -1,13 +1,13 @@
 # learnbuddy Gateway
 
-`learnbuddy/gateway`（`@learnbuddy/gateway`）是 **Web ↔ 桌面 Executor** 的中转服务（Fastify + WebSocket），兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。包结构见 [gateway/README.md](../gateway/README.md)。
+`learnbuddy/gateway`（`@learnbuddy/gateway`）是 **Web ↔ 桌面** 的中转服务（Fastify + WebSocket），兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。包结构见 [gateway/README.md](../gateway/README.md)。
 
 与 nanobot 自带的 `nanobot gateway`（:8765）不同；learnbuddy Web 默认连 **本服务**（:18765）。
 
 ## 架构
 
 ```text
-apps/web  ──HTTP/WS──►  gateway (Fastify)  ──WS──►  apps/desktop (executor)
+apps/web  ──HTTP/WS──►  gateway (Fastify)  ──WS──►  apps/desktop
                          │
                          ├─ POST /api/sessions/:key/messages  (Web 发消息)
                          ├─ WS ui_event                         (桌面 Agent 回流)
@@ -30,15 +30,15 @@ pnpm dev:web
 # 或一键：pnpm dev:web:full
 ```
 
-Vite 开发代理：`/gateway-api` → `http://127.0.0.1:18765`，`/gateway-ws` → WebSocket（兼容旧路径 `/relay-api`、`/relay-ws`）。
+Vite 开发代理：`/gateway-api` → `http://127.0.0.1:18765`，`/gateway-ws` → WebSocket（兼容旧路径 `/gateway-api`、`/gateway-ws`）。
 
 ## 环境变量
 
 | 变量 | 说明 | 默认 |
 |------|------|------|
 | `GATEWAY_PORT` | HTTP/WS 端口 | `18765` |
-| `GATEWAY_SECRET` | 桌面 executor 注册密钥 | `dev-secret` |
-| `GATEWAY_DEV_VIEWER_TOKEN` | 开发 bootstrap token | `dev-viewer` |
+| `GATEWAY_SECRET` | 桌面端 WS 注册密钥（role=desktop） | `dev-secret` |
+| `GATEWAY_DEV_WEB_TOKEN` | 开发 bootstrap token | `dev-web` |
 | `GATEWAY_WS_PATH` | bootstrap 返回的 WS 路径 | `/gateway-ws/ws` |
 | `GATEWAY_AUTH_REQUIRE_EMAIL` | 强制邮箱 OTP | `false` |
 | `GATEWAY_AUTH_DEV_BYPASS` | 开发跳过邮箱登录 | 非 production 为 `true` |
@@ -63,7 +63,7 @@ POST /auth/email/verify        { "email": "...", "code": "123456" }
 |------|------|
 | `pnpm gateway:dev` | tsx watch（`@learnbuddy/gateway`） |
 | `pnpm gateway:build` | 编译并运行 |
-| `pnpm gateway:test` | HTTP + executor 冒烟 |
+| `pnpm gateway:test` | HTTP + desktop WS 冒烟 |
 | `pnpm gateway:test:acceptance` | §6 `InboundEvent` 清单 |
 | `pnpm gateway:test:all` | 全部自动化测试 |
 | `pnpm start:legacy` | 旧 `server.mjs`（仅应急） |
@@ -106,7 +106,7 @@ HTTP 列表（`GET /api/sessions`）在 Gateway 在线时仍可走代理；**实
 
 ## 常见问题：Web 发消息 503
 
-`POST /gateway-api/api/sessions/.../messages` 返回 **503** 表示 gateway **没有在线的桌面 executor**（不是 Vite 代理坏了）。
+`POST /gateway-api/api/sessions/.../messages` 返回 **503** 表示 gateway **没有在线的桌面端**（不是 Vite 代理坏了）。
 
 1. 终端 A：`pnpm gateway:dev`（监听 `18765`）
 2. 复制 `.env.example` → `.env`，设置：
@@ -117,13 +117,13 @@ HTTP 列表（`GET /api/sessions`）在 Gateway 在线时仍可走代理；**实
    ```
 3. 终端 B：`pnpm dev:desktop`，侧栏打开 **「远程控制」**（日志：`[main] Gateway remote enabled:`）
 4. 终端 C：`pnpm dev:web` 或 `pnpm dev:web:full`
-5. 自检：`curl http://127.0.0.1:18765/health` → `"online":true`、`executors` ≥ 1
+5. 自检：`curl http://127.0.0.1:18765/health` → `"online":true`、`desktops` ≥ 1
 
 Web UI 在 503 时会显示「桌面端未连接 Gateway」提示条，并停止「模型正在回复…」转圈。
 
 ## Web 新建对话同步桌面
 
-Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面 executor 发送 `create_session`，桌面创建 JSONL 会话并刷新侧边栏。需桌面已连接 Gateway（`GATEWAY_ENABLED=true`）。
+Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面端发送 `create_session`，桌面创建 JSONL 会话并刷新侧边栏。需桌面已连接 Gateway（`GATEWAY_ENABLED=true`）。
 
 ## 会话数据同步（列表 + 历史）
 
@@ -151,6 +151,6 @@ Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面 exe
 
 若侧边栏已有大量空的「新建对话」，可手动删除 workspace 下仅有一行元数据的 `.jsonl` 文件，或发一条消息后刷新列表。
 
-> **注意**：仓库中若仍存在 `relay-server/` 目录，为迁移遗留副本，**仅维护 `gateway/`**。可安全删除 `relay-server/` 以免混淆。
+> **注意**：仓库中若仍存在 `gateway-legacy-removed/` 目录，为迁移遗留副本，**仅维护 `gateway/`**。可安全删除 `gateway-legacy-removed/` 以免混淆。
 
-详见 [CROSS_DEVICE_RELAY.md](./CROSS_DEVICE_RELAY.md)、[MONOREPO_MIGRATION.md](./MONOREPO_MIGRATION.md) §6。
+详见 [CROSS_DEVICE_GATEWAY.md](./CROSS_DEVICE_GATEWAY.md)、[MONOREPO_MIGRATION.md](./MONOREPO_MIGRATION.md) §6。

@@ -1,7 +1,13 @@
-/** MessageFrame push client (new protocol). */
-export { WebSocketClient } from './client.js'
-export type { WebClientConfig, WebClientStatus } from './types.js'
+/** Production Web transport (AgentTransport). */
+export { GatewayTransport, type GatewayTransportConfig } from './gateway-transport.js'
 
-/** Legacy relay viewer (Web UI / @learnbuddy/client). */
-export { RelayViewerClient } from './relay-viewer.js'
-export type { RelayViewerConfig, RelayViewerStatus } from './relay-viewer.js'
+/** MessageFrame push client (experimental). */
+export {
+  WebSocketClient,
+  type WebClientConfig,
+  type WebClientStatus,
+} from './client.js'
+
+/** Lower-level Web client without AgentTransport callbacks. */
+export { WebGatewayClient } from './web-client.js'
+export type { WebGatewayConfig, WebGatewayStatus } from './web-client.js'

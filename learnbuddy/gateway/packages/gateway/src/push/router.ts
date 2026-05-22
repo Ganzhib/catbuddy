@@ -1,4 +1,4 @@
-import { MessageFrame, Connection } from '@learnbuddy/gateway-common';
+import { MessageFrame, Connection } from '@learnbuddy/shared';
 
 export type RouteTarget = 
   | { type: 'session'; sessionId: string }

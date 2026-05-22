@@ -1,4 +1,5 @@
-export * from './types.js'
-export * from './message.js'
-export * from './errors.js'
-export * from './utils.js'
+/**
+ * @deprecated Prefer `@learnbuddy/shared` (gateway-protocol, gateway-message).
+ * Re-exports for gateway server push modules during migration.
+ */
+export * from '@learnbuddy/shared'

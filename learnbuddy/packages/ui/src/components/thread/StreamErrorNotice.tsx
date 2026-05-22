@@ -62,10 +62,10 @@ function resolveCopy(
         title: t("errors.messageTooBig.title"),
         body: t("errors.messageTooBig.body"),
       };
-    case "gateway_executor_offline":
+    case "gateway_desktop_offline":
       return {
-        title: t("errors.gatewayExecutorOffline.title"),
-        body: t("errors.gatewayExecutorOffline.body"),
+        title: t("errors.gatewayDesktopOffline.title"),
+        body: t("errors.gatewayDesktopOffline.body"),
       };
     default:
       return { title: t("errors.generic.title"), body: t("errors.generic.body") };

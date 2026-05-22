@@ -5,9 +5,9 @@ import {
   DeliverResult,
   DeliverStatus,
   ErrorCode,
-} from '@learnbuddy/gateway-common';
-import { createAck } from '@learnbuddy/gateway-common';
-import { backoffDelay } from '@learnbuddy/gateway-common';
+} from '@learnbuddy/shared';
+import { createAck } from '@learnbuddy/shared';
+import { backoffDelay } from '@learnbuddy/shared';
 import { ConnectionManager } from './connection-manager';
 
 interface DeliveryConfig {

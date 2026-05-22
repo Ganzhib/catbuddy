@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Connection, ConnectionStatus, ConnectionType, ConnectionStats } from '@learnbuddy/gateway-common';
+import { Connection, GatewayConnectionStatus, ConnectionType, ConnectionStats } from '@learnbuddy/shared';
 
 export class ConnectionManager extends EventEmitter {
   private sessions = new Map<string, Connection>();
@@ -53,7 +53,7 @@ export class ConnectionManager extends EventEmitter {
   }
 
   /** 更新连接状�?*/
-  updateStatus(sessionId: string, status: ConnectionStatus): void {
+  updateStatus(sessionId: string, status: GatewayConnectionStatus): void {
     const conn = this.sessions.get(sessionId);
     if (conn) {
       conn.status = status;

@@ -35,8 +35,8 @@ const dirs = [
   path.join(root, 'apps/desktop/electron'),
 ]
 
-// relay-api relative types
-const relayApi = path.join(root, 'packages/ui/src/lib/relay-api.ts')
+// gateway-api relative types
+const relayApi = path.join(root, 'packages/ui/src/lib/gateway-api.ts')
 if (fs.existsSync(relayApi)) {
   let t = fs.readFileSync(relayApi, 'utf8')
   t = t.replace(/from ['"]\.\/types['"]/, 'from "@learnbuddy/shared"')

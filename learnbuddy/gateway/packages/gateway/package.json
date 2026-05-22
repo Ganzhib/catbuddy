@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",
-    "@learnbuddy/gateway-common": "workspace:*",
+    "@learnbuddy/shared": "workspace:*",
     "fastify": "^4.26.0",
     "jsonwebtoken": "^9.0.0",
     "mysql2": "^3.14.0",

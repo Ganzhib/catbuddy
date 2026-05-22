@@ -117,17 +117,17 @@ export interface ChatSummary {
   preview: string;
 }
 
-export type GatewayMode = 'nanobot' | 'gateway' | 'relay'
+export type GatewayMode = 'nanobot' | 'gateway'
 
 export interface BootstrapResponse {
   token: string;
   ws_path: string;
   expires_in: number;
   model_name?: string | null;
-  /** When ``gateway`` (or legacy ``relay``), the browser uses learnbuddy gateway (desktop executor). */
+  /** When ``gateway``, the browser uses learnbuddy Gateway (desktop runs Agent). */
   gateway_mode?: GatewayMode
-  /** Desktop executor connected (Web can run agent via gateway). */
-  executor_online?: boolean
+  /** Desktop client connected (Web can run agent via gateway). */
+  desktop_online?: boolean
   /** HTTP 401: Web must complete email login before bootstrap/API. */
   requires_auth?: boolean
 }
@@ -200,7 +200,7 @@ export type ConnectionStatus =
 export type InboundEvent =
   | { event: "ready"; chat_id: string; client_id: string }
   | { event: "attached"; chat_id: string }
-  /** User message injected from Web relay (desktop did not send locally). */
+  /** User message injected from Web via Gateway (desktop did not send locally). */
   | { event: "user_inbound"; chat_id: string; text: string }
   | {
       event: "message";

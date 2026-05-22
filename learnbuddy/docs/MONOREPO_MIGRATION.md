@@ -369,7 +369,7 @@ Gateway / `WsTransport` 需支持或与 IPC 映射等价的 `InboundEvent`：
 
 ## 10. 跨端执行（Web 发消息 → 桌面本地文件）
 
-已实现，见 **[CROSS_DEVICE_RELAY.md](./CROSS_DEVICE_RELAY.md)**（`relay-server` + 桌面 `RelayChannel`）。与 monorepo 各阶段可并行。
+已实现，见 **[CROSS_DEVICE_GATEWAY.md](./CROSS_DEVICE_GATEWAY.md)**（`gateway-legacy-removed` + 桌面 `GatewayChannel`）。与 monorepo 各阶段可并行。
 
 ---
 

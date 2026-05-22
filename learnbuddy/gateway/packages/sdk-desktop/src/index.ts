@@ -1,11 +1,11 @@
 /** MessageFrame push client (new protocol). */
 export { DesktopClient } from './client.js'
-export type { DesktopClientConfig, DesktopClientStatus } from './types.js'
+export type { DesktopClientConfig, DesktopClientStatus } from './client.js'
 
-/** Legacy executor relay (Electron desktop). */
-export { ExecutorRelayClient } from './executor-relay.js'
+/** Desktop session WebSocket client (Electron). */
+export { DesktopGatewayClient } from './desktop-client.js'
 export type {
-  ExecutorRelayConfig,
-  ExecutorRelayStatus,
-  ExecutorInboundMessage,
-} from './executor-relay.js'
+  DesktopGatewayConfig,
+  DesktopGatewayStatus,
+  DesktopInboundMessage,
+} from './desktop-client.js'

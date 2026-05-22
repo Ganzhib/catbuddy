@@ -522,7 +522,7 @@ function ModeTabs({
           className={cn(
             'flex-1 rounded-lg py-2.5 text-sm font-medium transition-all duration-200',
             mode === m
-              ? 'bg-white/90 text-foreground shadow-sm dark:bg-white/15'
+              ? 'bg-card/90 text-foreground shadow-sm dark:bg-white/15'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -536,25 +536,25 @@ function ModeTabs({
 function AmbientBackground() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-blue-50/80 to-indigo-100/60 dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
-      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-sky-300/40 blur-3xl dark:bg-sky-500/20" />
-      <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-violet-300/35 blur-3xl dark:bg-violet-600/15" />
-      <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-500/10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(44_38%_96%)] via-[hsl(43_36%_93%)] to-[hsl(40_32%_90%)] dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
+      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-amber-200/35 blur-3xl dark:bg-sky-500/20" />
+      <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-orange-200/25 blur-3xl dark:bg-violet-600/15" />
+      <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-yellow-100/40 blur-3xl dark:bg-amber-500/10" />
     </div>
   )
 }
 
 const glassPanel = cn(
-  'border border-white/60 dark:border-white/[0.12]',
-  'bg-white/55 dark:bg-neutral-900/45',
+  'border border-[hsl(40_22%_84%/0.65)] dark:border-white/[0.12]',
+  'bg-[hsl(44_42%_97.5%/0.72)] dark:bg-neutral-900/45',
   'backdrop-blur-2xl backdrop-saturate-150',
-  'shadow-[0_8px_40px_rgba(15,23,42,0.08)]',
+  'shadow-[0_8px_40px_rgba(92,72,40,0.08)]',
   'rounded-2xl',
 )
 
 const glassChip = cn(
-  'border border-white/50 dark:border-white/10',
-  'bg-white/40 dark:bg-white/5',
+  'border border-[hsl(40_22%_84%/0.55)] dark:border-white/10',
+  'bg-[hsl(44_38%_96%/0.55)] dark:bg-white/5',
   'backdrop-blur-xl',
 )
 
@@ -567,7 +567,7 @@ function otpHint(expiresIn: number, delivery?: 'email' | 'console'): string {
 
 const glassInput = cn(
   'flex h-11 w-full rounded-xl px-3 py-2 text-sm transition-all',
-  'border border-white/70 bg-white/50 dark:border-white/15 dark:bg-white/5',
+  'border border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.65)] dark:border-white/15 dark:bg-white/5',
   'backdrop-blur-md placeholder:text-muted-foreground/70',
   'shadow-inner shadow-black/[0.03]',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',

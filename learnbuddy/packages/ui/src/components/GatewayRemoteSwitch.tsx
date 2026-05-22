@@ -56,7 +56,7 @@ export function GatewayRemoteSwitch() {
         : t("sidebar.remote.off");
 
   return (
-    <div className="px-2 pb-1">
+    <div className="px-1 pb-1.5">
       <button
         type="button"
         role="switch"
@@ -64,7 +64,7 @@ export function GatewayRemoteSwitch() {
         disabled={busy || !state?.envConfigured}
         onClick={() => void onToggle()}
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-full px-3 py-2 text-left text-[12px]",
+          "flex w-full items-center justify-between gap-2.5 rounded-full px-3.5 py-2.5 text-left text-[13px]",
           "text-sidebar-foreground/90 hover:bg-sidebar-accent/75",
           "disabled:pointer-events-none disabled:opacity-50",
         )}
@@ -84,7 +84,7 @@ export function GatewayRemoteSwitch() {
           />
         </span>
       </button>
-      <p className="px-3 pb-1 text-[11px] leading-snug text-muted-foreground/80">{hint}</p>
+      <p className="px-3.5 pb-0.5 pt-1 text-[12px] leading-relaxed text-muted-foreground/80">{hint}</p>
     </div>
   );
 }

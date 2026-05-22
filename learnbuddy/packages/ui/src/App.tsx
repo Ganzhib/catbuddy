@@ -10,11 +10,15 @@ import { useSessions } from '@/hooks/useSessions'
 import { useDeferredTitleRefresh } from '@/hooks/useDeferredTitleRefresh'
 import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
-import { clearSavedSecret, fetchBootstrap } from "@learnbuddy/platform"
+import { AuthGate } from '@/components/auth/AuthGate'
 import { deriveTitle } from '@/lib/format'
-import { createLearnbuddyClient, type learnbuddyClient } from "@learnbuddy/client"
 import { ClientProvider, useClient } from '@/providers/ClientProvider'
-import type { ChatSummary } from "@learnbuddy/shared"
+import {
+  normalizeChatSummary,
+  parseSessionKey,
+  toSessionKey,
+  type ChatSummary,
+} from "@learnbuddy/shared"
 
 const SIDEBAR_STORAGE_KEY = 'learnbuddy-webui.sidebar'
 const RESTART_STARTED_KEY = 'learnbuddy-webui.restartStartedAt'
@@ -26,72 +30,19 @@ function readSidebarOpen(): boolean {
 }
 
 export default function App() {
-  const [state, setState] = useState<{
-    client: learnbuddyClient; token: string; modelName: string | null
-  } | null>(null)
-  const [bootError, setBootError] = useState<string | null>(null)
-  const [bootAttempts, setBootAttempts] = useState(0)
-
-  const doBootstrap = useCallback(async () => {
-    setBootError(null)
-    try {
-      const boot = await fetchBootstrap()
-      const client = createLearnbuddyClient({
-        token: boot.token,
-        wsPath: boot.ws_path,
-      })
-      client.connect()
-      setState({ client, token: boot.token, modelName: boot.model_name ?? null })
-      setBootError(null)
-    } catch (err: any) {
-      const msg = err?.message ?? String(err)
-      console.error('Bootstrap failed:', msg)
-      setBootError(msg)
-    }
-  }, [])
-
-  useEffect(() => {
-    doBootstrap()
-  }, [doBootstrap, bootAttempts])
-
-  const handleModelNameChange = useCallback((modelName: string | null) => {
-    setState(prev => prev ? { ...prev, modelName } : prev)
-  }, [])
-
-  const handleLogout = useCallback(() => {
-    state?.client.close()
-    clearSavedSecret()
-    setState(null)
-  }, [state])
-
-  if (!state) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        {bootError ? (
-          <div className="flex flex-col items-center gap-4 max-w-sm text-center px-6">
-            <p className="text-red-500 text-sm font-medium">Connection Failed</p>
-            <p className="text-xs text-gray-400 break-all">{bootError}</p>
-            <button
-              onClick={() => setBootAttempts(n => n + 1)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
-            <BrandMark className="h-12 w-12 object-contain opacity-90" />
-            <span>Loading learnbuddy…</span>
-          </div>
-        )}
-      </div>
-    )
-  }
+  const [modelName, setModelName] = useState<string | null>(null)
 
   return (
-    <ClientProvider client={state.client} token={state.token} modelName={state.modelName}>
-      <Shell onModelNameChange={handleModelNameChange} onLogout={handleLogout} />
-    </ClientProvider>
+    <AuthGate>
+      {({ client, token, modelName: bootModel, onLogout }) => (
+        <ClientProvider client={client} token={token} modelName={modelName ?? bootModel}>
+          <Shell
+            onModelNameChange={setModelName}
+            onLogout={onLogout}
+          />
+        </ClientProvider>
+      )}
+    </AuthGate>
   )
 }
 
@@ -106,6 +57,7 @@ function Shell({
   const { theme, toggle } = useTheme()
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions()
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const placeholderSessionsRef = useRef<Map<string, ChatSummary>>(new Map())
   const [view, setView] = useState<ShellView>('chat')
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(readSidebarOpen)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -119,7 +71,25 @@ function Shell({
 
   const activeSession = useMemo<ChatSummary | null>(() => {
     if (!activeKey) return null
-    return sessions.find(s => s.key === activeKey) ?? null
+    const key = toSessionKey(activeKey)
+    const found = sessions.find((s) => toSessionKey(s.key) === key)
+    if (found) return normalizeChatSummary(found)
+    let placeholder = placeholderSessionsRef.current.get(key)
+    if (!placeholder) {
+      const parsed = parseSessionKey(key)
+      const now = new Date().toISOString()
+      placeholder = normalizeChatSummary({
+        key: parsed.key,
+        channel: parsed.channel,
+        chatId: parsed.chatId,
+        createdAt: now,
+        updatedAt: now,
+        title: '',
+        preview: '',
+      })
+      placeholderSessionsRef.current.set(key, placeholder)
+    }
+    return placeholder
   }, [sessions, activeKey])
 
   const closeDesktopSidebar = useCallback(() => setDesktopSidebarOpen(false), [])
@@ -134,7 +104,7 @@ function Shell({
   const onCreateChat = useCallback(async () => {
     try {
       const chatId = await createChat()
-      setActiveKey(`desktop:${chatId}`)  // 带 prefix，匹酝 JSONL session key
+      setActiveKey(toSessionKey(chatId))
       setView('chat')
       setMobileSidebarOpen(false)
       return chatId
@@ -146,7 +116,9 @@ function Shell({
   }, [])
 
   const onSelectChat = useCallback((key: string) => {
-    setActiveKey(key); setView('chat'); setMobileSidebarOpen(false)
+    setActiveKey(toSessionKey(key))
+    setView('chat')
+    setMobileSidebarOpen(false)
   }, [])
 
   const onOpenSettings = useCallback(() => {
@@ -160,6 +132,11 @@ function Shell({
       return sessions.some(s => s.key === current) ? current : sessions[0]?.key ?? null
     })
   }, [sessions])
+
+  useEffect(() => {
+    const id = activeSession?.chatId
+    if (id) client.attach(id)
+  }, [activeSession?.chatId, client])
 
   useEffect(() => {
     return client.onRuntimeModelUpdate((modelName) => onModelNameChange(modelName))

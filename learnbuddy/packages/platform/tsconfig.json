@@ -3,6 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*", "src/preload-api.d.ts"],
-  "references": [{ "path": "../shared" }]
+  "include": ["src/**/*", "src/preload-api.d.ts"]
 }

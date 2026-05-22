@@ -1,11 +1,7 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./packages/shared" },
-    { "path": "./packages/client" },
-    { "path": "./packages/platform" },
-    { "path": "./packages/ui" },
-    { "path": "./apps/desktop" },
-    { "path": "./apps/web" }
-  ]
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": []
 }

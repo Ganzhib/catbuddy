@@ -147,6 +147,25 @@ export class GatewayWsClient {
     }
   }
 
+  private bareChatId(sessionKey: string): string {
+    const idx = sessionKey.indexOf(":");
+    return idx === -1 ? sessionKey : sessionKey.slice(idx + 1);
+  }
+
+  /** Tell Gateway + Web to follow this session (desktop => gateway => web). */
+  focusSession(sessionKey: string): void {
+    const key = sessionKey.trim();
+    if (!key) return;
+    this.sessionProvider?.getOrCreate(key);
+    this.subscribeSession(key);
+    this.publishUiEvent(key, this.bareChatId(key), {
+      event: "session_updated",
+      chat_id: this.bareChatId(key),
+      scope: "focus",
+    });
+    this.publishSessionsSync();
+  }
+
   /** Subscribe every known session key (sidebar list). */
   syncSessions(sessionKeys: string[]): void {
     for (const key of sessionKeys) {

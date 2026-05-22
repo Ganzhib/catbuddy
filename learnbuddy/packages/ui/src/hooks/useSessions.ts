@@ -61,8 +61,8 @@ export function useSessions(): {
 
   useEffect(() => {
     return client.onSessionUpdate((_chatId, scope) => {
-      // Gateway 列表推送（metadata）；避免与 GET /api/sessions RPC 形成死循环
-      if (scope !== "metadata") return;
+      // metadata：桌面 sessions_sync；focus：桌面新建/切换会话
+      if (scope !== "metadata" && scope !== "focus") return;
       if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current);
       refreshDebounceRef.current = setTimeout(() => {
         refreshDebounceRef.current = null;

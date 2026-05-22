@@ -44,12 +44,8 @@ export function registerIpcHandlers(
       metadata: {},
       sessionKeyOverride: sessionKey,
     });
-    gatewayWsClient?.subscribeSession(sessionKey);
-    gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
-      event: "session_updated",
-      chat_id: bareChatId(sessionKey),
-      scope: "focus",
-    });
+    sessions.getOrCreate(sessionKey);
+    gatewayWsClient?.focusSession(sessionKey);
     if (content.trim()) {
       gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
         event: "user_inbound",
@@ -74,7 +70,8 @@ export function registerIpcHandlers(
 
   ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
     const key = sessionKey?.trim() || toSessionKey(chatId)
-    gatewayWsClient?.subscribeSession(key)
+    sessions.getOrCreate(key)
+    gatewayWsClient?.focusSession(key)
     return { sessionKey: key, subscribed: gatewayWsClient?.subscribedSessionKeys ?? [] }
   })
 
@@ -101,9 +98,12 @@ export function registerIpcHandlers(
   ipcMain.handle('session:get', async (_event, { key }: { key: string }) => sessions.getDetail(key))
   ipcMain.handle('session:delete', async (_event, { key }: { key: string }) => sessions.delete(key))
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => sessions.clear(key))
-  ipcMain.handle('session:new', async () => ({
-    key: `desktop:${Date.now()}`,
-  }))
+  ipcMain.handle('session:new', async () => {
+    const key = `desktop:${Date.now()}`
+    sessions.getOrCreate(key)
+    gatewayWsClient?.focusSession(key)
+    return { key }
+  })
 
   // ═══ Config ═══
   ipcMain.handle('config:get', async () => config)

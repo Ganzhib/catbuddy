@@ -178,10 +178,40 @@ export class GatewayStateService {
     }
   }
 
+  private isSessionFocusEvent(event: Record<string, unknown>): boolean {
+    return event.event === 'session_updated' && event.scope === 'focus'
+  }
+
+  /** Desktop 切换/新建会话：推送给所有已连接 Web，并刷新侧栏列表。 */
+  private async broadcastSessionFocus(
+    deviceId: string,
+    sessionKey: string,
+    chatId: string,
+    event: Record<string, unknown>,
+  ): Promise<void> {
+    if (!sessionKey) return
+    await this.store.getOrCreate(sessionKey)
+    this.sessionDesktop.set(sessionKey, deviceId)
+    const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
+    for (const client of this.clients.values()) {
+      if (client.role !== 'web' || client.ws.readyState !== 1) continue
+      client.sessions.add(sessionKey)
+      let set = this.sessionWebSockets.get(sessionKey)
+      if (!set) {
+        set = new Set()
+        this.sessionWebSockets.set(sessionKey, set)
+      }
+      set.add(client.ws)
+      client.ws.send(payload)
+    }
+    this.notifyWebClientsSessionListChanged()
+  }
+
   private async webWsMayReceiveSession(ws: WebSocket, sessionKey: string): Promise<boolean> {
     if (!isWebLoginRequired()) return true
     const owner = await this.store.getSessionOwner(sessionKey)
-    if (!owner) return false
+    // 桌面新建、尚未被 Web HTTP 认领的会话，仍允许配对 Web 收流式事件
+    if (!owner) return true
     for (const client of this.clients.values()) {
       if (client.role !== 'web' || client.ws !== ws) continue
       const email =
@@ -591,6 +621,10 @@ export class GatewayStateService {
     const client = this.clients.get(clientKey)
     if (!client || client.role !== 'desktop') return
     const cid = chatId || this.chatIdFromSessionKey(sessionKey)
+    if (this.isSessionFocusEvent(event)) {
+      void this.broadcastSessionFocus(client.deviceId, sessionKey, cid, event)
+      return
+    }
     this.broadcastUiEvent(sessionKey, cid, event)
   }
 

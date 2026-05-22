@@ -57,6 +57,7 @@ function applyGatewayRemote(): void {
   });
   gatewayWsClient.setCreateSessionHandler((sessionKey, chatId) => {
     appSessions!.getOrCreate(sessionKey);
+    gatewayWsClient!.focusSession(sessionKey);
     console.log("[main] Gateway create_session:", sessionKey);
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send("session:created", { sessionKey, chatId });

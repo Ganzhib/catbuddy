@@ -183,22 +183,27 @@ export class SessionManager {
   }
 
   list(): SessionInfo[] {
-    const results: SessionInfo[] = []
-    const files = fs.readdirSync(this._dir).filter((f) => f.endsWith('.jsonl'))
+    const byKey = new Map<string, SessionInfo>()
 
+    const files = fs.readdirSync(this._dir).filter((f) => f.endsWith('.jsonl'))
     for (const f of files) {
       const fp = path.join(this._dir, f)
       try {
         const lines = fs.readFileSync(fp, 'utf-8').split('\n').filter(Boolean)
         if (lines.length <= 1) continue
         const info = this._parseInfoLine(lines[0])
-        if (info) results.push(info)
+        if (info) byKey.set(info.key, info)
       } catch {
         // 跳过损坏文件
       }
     }
 
-    return results.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    // 含内存中新建、尚未落盘的会话，供 Gateway sessions_sync 推送到 Web
+    for (const info of this._cache.values()) {
+      if (!byKey.has(info.key)) byKey.set(info.key, info)
+    }
+
+    return [...byKey.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
   }
 
 

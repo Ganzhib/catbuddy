@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Radio } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
@@ -69,7 +70,18 @@ export function GatewayRemoteSwitch() {
           "disabled:pointer-events-none disabled:opacity-50",
         )}
       >
-        <span className="font-medium">{t("sidebar.remote.label")}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Radio
+            className={cn(
+              "h-4 w-4 shrink-0",
+              state?.enabled && state.connected
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-muted-foreground/80",
+            )}
+            aria-hidden
+          />
+          <span className="font-medium">{t("sidebar.remote.label")}</span>
+        </span>
         <span
           className={cn(
             "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",

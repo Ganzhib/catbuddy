@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { MessageFrame, createMessageFrame } from '@learnbuddy/gateway-common';
+import { MessageFrame, createMessageFrame } from '@learnbuddy/shared'
 
 export interface DesktopClientConfig {
   url: string;              // wss://gateway.example.com/ws

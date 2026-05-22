@@ -1,5 +1,5 @@
-import { ConnectionType, AuthPayload, AuthResult, ErrorCode } from '@learnbuddy/gateway-common';
-import { AuthError } from '@learnbuddy/gateway-common';
+import { ConnectionType, AuthPayload, AuthResult, ErrorCode } from '@learnbuddy/shared';
+import { AuthError } from '@learnbuddy/shared';
 
 interface AuthConfig {
   secret: string;

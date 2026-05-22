@@ -1,9 +1,9 @@
-import { AuthService } from './relay/auth/auth.service.js'
-import { EmailService } from './relay/auth/email.service.js'
-import { MysqlPool } from './relay/database/mysql-pool.js'
-import { GatewayStateService } from './relay/gateway-state.js'
-import { MysqlSessionStore } from './relay/storage/mysql/mysql-session-store.js'
-import { MysqlUserStore } from './relay/storage/mysql/mysql-user-store.js'
+import { AuthService } from './session/auth/auth.service.js'
+import { EmailService } from './session/auth/email.service.js'
+import { MysqlPool } from './session/database/mysql-pool.js'
+import { GatewayStateService } from './session/gateway-state.js'
+import { MysqlSessionStore } from './session/storage/mysql/mysql-session-store.js'
+import { MysqlUserStore } from './session/storage/mysql/mysql-user-store.js'
 
 export interface GatewayServices {
   pool: MysqlPool
@@ -19,6 +19,6 @@ export async function createGatewayServices(): Promise<GatewayServices> {
   const state = new GatewayStateService(sessionStore)
   const email = new EmailService()
   const auth = new AuthService(state, email, userStore)
-  auth.ensureDevViewerRegistered()
+  auth.ensureDevWebRegistered()
   return { pool, state, auth }
 }

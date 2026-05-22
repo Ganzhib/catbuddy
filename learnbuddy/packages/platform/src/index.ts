@@ -1,3 +1,5 @@
+export type { LearnbuddyPreloadApi } from './preload-api.d.ts'
+
 export {
   createPlatformApi,
   fetchBootstrap,
@@ -8,12 +10,7 @@ export {
   ApiError,
   type PlatformApi,
 } from './create-platform'
-export {
-  resolveGatewayHttpBase,
-  resolveRelayHttpBase,
-  useLearnbuddyGateway,
-  useRelayGateway,
-} from './gateway-http'
+export { resolveGatewayHttpBase, useLearnbuddyGateway } from './gateway-http'
 export {
   BootstrapAuthRequired,
   clearAuthToken,

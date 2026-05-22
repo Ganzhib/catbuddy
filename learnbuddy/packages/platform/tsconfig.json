@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*", "src/preload-api.d.ts"]
+  "include": ["src/**/*", "src/preload-api.d.ts", "src/vite-env.d.ts"]
 }

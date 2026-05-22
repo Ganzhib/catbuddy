@@ -44,8 +44,8 @@ export class ChannelManager {
     const out: BaseChannel[] = [];
     if (primary) out.push(primary);
     if (msg.channel === "desktop") {
-      const relay = this.channels.get("relay");
-      if (relay && relay !== primary) out.push(relay);
+      const gateway = this.channels.get("gateway");
+      if (gateway && gateway !== primary) out.push(gateway);
     }
     return out;
   }

@@ -18,12 +18,10 @@
     "dev:gateway": "pnpm gateway:dev",
     "gateway:build": "pnpm --filter @learnbuddy/gateway build",
     "gateway:start": "pnpm --filter @learnbuddy/gateway start",
-    "gateway:test": "node gateway/test-e2e.mjs",
-    "gateway:test:acceptance": "node gateway/test-acceptance.mjs",
-    "gateway:test:all": "node gateway/test-all.mjs",
-    "relay:dev": "pnpm gateway:dev",
-    "relay:web": "pnpm --filter @learnbuddy/web relay:web",
-    "relay:test": "pnpm gateway:test"
+    "gateway:test": "pnpm --dir gateway test:e2e",
+    "gateway:test:acceptance": "pnpm --dir gateway test:acceptance",
+    "gateway:test:all": "pnpm --dir gateway test:all",
+    "gateway:web": "pnpm --filter @learnbuddy/web gateway:web"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

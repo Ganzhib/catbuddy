@@ -15,9 +15,6 @@ export async function checkGateway(url = 'http://127.0.0.1:18765/health') {
   }
 }
 
-/** @deprecated */
-export const checkRelayGateway = checkGateway
-
 export function gatewayPreflightPlugin(enabled) {
   return {
     name: 'learnbuddy-gateway-preflight',
@@ -33,6 +30,3 @@ export function gatewayPreflightPlugin(enabled) {
     },
   }
 }
-
-/** @deprecated */
-export const relayPreflightPlugin = gatewayPreflightPlugin

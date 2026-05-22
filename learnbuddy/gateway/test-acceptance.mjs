@@ -4,9 +4,9 @@
  */
 import { WebSocket } from "ws";
 
-const HTTP = process.env.GATEWAY_HTTP || process.env.RELAY_HTTP || "http://127.0.0.1:18765";
-const WS_URL = process.env.GATEWAY_WS || process.env.RELAY_WS || "ws://127.0.0.1:18765/ws";
-const SECRET = process.env.GATEWAY_SECRET || process.env.RELAY_SECRET || "dev-secret";
+const HTTP = process.env.GATEWAY_HTTP || "http://127.0.0.1:18765";
+const WS_URL = process.env.GATEWAY_WS || "ws://127.0.0.1:18765/ws";
+const SECRET = process.env.GATEWAY_SECRET || "dev-secret";
 const SESSION = "desktop:acceptance-test";
 const CHAT_ID = "acceptance-test";
 
@@ -33,17 +33,17 @@ function eventKey(ev) {
   return ev.event;
 }
 
-async function connectExecutor() {
+async function connectDesktop() {
   const ws = new WebSocket(WS_URL);
   let pairingCode = "";
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("executor timeout")), 8000);
+    const t = setTimeout(() => reject(new Error("desktop timeout")), 8000);
     ws.on("open", () => {
       ws.send(
         JSON.stringify({
           type: "register",
-          role: "executor",
-          deviceId: "acceptance-exec",
+          role: "desktop",
+          deviceId: "acceptance-desktop",
           token: SECRET,
         }),
       );
@@ -63,19 +63,19 @@ async function connectExecutor() {
   return { ws, pairingCode };
 }
 
-async function connectViewer(viewerToken) {
+async function connectWeb(webToken) {
   const seen = new Set();
   const events = [];
   const ws = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("viewer timeout")), 8000);
+    const t = setTimeout(() => reject(new Error("web timeout")), 8000);
     ws.on("open", () => {
       ws.send(
         JSON.stringify({
           type: "register",
-          role: "viewer",
-          deviceId: "acceptance-viewer",
-          token: viewerToken,
+          role: "web",
+          deviceId: "acceptance-web",
+          token: webToken,
         }),
       );
     });
@@ -144,29 +144,29 @@ async function main() {
   if (!boot.body.token || boot.body.gateway_mode !== "gateway") {
     throw new Error(`bootstrap failed: ${JSON.stringify(boot.body)}`);
   }
-  const viewerToken = boot.body.token;
-  console.log("[acceptance] bootstrap ok", { token: viewerToken.slice(0, 12) + "…", ws_path: boot.body.ws_path });
+  const webToken = boot.body.token;
+  console.log("[acceptance] bootstrap ok", { token: webToken.slice(0, 12) + "…", ws_path: boot.body.ws_path });
 
-  console.log("[acceptance] 2. executor + viewer WS");
-  const { ws: execWs, pairingCode } = await connectExecutor();
-  const { ws: viewerWs, seen } = await connectViewer(viewerToken);
+  console.log("[acceptance] 2. desktop + web WS");
+  const { ws: execWs, pairingCode } = await connectDesktop();
+  const { ws: webWs, seen } = await connectWeb(webToken);
 
   console.log("[acceptance] 3. publish ui_event sequence");
   publishSequence(execWs);
   await new Promise((r) => setTimeout(r, 800));
 
-  console.log("[acceptance] 4. HTTP send (inbound to executor)");
+  console.log("[acceptance] 4. HTTP send (inbound to desktop)");
   const send = await httpJson(`/api/sessions/${encodeURIComponent(SESSION)}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${viewerToken}`,
+      Authorization: `Bearer ${webToken}`,
     },
     body: JSON.stringify({ content: "acceptance ping via HTTP" }),
   });
   if (!send.body.ok) throw new Error(`HTTP send failed: ${JSON.stringify(send.body)}`);
 
-  viewerWs.close();
+  webWs.close();
   execWs.close();
 
   console.log("\n[acceptance] §6 checklist:");

@@ -1,6 +1,5 @@
 /**
  * Preload script — pure CommonJS, NO TypeScript compilation
- * 直接放在项目根目录，.cjs 扩展名强制 CJS 模式
  */
 const { contextBridge, ipcRenderer } = require('electron')
 
@@ -18,7 +17,7 @@ const IPC = {
   TURN_COMPLETE: 'agent:turn-complete',
   SYSTEM_MESSAGE: 'agent:system-message',
   ASSISTANT_MESSAGE: 'agent:assistant-message',
-  RELAY_INBOUND: 'agent:relay-inbound',
+  GATEWAY_INBOUND: 'agent:gateway-inbound',
   SESSION_LIST: 'session:list',
   SESSION_GET: 'session:get',
   SESSION_DELETE: 'session:delete',
@@ -34,18 +33,16 @@ const IPC = {
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
   CHANNELS_STATUS: 'channels:status',
-  RELAY_STATUS: 'relay:status',
-  RELAY_SUBSCRIBE: 'relay:subscribe-session',
-  RELAY_SYNC_ALL: 'relay:sync-all-sessions',
+  GATEWAY_STATUS: 'gateway:status',
+  GATEWAY_SUBSCRIBE: 'gateway:subscribe-session',
+  GATEWAY_SYNC_ALL: 'gateway:sync-all-sessions',
 }
 
 const api = {
-  // ── Agent ──
   sendMessage: (chatId, content, media) => ipcRenderer.invoke(IPC.AGENT_SEND, { chatId, content, media }),
   stopAgent: (sessionKey) => ipcRenderer.invoke(IPC.AGENT_STOP, { sessionKey }),
   getStatus: () => ipcRenderer.invoke(IPC.AGENT_STATUS),
 
-  // ── Stream events ──
   onStreamDelta: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.STREAM_DELTA, h); return () => ipcRenderer.removeListener(IPC.STREAM_DELTA, h) },
   onStreamEnd: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.STREAM_END, h); return () => ipcRenderer.removeListener(IPC.STREAM_END, h) },
   onReasoningDelta: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.REASONING_DELTA, h); return () => ipcRenderer.removeListener(IPC.REASONING_DELTA, h) },
@@ -56,9 +53,8 @@ const api = {
   onTurnComplete: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.TURN_COMPLETE, h); return () => ipcRenderer.removeListener(IPC.TURN_COMPLETE, h) },
   onSystemMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.SYSTEM_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.SYSTEM_MESSAGE, h) },
   onAssistantMessage: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.ASSISTANT_MESSAGE, h); return () => ipcRenderer.removeListener(IPC.ASSISTANT_MESSAGE, h) },
-  onRelayInbound: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.RELAY_INBOUND, h); return () => ipcRenderer.removeListener(IPC.RELAY_INBOUND, h) },
+  onGatewayInbound: (cb) => { const h = (_, d) => cb(d); ipcRenderer.on(IPC.GATEWAY_INBOUND, h); return () => ipcRenderer.removeListener(IPC.GATEWAY_INBOUND, h) },
 
-  // ── Session ──
   listSessions: () => ipcRenderer.invoke(IPC.SESSION_LIST),
   getSession: (key) => ipcRenderer.invoke(IPC.SESSION_GET, { key }),
   deleteSession: (key) => ipcRenderer.invoke(IPC.SESSION_DELETE, { key }),
@@ -70,29 +66,24 @@ const api = {
     return () => ipcRenderer.removeListener(IPC.SESSION_CREATED, h)
   },
 
-  // ── Config ──
   getConfig: () => ipcRenderer.invoke(IPC.CONFIG_GET),
   updateConfig: (path, value) => ipcRenderer.invoke(IPC.CONFIG_UPDATE, { path, value }),
   listModels: () => ipcRenderer.invoke(IPC.CONFIG_LIST_MODELS),
   setModel: (name) => ipcRenderer.invoke(IPC.CONFIG_SET_MODEL, { presetName: name }),
 
-  // ── Workspace ──
   selectWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_SELECT),
   getWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_GET),
 
-  // ── Skills ──
   listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
   toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),
 
-  // ── Restart ──
   restartApp: () => ipcRenderer.invoke('app:restart'),
 
-  // ── Channels ──
   getChannelsStatus: () => ipcRenderer.invoke(IPC.CHANNELS_STATUS),
 
-  getRelayStatus: () => ipcRenderer.invoke(IPC.RELAY_STATUS),
-  relaySubscribeSession: (payload) => ipcRenderer.invoke(IPC.RELAY_SUBSCRIBE, payload),
-  relaySyncAllSessions: () => ipcRenderer.invoke(IPC.RELAY_SYNC_ALL),
+  getGatewayStatus: () => ipcRenderer.invoke(IPC.GATEWAY_STATUS),
+  gatewaySubscribeSession: (payload) => ipcRenderer.invoke(IPC.GATEWAY_SUBSCRIBE, payload),
+  gatewaySyncAllSessions: () => ipcRenderer.invoke(IPC.GATEWAY_SYNC_ALL),
 
   getGatewayRemoteEnabled: () => ipcRenderer.invoke('gateway:get-remote-enabled'),
   setGatewayRemoteEnabled: (enabled) =>

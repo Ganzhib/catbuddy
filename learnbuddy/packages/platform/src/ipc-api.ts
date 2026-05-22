@@ -1,5 +1,6 @@
 import type {
   ChatSummary,
+  SessionInfo,
   SettingsPayload,
   SettingsUpdate,
   SlashCommand,
@@ -29,7 +30,7 @@ export async function listSessionsIpc(
   _base: string = '',
 ): Promise<ChatSummary[]> {
   const sessions = await requireIpcBridge().listSessions()
-  return sessions.map(s => ({
+  return sessions.map((s: SessionInfo) => ({
     key: s.key,
     ...splitKey(s.key),
     createdAt: s.createdAt,

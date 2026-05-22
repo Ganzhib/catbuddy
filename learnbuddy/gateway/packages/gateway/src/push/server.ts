@@ -6,8 +6,8 @@ import { HeartbeatMonitor } from './heartbeat';
 import { ReliableDelivery } from './reliable-delivery';
 import { InMemoryOfflineStorage } from './offline-storage';
 import { Authenticator } from './auth';
-import { Connection, ConnectionType, MessageFrame } from '@learnbuddy/gateway-common';
-import { validateFrame, createPong } from '@learnbuddy/gateway-common';
+import { Connection, ConnectionType, MessageFrame } from '@learnbuddy/shared';
+import { validateFrame, createPong } from '@learnbuddy/shared';
 
 export interface GatewayConfig {
   port: number;

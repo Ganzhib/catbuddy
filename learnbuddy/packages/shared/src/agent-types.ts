@@ -194,7 +194,7 @@ export interface learnbuddyConfig {
   channels: ChannelsConfig
   tools: ToolsConfig
   cron?: CronSchedule[]
-  /** Cross-device gateway remote control (desktop executor for Web). */
+  /** Cross-device Gateway remote control (desktop runs Agent for Web). */
   gateway?: { remoteEnabled?: boolean }
 }
 

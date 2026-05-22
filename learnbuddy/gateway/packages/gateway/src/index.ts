@@ -7,8 +7,9 @@ import Fastify from 'fastify'
 import { WebSocketServer } from 'ws'
 import { createGatewayServices } from './create-services.js'
 import { registerHttpRoutes } from './http-routes.js'
-import { gatewayEnv } from './relay/config/env.js'
-import { attachRelayWebSocket } from './ws-relay.js'
+import { gatewayEnv } from './session/config/env.js'
+import { isWebLoginRequired } from './session/auth/auth-policy.js'
+import { attachGatewaySessionWebSocket } from './ws-session.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const gatewayRoot = path.resolve(__dirname, '../../..')
@@ -23,11 +24,15 @@ async function main() {
   const port = gatewayEnv.port
   await app.listen({ port, host: '0.0.0.0' })
   const wss = new WebSocketServer({ server: app.server, path: '/ws' })
-  attachRelayWebSocket(wss, state, (msg) => app.log.info(msg))
+  attachGatewaySessionWebSocket(wss, state, auth, (msg) => app.log.info(msg))
 
   console.log(`[gateway] http://127.0.0.1:${port}  ws://127.0.0.1:${port}/ws`)
   console.log(`[gateway] bootstrap path ${gatewayEnv.publicWsPath}`)
-  console.log(`[gateway] GATEWAY_SECRET=${gatewayEnv.executorSecret ? '(set)' : '(default)'}`)
+  console.log(`[gateway] GATEWAY_SECRET=${gatewayEnv.desktopSecret ? '(set)' : '(default)'}`)
+  console.log(
+    `[gateway] auth require_email=${gatewayEnv.authRequireEmail} dev_bypass=${gatewayEnv.authDevBypass} `
+    + `web_login_required=${isWebLoginRequired()}`,
+  )
   const envPath = path.join(gatewayRoot, '.env')
   console.log(
     `[gateway] env: gateway/.env ${fs.existsSync(envPath) ? '(loaded)' : '(missing — copy .env.example)'}`,
@@ -44,7 +49,7 @@ async function main() {
     )
   } else {
     console.log(
-      '[gateway] SMTP not configured — registration OTP prints HERE only (set SMTP_* in gateway/.env)',
+      '[gateway] SMTP 未配置 — 注册验证码不会发邮件，仅打印在本终端（请复制 gateway/.env.example → gateway/.env 并填写 SMTP_*）',
     )
   }
 

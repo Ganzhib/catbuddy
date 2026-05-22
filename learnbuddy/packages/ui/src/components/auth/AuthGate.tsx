@@ -50,7 +50,7 @@ export function AuthGate({
       )
       const useGateway =
         !hasLearnbuddyIpc()
-        && (boot.gateway_mode === 'gateway' || boot.gateway_mode === 'relay')
+        && boot.gateway_mode === 'gateway'
       const client = createLearnbuddyClient({
         token: boot.token,
         wsPath: boot.ws_path,

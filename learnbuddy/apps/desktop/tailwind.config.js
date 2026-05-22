@@ -5,7 +5,7 @@ export default {
   presets: [uiPreset],
   content: [
     "./index.html",
-    "./relay-web.html",
+    "./gateway-web.html",
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],

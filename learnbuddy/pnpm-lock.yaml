@@ -175,25 +175,24 @@ importers:
       vitest:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@22.19.19)(terser@5.48.0)
+      ws:
+        specifier: ^8.18.0
+        version: 8.20.1
 
   gateway/packages/common:
     dependencies:
-      uuid:
-        specifier: ^9.0.0
-        version: 9.0.1
-    devDependencies:
-      '@types/uuid':
-        specifier: ^9.0.0
-        version: 9.0.8
+      '@learnbuddy/shared':
+        specifier: workspace:*
+        version: link:../../../packages/shared
 
   gateway/packages/gateway:
     dependencies:
       '@fastify/cors':
         specifier: ^9.0.0
         version: 9.0.1
-      '@learnbuddy/gateway-common':
+      '@learnbuddy/shared':
         specifier: workspace:*
-        version: link:../common
+        version: link:../../../packages/shared
       fastify:
         specifier: ^4.26.0
         version: 4.29.1
@@ -231,9 +230,9 @@ importers:
 
   gateway/packages/sdk-desktop:
     dependencies:
-      '@learnbuddy/gateway-common':
+      '@learnbuddy/shared':
         specifier: workspace:*
-        version: link:../common
+        version: link:../../../packages/shared
       ws:
         specifier: ^8.16.0
         version: 8.20.1
@@ -244,15 +243,18 @@ importers:
 
   gateway/packages/sdk-web:
     dependencies:
-      '@learnbuddy/gateway-common':
-        specifier: workspace:*
-        version: link:../common
       '@learnbuddy/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
 
   packages/client:
     dependencies:
+      '@learnbuddy/gateway-sdk-web':
+        specifier: workspace:*
+        version: link:../../gateway/packages/sdk-web
+      '@learnbuddy/platform':
+        specifier: workspace:*
+        version: link:../platform
       '@learnbuddy/shared':
         specifier: workspace:*
         version: link:../shared
@@ -263,7 +265,15 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
-  packages/shared: {}
+  packages/shared:
+    dependencies:
+      uuid:
+        specifier: ^9.0.0
+        version: 9.0.1
+    devDependencies:
+      '@types/uuid':
+        specifier: ^9.0.0
+        version: 9.0.8
 
   packages/ui:
     dependencies:

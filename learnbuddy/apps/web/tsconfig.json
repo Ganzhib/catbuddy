@@ -13,6 +13,13 @@
       "@learnbuddy/platform": ["../../packages/platform/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "vite-env.d.ts", "../../packages/ui/src/**/*", "../../packages/ui/vite-env.d.ts"],
+  "include": [
+    "src/**/*",
+    "vite-env.d.ts",
+    "../../packages/ui/src/**/*",
+    "../../packages/ui/vite-env.d.ts",
+    "../../packages/platform/src/vite-env.d.ts",
+    "../../packages/platform/src/preload-api.d.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -26,7 +26,7 @@ export interface LearnbuddyPreloadApi {
   onTurnComplete(cb: (data: TurnCompleteData & { chatId: string }) => void): () => void
   onSystemMessage(cb: (data: { chatId: string; text: string }) => void): () => void
   onAssistantMessage(cb: (data: { chatId: string; text: string }) => void): () => void
-  onRelayInbound(cb: (data: { chatId: string; sessionKey: string; content: string }) => void): () => void
+  onGatewayInbound(cb: (data: { chatId: string; sessionKey: string; content: string }) => void): () => void
   onSessionCreated(cb: (data: { sessionKey: string; chatId: string }) => void): () => void
 
   listSessions(): Promise<SessionInfo[]>
@@ -50,7 +50,7 @@ export interface LearnbuddyPreloadApi {
 
   getChannelsStatus(): Promise<Record<string, ChannelStatus>>
 
-  getRelayStatus(): Promise<{
+  getGatewayStatus(): Promise<{
     enabled: boolean
     connected: boolean
     deviceId?: string
@@ -58,16 +58,25 @@ export interface LearnbuddyPreloadApi {
     lastError?: string
     subscribedSessions?: string[]
   }>
-  relaySubscribeSession(payload: {
+  gatewaySubscribeSession(payload: {
     sessionKey?: string
     chatId?: string
   }): Promise<{ sessionKey: string; subscribed?: string[] }>
-  relaySyncAllSessions(): Promise<{ keys: string[]; subscribed?: string[] }>
+  gatewaySyncAllSessions(): Promise<{ keys: string[]; subscribed?: string[] }>
+
+  getGatewayRemoteEnabled(): Promise<{
+    enabled: boolean
+    envConfigured: boolean
+    connected: boolean
+  }>
+  setGatewayRemoteEnabled(enabled: boolean): Promise<{
+    enabled: boolean
+    connected: boolean
+  }>
 }
 
 declare global {
   interface Window {
-    /** Electron preload bridge; undefined in browser builds. */
     learnbuddy?: LearnbuddyPreloadApi
   }
 }

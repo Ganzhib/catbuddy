@@ -13,7 +13,7 @@ pnpm gateway:test:acceptance   # 单测 ui_event 清单
 pnpm gateway:test:all          # e2e + ui_event + acceptance
 ```
 
-`test-acceptance.mjs` 模拟 executor 推送事件序列，经 WS `ui_event` 到 viewer，检查：
+`test-acceptance.mjs` 模拟 desktop 推送事件序列，经 WS `ui_event` 到 web，检查：
 
 | 事件 | 必需 | 自动化 |
 |------|------|--------|
@@ -40,7 +40,7 @@ pnpm dev:web
 
 1. 桌面打开一条对话，记下 `sessionKey`（如 `desktop:1730_abc`）。
 2. Web 发消息，确认流式回复、工具卡、`turn_end`。
-3. 设置 → 远程控制：配对码 + `POST /api/pair`（或使用 `relay-web.html`）。
+3. 设置 → 远程控制：配对码 + `POST /api/pair`（或使用 `gateway-web.html`）。
 
 ## 邮箱鉴权验收
 

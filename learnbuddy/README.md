@@ -28,7 +28,7 @@ learnbuddy/
 
 │   ├── shared/      # 协议与类型
 
-│   ├── client/      # learnbuddyClient + transport（IPC / WS / relay）
+│   ├── client/      # learnbuddyClient + transport（IPC / WS / gateway）
 
 │   ├── platform/    # bootstrap / REST·IPC API
 
@@ -69,7 +69,7 @@ pnpm install
 
 | `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
 
-| `pnpm relay:web` | 仅打开远程对话页 `/relay-web.html` |
+| `pnpm gateway:web` | 仅打开远程对话页 `/gateway-web.html` |
 
 | `pnpm build:desktop` | 桌面安装包 |
 
@@ -84,7 +84,7 @@ pnpm install
 
 
 
-无需本地 `nanobot gateway`。Web UI 通过 **learnbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_RELAY.md](./docs/CROSS_DEVICE_RELAY.md)。
+无需本地 `nanobot gateway`。Web UI 通过 **learnbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)。
 
 
 
@@ -104,17 +104,17 @@ pnpm gateway:dev
 
 # apps/desktop/.env 或环境变量：
 
-#   RELAY_ENABLED=true
+#   GATEWAY_ENABLED=true
 
 #   RELAY_URL=ws://127.0.0.1:18765/ws
 
-#   RELAY_SECRET=dev-secret
+#   GATEWAY_SECRET=dev-secret
 
 pnpm dev:desktop
 
 
 
-# 3) Web 前端（apps/web/.env.development 已默认 VITE_USE_RELAY_GATEWAY=true）
+# 3) Web 前端（apps/web/.env.development 已默认 VITE_USE_GATEWAY=true）
 
 pnpm dev:web
 
@@ -122,11 +122,11 @@ pnpm dev:web
 
 
 
-浏览器打开 `http://127.0.0.1:5173/`。Bootstrap 使用 dev viewer token（`dev-viewer`），消息由桌面 Agent 处理。
+浏览器打开 `http://127.0.0.1:5173/`。Bootstrap 使用 dev Web token（`dev-web`），消息由桌面 Agent 处理。
 
 
 
-- 轻量远程对话页：`http://127.0.0.1:5173/relay-web.html` 或 `pnpm relay:web`
+- 轻量远程对话页：`http://127.0.0.1:5173/gateway-web.html` 或 `pnpm gateway:web`
 
 - 桌面 **设置 → 远程控制** 可查看配对码；完整 App 开发模式用 bootstrap token，无需手动配对
 
@@ -136,7 +136,7 @@ pnpm dev:web
 
 
 
-在 `apps/web/.env.development` 中设置 `VITE_USE_RELAY_GATEWAY=false`，并启动 nanobot：
+在 `apps/web/.env.development` 中设置 `VITE_USE_GATEWAY=false`，并启动 nanobot：
 
 
 
@@ -160,7 +160,7 @@ pnpm dev:web
 
 | `VITE_USE_GATEWAY` | `true`（默认 dev）→ learnbuddy gateway |
 
-| `VITE_USE_RELAY_GATEWAY` | 同义兼容 |
+| `VITE_USE_GATEWAY` | 同义兼容 |
 
 | `VITE_GATEWAY_URL` | nanobot HTTP（`false` 时，默认 `http://127.0.0.1:8765`） |
 
@@ -178,7 +178,7 @@ pnpm dev:web
 
 2. 桌面：`pnpm dev:desktop` → 发消息、看流式回复与工具卡
 
-3. Web：`pnpm gateway:dev` + 桌面 `RELAY_ENABLED=true` + `pnpm dev:web`
+3. Web：`pnpm gateway:dev` + 桌面 `GATEWAY_ENABLED=true` + `pnpm dev:web`
 
 
 

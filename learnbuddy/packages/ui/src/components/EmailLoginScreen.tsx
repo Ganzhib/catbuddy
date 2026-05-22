@@ -87,9 +87,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true)
     try {
       const res = await requestRegister(email.trim(), password, base)
-      setHint(
-        `验证码已提交（${res.expiresIn} 秒内有效）。若邮箱未收到，请检查 gateway/.env 的 SMTP 配置，或查看 Gateway 终端是否打印了 [dev] OTP。`,
-      )
+      setHint(otpHint(res.expiresIn, res.delivery))
       setRegisterStep('verify')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -116,8 +114,8 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
     setBusy(true)
     try {
-      const res = await requestEmailCode(email.trim(), base)
-      setHint(`验证码已重新发送（${res.expiresIn} 秒内有效）。`)
+      const res = await requestEmailCode(email.trim(), base, password)
+      setHint(otpHint(res.expiresIn, res.delivery))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -559,6 +557,13 @@ const glassChip = cn(
   'bg-white/40 dark:bg-white/5',
   'backdrop-blur-xl',
 )
+
+function otpHint(expiresIn: number, delivery?: 'email' | 'console'): string {
+  if (delivery === 'console') {
+    return `验证码 ${expiresIn} 秒内有效。未配置邮件服务：请到运行 pnpm gateway:dev 的终端查找「验证码: xxxxxx」，不要查收件箱。`
+  }
+  return `验证码已发送到邮箱（${expiresIn} 秒内有效）。若未收到，请检查垃圾邮件，或点「重新发送」。`
+}
 
 const glassInput = cn(
   'flex h-11 w-full rounded-xl px-3 py-2 text-sm transition-all',

@@ -1,67 +1,67 @@
 /**
- * Verify executor → viewer ui_event fan-out.
+ * Verify desktop → web ui_event fan-out.
  */
 import { WebSocket } from "ws";
 
 const HTTP = "http://127.0.0.1:18765";
 const WS_URL = "ws://127.0.0.1:18765/ws";
-const SECRET = process.env.GATEWAY_SECRET || process.env.RELAY_SECRET || "dev-secret";
-const SESSION = "desktop:relay-test";
+const SECRET = process.env.GATEWAY_SECRET || "dev-secret";
+const SESSION = "desktop:gateway-test";
 
 async function main() {
   let pairingCode = "";
-  const exec = new WebSocket(WS_URL);
+  const desktopWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("exec register timeout")), 8000);
-    exec.onopen = () => {
-      exec.send(
+    const t = setTimeout(() => reject(new Error("desktop register timeout")), 8000);
+    desktopWs.onopen = () => {
+      desktopWs.send(
         JSON.stringify({
           type: "register",
-          role: "executor",
-          deviceId: "test-exec-ui",
+          role: "desktop",
+          deviceId: "test-desktop-ui",
           token: SECRET,
         }),
       );
     };
-    exec.onmessage = (ev) => {
+    desktopWs.onmessage = (ev) => {
       const msg = JSON.parse(String(ev.data));
       if (msg.type === "registered") {
         pairingCode = msg.pairingCode;
-        exec.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
+        desktopWs.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
         clearTimeout(t);
         resolve();
       }
     };
-    exec.onerror = reject;
+    desktopWs.onerror = reject;
   });
 
-  const viewerToken = `viewer-ui-${Date.now()}`;
+  const webToken = `web-ui-${Date.now()}`;
   const pairRes = await fetch(`${HTTP}/api/pair`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pairingCode, token: viewerToken }),
+    body: JSON.stringify({ pairingCode, token: webToken }),
   });
   const pair = await pairRes.json();
   if (!pair.ok) throw new Error(`pair failed ${JSON.stringify(pair)}`);
 
   let uiEvent = null;
-  const viewer = new WebSocket(WS_URL);
+  const webWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("viewer timeout")), 8000);
-    viewer.onopen = () => {
-      viewer.send(
+    const t = setTimeout(() => reject(new Error("web timeout")), 8000);
+    webWs.onopen = () => {
+      webWs.send(
         JSON.stringify({
           type: "register",
-          role: "viewer",
-          deviceId: "test-viewer",
-          token: viewerToken,
+          role: "web",
+          deviceId: "test-web",
+          token: webToken,
         }),
       );
     };
-    viewer.onmessage = (ev) => {
+    webWs.onmessage = (ev) => {
       const msg = JSON.parse(String(ev.data));
       if (msg.type === "registered") {
-        viewer.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
+        webWs.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
         clearTimeout(t);
         resolve();
       }
@@ -69,21 +69,21 @@ async function main() {
         uiEvent = msg.event;
       }
     };
-    viewer.onerror = reject;
+    webWs.onerror = reject;
   });
 
-  exec.send(
+  desktopWs.send(
     JSON.stringify({
       type: "ui_event",
       sessionKey: SESSION,
-      chatId: "relay-test",
-      event: { event: "delta", chat_id: "relay-test", text: "hello from executor" },
+      chatId: "gateway-test",
+      event: { event: "delta", chat_id: "gateway-test", text: "hello from desktop" },
     }),
   );
 
   await new Promise((r) => setTimeout(r, 500));
-  viewer.close();
-  exec.close();
+  webWs.close();
+  desktopWs.close();
 
   if (!uiEvent || uiEvent.event !== "delta") {
     throw new Error(`ui_event not received: ${JSON.stringify(uiEvent)}`);

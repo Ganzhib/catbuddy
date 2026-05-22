@@ -1,4 +1,4 @@
-import { MessageFrame } from '@learnbuddy/gateway-common';
+import { MessageFrame } from '@learnbuddy/shared';
 
 /**
  * 离线消息存储接口

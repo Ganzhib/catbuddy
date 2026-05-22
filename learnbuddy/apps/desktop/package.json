@@ -14,9 +14,9 @@
     "rebuild:unpack": "pnpm run kill-app && pnpm run build:unpack",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "relay:dev": "pnpm --filter @learnbuddy/gateway dev",
-    "relay:test": "node ../../gateway/test-all.mjs",
-    "relay:web": "vite --open /relay-web.html",
+    "gateway:dev": "pnpm --filter @learnbuddy/gateway dev",
+    "gateway:test": "node ../../gateway/test-all.mjs",
+    "gateway:web": "vite --open /gateway-web.html",
     "brand:generate": "node ../../scripts/generate-brand.mjs",
     "brand:cutout": "node ../../scripts/remove-icon-background.mjs"
   },

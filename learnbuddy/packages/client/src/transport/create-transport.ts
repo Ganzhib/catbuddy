@@ -1,7 +1,7 @@
 import type { AgentTransport, CreateTransportOptions } from "./types";
 export type { CreateTransportOptions } from "./types";
 import { IpcTransport } from "./ipc-transport";
-import { RelayTransport } from "./relay-transport";
+import { GatewayTransport } from "@learnbuddy/gateway-sdk-web";
 import { WsTransport } from "./ws-transport";
 
 export function hasLearnbuddyIpc(): boolean {
@@ -24,11 +24,11 @@ export function createAgentTransport(
     return new IpcTransport();
   }
 
-  if (mode === "gateway" || mode === "relay") {
-    const httpBase = (options.gatewayHttpBase ?? options.relayHttpBase)?.trim() || "";
-    return new RelayTransport({
+  if (mode === "gateway") {
+    const httpBase = options.gatewayHttpBase?.trim() || "";
+    return new GatewayTransport({
       httpBase,
-      viewerToken: options.token,
+      webToken: options.token,
     });
   }
 

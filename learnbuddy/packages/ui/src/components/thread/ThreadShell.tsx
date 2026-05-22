@@ -139,8 +139,8 @@ export function ThreadShell({
   }, [chatId, client]);
 
   useEffect(() => {
-    if (!historyKey || !window.learnbuddy?.relaySubscribeSession) return;
-    void window.learnbuddy.relaySubscribeSession({ sessionKey: historyKey });
+    if (!historyKey || !window.learnbuddy?.gatewaySubscribeSession) return;
+    void window.learnbuddy.gatewaySubscribeSession({ sessionKey: historyKey });
   }, [historyKey]);
 
   const displayMessages = useMemo(() => projectWebuiThreadMessages(messages), [messages]);

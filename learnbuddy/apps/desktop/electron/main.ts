@@ -12,11 +12,11 @@ import { SessionManager } from "./session/session-manager.js";
 import { getDefaultConfig } from "./config/defaults.js";
 import { log } from "./utils";
 import { MessageBus } from "./bus/index.js";
-import { ChannelManager, DesktopChannel, RelayChannel } from "./channels/index.js";
+import { ChannelManager, DesktopChannel, GatewayChannel } from "./channels/index.js";
 import {
-  loadRelayConfigFromEnv,
-  RelayClient,
-} from "./sync/relay-client.js";
+  loadGatewayConfigFromEnv,
+  GatewayWsClient,
+} from "./sync/gateway-ws-client.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 按优先级加载 .env（延迟到 app ready 后）
@@ -26,54 +26,54 @@ let agentLoop: AgentLoop | null = null;
 let sessions: SessionManager | null = null;
 let bus: MessageBus | null = null;
 let channelManager: ChannelManager | null = null;
-let relayClient: RelayClient | null = null;
+let gatewayWsClient: GatewayWsClient | null = null;
 let appConfig: any = null;
 let appConfigFile = "";
 let appSessions: SessionManager | null = null;
 let appBus: MessageBus | null = null;
 let appChannelManager: ChannelManager | null = null;
 
-function applyGatewayRelay(): void {
-  if (relayClient) {
-    relayClient.stop();
-    appChannelManager?.unregister("relay");
-    relayClient = null;
+function applyGatewayRemote(): void {
+  if (gatewayWsClient) {
+    gatewayWsClient.stop();
+    appChannelManager?.unregister("gateway");
+    gatewayWsClient = null;
   }
-  const relayCfg = loadRelayConfigFromEnv();
+  const gwCfg = loadGatewayConfigFromEnv();
   const remoteEnabled = appConfig?.gateway?.remoteEnabled === true;
-  if (!relayCfg || !remoteEnabled || !appChannelManager || !appSessions || !appBus) {
-    if (relayCfg && !remoteEnabled) {
+  if (!gwCfg || !remoteEnabled || !appChannelManager || !appSessions || !appBus) {
+    if (gwCfg && !remoteEnabled) {
       console.log("[main] Gateway env set but remote control is off");
     }
     return;
   }
-  relayClient = new RelayClient(relayCfg, appBus);
-  relayClient.setSessionProvider({
+  gatewayWsClient = new GatewayWsClient(gwCfg, appBus);
+  gatewayWsClient.setSessionProvider({
     list: () => appSessions!.list(),
     getDetail: (key) => appSessions!.getDetail(key),
     getOrCreate: (key) => appSessions!.getOrCreate(key),
     importWebuiThread: (key, payload) =>
       appSessions!.importWebuiThread(key, payload),
   });
-  relayClient.setCreateSessionHandler((sessionKey, chatId) => {
+  gatewayWsClient.setCreateSessionHandler((sessionKey, chatId) => {
     appSessions!.getOrCreate(sessionKey);
-    console.log("[main] Relay create_session:", sessionKey);
+    console.log("[main] Gateway create_session:", sessionKey);
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send("session:created", { sessionKey, chatId });
     }
   });
-  relayClient.start();
-  appChannelManager.register(new RelayChannel(relayClient));
+  gatewayWsClient.start();
+  appChannelManager.register(new GatewayChannel(gatewayWsClient));
   const rows = appSessions.list();
-  relayClient.syncSessions(rows.map((r) => r.key));
-  console.log("[main] Gateway remote enabled:", relayCfg.url);
+  gatewayWsClient.syncSessions(rows.map((r) => r.key));
+  console.log("[main] Gateway remote enabled:", gwCfg.url);
 }
 
 function registerGatewayRemoteIpc(): void {
   ipcMain.handle("gateway:get-remote-enabled", async () => ({
     enabled: appConfig?.gateway?.remoteEnabled === true,
-    envConfigured: !!loadRelayConfigFromEnv(),
-    connected: relayClient?.status.connected ?? false,
+    envConfigured: !!loadGatewayConfigFromEnv(),
+    connected: gatewayWsClient?.status.connected ?? false,
   }));
 
   ipcMain.handle(
@@ -83,10 +83,10 @@ function registerGatewayRemoteIpc(): void {
       appConfig.gateway.remoteEnabled = !!enabled;
       const fs = await import("node:fs");
       fs.writeFileSync(appConfigFile, JSON.stringify(appConfig, null, 2), "utf-8");
-      applyGatewayRelay();
+      applyGatewayRemote();
       return {
         enabled: appConfig.gateway.remoteEnabled === true,
-        connected: relayClient?.status.connected ?? false,
+        connected: gatewayWsClient?.status.connected ?? false,
       };
     },
   );
@@ -174,7 +174,7 @@ async function initAgent() {
   appChannelManager = channelManager;
   channelManager.register(new DesktopChannel());
 
-  applyGatewayRelay();
+  applyGatewayRemote();
   registerGatewayRemoteIpc();
 
   const provider = createProvider(config);
@@ -190,7 +190,7 @@ async function initAgent() {
     sessionManager: sessions,
     bus,  // ← 注入 bus，开启 multi-channel 支持
   });
-  registerIpcHandlers(agentLoop, sessions, config, configFile, relayClient);
+  registerIpcHandlers(agentLoop, sessions, config, configFile, gatewayWsClient);
 
   // 启动 bus 驱动的后台循环
   channelManager.start();

@@ -9,5 +9,10 @@ export {
   hasLearnbuddyIpc,
   type CreateTransportOptions,
 } from './transport'
-export type { AgentTransport, TransportCallbacks, SessionUpdateScope } from './transport/types'
+export type {
+  AgentTransport,
+  TransportCallbacks,
+  SessionUpdateScope,
+} from '@learnbuddy/shared'
+export type { GatewayTransportConfig } from '@learnbuddy/gateway-sdk-web'
 export * from './tool-traces'

@@ -154,6 +154,7 @@
     "loadingConversation": "Memuat percakapan…",
     "empty": {
       "description": "Ajukan pertanyaan, lanjutkan pekerjaan lokal, atau mulai thread baru.",
+      "hiLead": "Hi, ",
       "greeting": "Apa yang bisa saya bantu?",
       "quickActions": {
         "plan": {

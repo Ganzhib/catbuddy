@@ -74,6 +74,7 @@ export class GatewayDesktopClient {
   private readonly deviceId: string
   private _connected = false
   private _lastError?: string
+  private _reconnectEnabled = true
   private sessionProvider: GatewaySessionProvider | null = null
   private readonly subscribedSessions = new Set<string>()
   private readonly options: GatewayDesktopClientOptions
@@ -103,10 +104,12 @@ export class GatewayDesktopClient {
   }
 
   start(): void {
+    this._reconnectEnabled = true
     this.connect()
   }
 
   stop(): void {
+    this._reconnectEnabled = false
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -268,6 +271,9 @@ export class GatewayDesktopClient {
       this._lastError = msg.message
       console.warn('[gateway] error:', msg.message)
       this.options.onError?.(msg.message)
+      if (msg.message === 'account_email_required' || msg.message === 'unauthorized') {
+        this._reconnectEnabled = false
+      }
       return
     }
 
@@ -350,7 +356,7 @@ export class GatewayDesktopClient {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimer) return
+    if (!this._reconnectEnabled || this.reconnectTimer) return
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
       this.connect()

@@ -197,6 +197,8 @@ export interface learnbuddyConfig {
   /** Cross-device Gateway remote control (desktop runs Agent for Web). */
   gateway?: {
     remoteEnabled?: boolean
+    /** Same email as Web login — used for Gateway desktop register. */
+    accountEmail?: string
     /** WebSocket URL, e.g. ws://127.0.0.1:18765/ws — env GATEWAY_URL overrides when set. */
     url?: string
     /** Desktop WS register secret — env GATEWAY_SECRET overrides when set. */

@@ -29,7 +29,8 @@ function useLocalGateway(): boolean {
   const flag = process.env.LEARNBUDDY_GATEWAY_USE_LOCAL?.trim()
   if (flag === 'true' || flag === '1') return true
   if (flag === 'false' || flag === '0') return false
-  return !app.isPackaged
+  // Default: production builtin (avoid dev silently targeting 127.0.0.1:18765).
+  return false
 }
 
 function resolveGatewayConfig(state: GatewayRemoteState) {
@@ -50,6 +51,23 @@ function connectionMode(state: GatewayRemoteState): 'env' | 'custom' | 'local' |
   return useLocalGateway() ? 'local' : 'builtin'
 }
 
+function requiresGatewayAccountEmail(): boolean {
+  const flag = process.env.GATEWAY_AUTH_REQUIRE_EMAIL?.trim()
+  if (flag === 'false' || flag === '0') return false
+  if (flag === 'true' || flag === '1') return true
+  return !useLocalGateway()
+}
+
+function resolveAccountEmail(state: GatewayRemoteState): string | undefined {
+  const fromState = state.gatewayAccountEmail?.trim()
+  if (fromState?.includes('@')) return fromState.toLowerCase()
+  const fromConfig = state.appConfig?.gateway?.accountEmail?.trim()
+  if (fromConfig?.includes('@')) return fromConfig.toLowerCase()
+  const fromEnv = process.env.GATEWAY_ACCOUNT_EMAIL?.trim()
+  if (fromEnv?.includes('@')) return fromEnv.toLowerCase()
+  return undefined
+}
+
 function persistConfig(state: GatewayRemoteState): void {
   fs.writeFileSync(
     state.appConfigFile,
@@ -58,14 +76,28 @@ function persistConfig(state: GatewayRemoteState): void {
   );
 }
 
+function safeIpcHandle(channel: string, handler: Parameters<typeof ipcMain.handle>[1]): void {
+  try {
+    ipcMain.removeHandler(channel);
+  } catch {
+    // no prior handler (first register)
+  }
+  ipcMain.handle(channel, handler);
+}
+
 export function applyGatewayRemote(state: GatewayRemoteState): void {
-  const {
-    appConfig,
-    appSessions,
-    appBus,
-    appChannelManager,
-    gatewayAccountEmail,
-  } = state;
+  const { appConfig, appSessions, appBus, appChannelManager } = state;
+
+  const remoteEnabled = appConfig?.gateway?.remoteEnabled === true;
+  const gwCfg = resolveGatewayConfig(state);
+  console.log("[main] applyGatewayRemote", {
+    remoteEnabled,
+    hasGatewayConfig: !!gwCfg,
+    gatewayUrl: gwCfg?.url,
+    gatewayEnabled: process.env.GATEWAY_ENABLED ?? "(unset)",
+    useLocal: useLocalGateway(),
+    accountEmail: resolveAccountEmail(state) ?? "(none)",
+  });
 
   if (state.gatewayWsClient) {
     state.gatewayWsClient.stop();
@@ -73,21 +105,54 @@ export function applyGatewayRemote(state: GatewayRemoteState): void {
     state.gatewayWsClient = null;
   }
 
-  const gwCfg = resolveGatewayConfig(state);
-  const remoteEnabled = appConfig?.gateway?.remoteEnabled === true;
   if (!gwCfg || !remoteEnabled || !appChannelManager || !appSessions || !appBus) {
+    console.log("[main] Gateway remote skipped:", {
+      hasGatewayConfig: !!gwCfg,
+      remoteEnabled,
+      hasChannelManager: !!appChannelManager,
+      hasSessions: !!appSessions,
+      hasBus: !!appBus,
+    });
     if (gwCfg && !remoteEnabled) {
       console.log("[main] Gateway ready but remote control is off");
     }
     return;
   }
 
-  const email =
-    gatewayAccountEmail?.trim() || gwCfg.accountEmail?.trim() || undefined;
+  const email = resolveAccountEmail(state)
+
+  if (requiresGatewayAccountEmail() && !email) {
+    console.log("[main] Gateway remote enabled but waiting for login email");
+    return;
+  }
+
+  console.log("[main] Gateway connecting:", {
+    url: gwCfg.url,
+    useLocal: useLocalGateway(),
+    accountEmail: email ?? "(none)",
+  });
 
   state.gatewayWsClient = new GatewayDesktopClient(
     { ...gwCfg, accountEmail: email },
     {
+      onConnected: (deviceId) => {
+        console.log("[main] Gateway WS connected:", deviceId);
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send("gateway:connection-changed", {
+            connected: true,
+            deviceId,
+          });
+        }
+      },
+      onError: (message) => {
+        console.warn("[main] Gateway WS error:", message);
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send("gateway:connection-changed", {
+            connected: false,
+            lastError: message,
+          });
+        }
+      },
       sessionProvider: {
         list: () => appSessions!.list(),
         getDetail: (key) => appSessions!.getDetail(key),
@@ -125,14 +190,25 @@ export function applyGatewayRemote(state: GatewayRemoteState): void {
 }
 
 export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
-  ipcMain.handle("gateway:get-remote-enabled", async () => ({
-    enabled: state.appConfig?.gateway?.remoteEnabled === true,
-    envConfigured: isGatewayConfigured(state),
-    configured: isGatewayConfigured(state),
-    connected: state.gatewayWsClient?.status.connected ?? false,
-  }));
+  console.log("[main] registerGatewayRemoteIpc");
 
-  ipcMain.handle("gateway:get-connection-settings", async () => {
+  safeIpcHandle("gateway:get-remote-enabled", async () => {
+    const email = resolveAccountEmail(state)
+    const needsLogin =
+      state.appConfig?.gateway?.remoteEnabled === true
+      && requiresGatewayAccountEmail()
+      && !email
+    return {
+      enabled: state.appConfig?.gateway?.remoteEnabled === true,
+      envConfigured: isGatewayConfigured(state),
+      configured: isGatewayConfigured(state),
+      connected: state.gatewayWsClient?.status.connected ?? false,
+      lastError: state.gatewayWsClient?.status.lastError,
+      needsLogin,
+    }
+  });
+
+  safeIpcHandle("gateway:get-connection-settings", async () => {
     const stored = state.appConfig?.gateway ?? {};
     const merged = resolveGatewayConfig(state);
     const local = useLocalGateway()
@@ -149,7 +225,7 @@ export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
     };
   });
 
-  ipcMain.handle(
+  safeIpcHandle(
     "gateway:set-connection-settings",
     async (_event, payload: { url?: string; secret?: string; clearCustom?: boolean }) => {
       if (!state.appConfig.gateway) state.appConfig.gateway = {};
@@ -175,21 +251,26 @@ export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
     },
   );
 
-  ipcMain.handle(
+  safeIpcHandle(
     "gateway:set-account-email",
     async (_event, { email }: { email?: string }) => {
+      console.log("[main] gateway:set-account-email", email);
       const normalized = String(email || "").trim().toLowerCase();
       state.gatewayAccountEmail = normalized.includes("@")
         ? normalized
         : undefined;
+      if (!state.appConfig.gateway) state.appConfig.gateway = {};
+      state.appConfig.gateway.accountEmail = state.gatewayAccountEmail;
+      persistConfig(state);
       applyGatewayRemote(state);
       return { ok: true, accountEmail: state.gatewayAccountEmail ?? null };
     },
   );
 
-  ipcMain.handle(
+  safeIpcHandle(
     "gateway:set-remote-enabled",
     async (_event, { enabled }: { enabled?: boolean }) => {
+      console.log("[main] gateway:set-remote-enabled", enabled);
       if (!state.appConfig.gateway) state.appConfig.gateway = {};
       state.appConfig.gateway.remoteEnabled = !!enabled;
       persistConfig(state);

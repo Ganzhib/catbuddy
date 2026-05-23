@@ -6,6 +6,7 @@
 .env
 .web
 .orion
+deploy/
 dist-electron
 release-fresh/
 release/

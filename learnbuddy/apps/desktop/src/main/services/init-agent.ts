@@ -54,7 +54,7 @@ export async function initAgent(): Promise<AgentRuntime> {
 
   const gatewayState: GatewayRemoteState = {
     gatewayWsClient: null,
-    gatewayAccountEmail: undefined,
+    gatewayAccountEmail: config.gateway?.accountEmail?.trim().toLowerCase() || undefined,
     appConfig: config,
     appConfigFile: configFile,
     appSessions: sessions,
@@ -84,7 +84,7 @@ export async function initAgent(): Promise<AgentRuntime> {
     sessions,
     config,
     configFile,
-    gatewayState.gatewayWsClient,
+    () => gatewayState.gatewayWsClient,
   );
 
   channelManager.start();

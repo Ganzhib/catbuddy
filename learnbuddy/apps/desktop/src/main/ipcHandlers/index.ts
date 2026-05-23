@@ -13,7 +13,7 @@ export function registerIpcHandlers(
   sessions: SessionManager,
   config: learnbuddyConfig,
   configFile: string,
-  gatewayWsClient: GatewayDesktopClient | null = null,
+  getGatewayClient: () => GatewayDesktopClient | null = () => null,
 ) {
   const persistConfig = () => saveConfig(configFile, config)
 
@@ -45,9 +45,9 @@ export function registerIpcHandlers(
       sessionKeyOverride: sessionKey,
     });
     sessions.getOrCreate(sessionKey);
-    gatewayWsClient?.focusSession(sessionKey);
+    getGatewayClient()?.focusSession(sessionKey);
     if (content.trim()) {
-      gatewayWsClient?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
+      getGatewayClient()?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
         event: "user_inbound",
         chat_id: bareChatId(sessionKey),
         text: content,
@@ -57,6 +57,7 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle('gateway:status', async () => {
+    const gatewayWsClient = getGatewayClient()
     const st = gatewayWsClient?.status;
     return {
       enabled: !!gatewayWsClient,
@@ -71,15 +72,15 @@ export function registerIpcHandlers(
   ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
     const key = sessionKey?.trim() || toSessionKey(chatId)
     sessions.getOrCreate(key)
-    gatewayWsClient?.focusSession(key)
-    return { sessionKey: key, subscribed: gatewayWsClient?.subscribedSessionKeys ?? [] }
+    getGatewayClient()?.focusSession(key)
+    return { sessionKey: key, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
   })
 
   ipcMain.handle('gateway:sync-all-sessions', async () => {
     const list = await sessions.list()
     const keys = list.map((row) => row.key)
-    gatewayWsClient?.syncSessions(keys)
-    return { keys, subscribed: gatewayWsClient?.subscribedSessionKeys ?? [] }
+    getGatewayClient()?.syncSessions(keys)
+    return { keys, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
   })
 
   ipcMain.handle('agent:stop', async (_event, { sessionKey }: { sessionKey: string }) => {
@@ -101,7 +102,7 @@ export function registerIpcHandlers(
   ipcMain.handle('session:new', async () => {
     const key = `desktop:${Date.now()}`
     sessions.getOrCreate(key)
-    gatewayWsClient?.focusSession(key)
+    getGatewayClient()?.focusSession(key)
     return { key }
   })
 
@@ -183,11 +184,14 @@ export function registerIpcHandlers(
   })
 
   // ═══ Channels ═══
-  ipcMain.handle('channels:status', async () => ({
-    desktop: { enabled: true, running: true },
-    gateway: {
-      enabled: !!gatewayWsClient,
-      running: gatewayWsClient?.status.connected ?? false,
-    },
-  }))
+  ipcMain.handle('channels:status', async () => {
+    const gatewayWsClient = getGatewayClient()
+    return {
+      desktop: { enabled: true, running: true },
+      gateway: {
+        enabled: !!gatewayWsClient,
+        running: gatewayWsClient?.status.connected ?? false,
+      },
+    }
+  })
 }

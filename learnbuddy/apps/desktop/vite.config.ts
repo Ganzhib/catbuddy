@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ignorePackageEmit } from "../../scripts/vite-ignore-package-emit.mjs";
+import { launchElectronDev } from "./scripts/launch-electron-dev.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
@@ -64,9 +65,14 @@ export default defineConfig({
     electron([
       {
         entry: path.resolve(__dirname, "src/main/index.ts"),
+        onstart() {
+          void launchElectronDev(__dirname);
+        },
         vite: {
           build: {
-            outDir: "dist-electron",
+            // Must be absolute: vite `root` is src/renderer, relative outDir ends up wrong.
+            outDir: path.resolve(__dirname, "dist-electron"),
+            emptyOutDir: false,
             rollupOptions: {
               external: [
                 "electron",

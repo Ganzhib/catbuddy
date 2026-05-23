@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 type RemoteState = {
   enabled: boolean;
   connected: boolean;
+  needsLogin?: boolean;
 };
 
 function friendlyRemoteHint(
@@ -19,13 +20,21 @@ function friendlyRemoteHint(
   lastError: string | undefined,
   loginRequired: boolean,
 ): string {
-  if (loginRequired) return t("sidebar.remote.loginRequired");
+  if (loginRequired || state.needsLogin) return t("sidebar.remote.loginRequired");
   if (!state.enabled) return t("sidebar.remote.off");
   if (state.connected) return t("sidebar.remote.connected");
   if (lastError === "account_email_required") {
     return t("sidebar.remote.loginRequired");
   }
-  if (lastError) return t("sidebar.remote.connecting");
+  if (lastError === "unauthorized") {
+    return t("sidebar.remote.unauthorized");
+  }
+  if (lastError) {
+    if (lastError.includes("ECONNREFUSED") || lastError.includes("127.0.0.1")) {
+      return t("sidebar.remote.localGatewayDown");
+    }
+    return t("sidebar.remote.error");
+  }
   return t("sidebar.remote.connecting");
 }
 
@@ -44,10 +53,13 @@ export function GatewayRemoteSwitch() {
       setState({
         enabled: remote.enabled,
         connected: remote.connected,
+        needsLogin: remote.needsLogin,
       });
       if (window.learnbuddy?.getGatewayStatus) {
         const st = await window.learnbuddy.getGatewayStatus();
-        setLastError(st.lastError);
+        setLastError(st.lastError ?? remote.lastError);
+      } else {
+        setLastError(remote.lastError);
       }
     } catch {
       setState(null);
@@ -55,9 +67,18 @@ export function GatewayRemoteSwitch() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    void (async () => {
+      await syncDesktopGatewayAccountEmail();
+      await refresh();
+    })();
     const id = setInterval(() => void refresh(), 3000);
-    return () => clearInterval(id);
+    const unsub = window.learnbuddy?.onGatewayConnectionChanged?.(() => {
+      void refresh();
+    });
+    return () => {
+      clearInterval(id);
+      unsub?.();
+    };
   }, [refresh]);
 
   if (!window.learnbuddy?.getGatewayRemoteEnabled) return null;

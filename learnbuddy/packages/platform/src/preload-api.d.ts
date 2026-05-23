@@ -27,6 +27,9 @@ export interface LearnbuddyPreloadApi {
   onSystemMessage(cb: (data: { chatId: string; text: string }) => void): () => void
   onAssistantMessage(cb: (data: { chatId: string; text: string }) => void): () => void
   onGatewayInbound(cb: (data: { chatId: string; sessionKey: string; content: string }) => void): () => void
+  onGatewayConnectionChanged?(
+    cb: (data: { connected: boolean; deviceId?: string; lastError?: string }) => void,
+  ): () => void
   onSessionCreated(cb: (data: { sessionKey: string; chatId: string }) => void): () => void
 
   listSessions(): Promise<SessionInfo[]>
@@ -72,6 +75,8 @@ export interface LearnbuddyPreloadApi {
     envConfigured: boolean
     configured?: boolean
     connected: boolean
+    lastError?: string
+    needsLogin?: boolean
   }>
   setGatewayRemoteEnabled(enabled: boolean): Promise<{
     enabled: boolean

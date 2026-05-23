@@ -32,6 +32,7 @@ function createLearnbuddyApi() {
     onSystemMessage: (cb) => subscribe(IPC.SYSTEM_MESSAGE, cb),
     onAssistantMessage: (cb) => subscribe(IPC.ASSISTANT_MESSAGE, cb),
     onGatewayInbound: (cb) => subscribe(IPC.GATEWAY_INBOUND, cb),
+    onGatewayConnectionChanged: (cb) => subscribe('gateway:connection-changed', cb),
 
     listSessions: () => ipcRenderer.invoke(IPC.SESSION_LIST),
     getSession: (key) => ipcRenderer.invoke(IPC.SESSION_GET, { key }),

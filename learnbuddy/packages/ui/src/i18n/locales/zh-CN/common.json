@@ -38,7 +38,10 @@
       "off": "仅本机对话，不与网页版同步",
       "connected": "已与网页版同步",
       "connecting": "正在连接…",
-      "loginRequired": "请先登录账号后再开启"
+      "loginRequired": "请先登录账号后再开启",
+      "unauthorized": "Gateway 密钥不匹配，请检查配置",
+      "error": "连接失败，请查看设置中的 Gateway 状态",
+      "localGatewayDown": "无法连接本机 Gateway，请确认 .env 中 LEARNBUDDY_GATEWAY_USE_LOCAL=false"
     },
     "searchAria": "搜索会话",
     "searchPlaceholder": "搜索会话",

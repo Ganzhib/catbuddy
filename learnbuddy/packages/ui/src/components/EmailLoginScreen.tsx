@@ -8,6 +8,7 @@ import {
   requestEmailCode,
   requestRegister,
   resolveGatewayHttpBase,
+  syncDesktopGatewayAccountEmail,
   verifyRegister,
 } from '@learnbuddy/platform'
 
@@ -78,6 +79,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true)
     try {
       await loginWithPassword(email.trim(), password, base)
+      await syncDesktopGatewayAccountEmail()
       onSuccess()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -112,6 +114,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true)
     try {
       await verifyRegister(email.trim(), code.trim(), base)
+      await syncDesktopGatewayAccountEmail()
       onSuccess()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))

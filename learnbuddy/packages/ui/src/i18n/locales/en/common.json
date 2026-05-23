@@ -50,7 +50,10 @@
       "off": "Local only — not synced with the web app",
       "connected": "Synced with the web app",
       "connecting": "Connecting…",
-      "loginRequired": "Sign in before turning this on"
+      "loginRequired": "Sign in before turning this on",
+      "unauthorized": "Gateway secret mismatch — check settings",
+      "error": "Connection failed — see Gateway status in Settings",
+      "localGatewayDown": "Cannot reach local Gateway — set LEARNBUDDY_GATEWAY_USE_LOCAL=false in .env"
     },
     "searchAria": "Search chats",
     "searchPlaceholder": "Search chats",

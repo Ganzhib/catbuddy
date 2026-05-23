@@ -2,16 +2,17 @@
 
 Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。开发联调见 [README.md](../README.md)。
 
-## 官方 Gateway（用户无需配置）
+## 官方域名（用户无需配置）
 
-| 端 | 生产默认 | 开发默认 |
-|----|----------|----------|
-| Web | `https://learnbuddy.ganzhibin.iuc` | Vite 代理 → `127.0.0.1:18765` |
-| Desktop（安装包） | `wss://learnbuddy.ganzhibin.iuc/ws` | `ws://127.0.0.1:18765/ws` |
+| 端 | 生产域名 | 开发 |
+|----|----------|------|
+| **Web**（浏览器打开） | `https://learnbuddy.ganzhibin.icu` | `http://127.0.0.1:5173` |
+| **Gateway**（API + WS） | `https://gateway.ganzhibin.icu` | `127.0.0.1:18765` |
+| **Desktop**（安装包） | 连 `wss://gateway.ganzhibin.icu/ws` | `ws://127.0.0.1:18765/ws` |
 
-用户只需 **邮箱登录** + Desktop **侧栏远程控制**；路由靠同一邮箱，不靠用户填 URL/密钥。
+用户只需 **邮箱登录** + Desktop **侧栏远程控制**；路由靠同一邮箱。
 
-服务端部署时 `GATEWAY_SECRET` 须与客户端内置 `learnbuddy-desktop-pair-v1` 一致（见 `packages/shared/src/gateway-endpoints.ts`）。自托管可在 Desktop 设置 →「自托管 / 高级」覆盖。
+服务端 `GATEWAY_SECRET` 须与客户端内置 `learnbuddy-desktop-pair-v1` 一致。常量见 `packages/shared/src/gateway-endpoints.ts`。
 
 ## 架构
 
@@ -55,7 +56,8 @@ Compose 会将容器内 `MYSQL_HOST` 设为 `mysql`（覆盖 `.env` 里的 `127.
 
 - [ ] `GATEWAY_JWT_SECRET` 改为强随机值
 - [ ] `GATEWAY_SECRET=learnbuddy-desktop-pair-v1`（与客户端内置一致）
-- [ ] DNS：`learnbuddy.ganzhibin.iuc` → Gateway 服务（TLS）
+- [ ] DNS：`gateway.ganzhibin.icu` → Gateway 服务器（TLS + WSS）
+- [ ] DNS：`learnbuddy.ganzhibin.icu` → Web 静态站（TLS）
 - [ ] `GATEWAY_AUTH_REQUIRE_EMAIL=true`、`GATEWAY_AUTH_DEV_BYPASS=false`
 - [ ] SMTP 可用（邮箱 OTP）
 - [ ] MySQL 持久化卷
@@ -65,7 +67,7 @@ Compose 会将容器内 `MYSQL_HOST` 设为 `mysql`（覆盖 `.env` 里的 `127.
 
 ```bash
 pnpm build:web
-# 产出: apps/web/dist/ — 默认连 https://learnbuddy.ganzhibin.iuc
+# 产出: apps/web/dist/ — 部署到 learnbuddy.ganzhibin.icu；API 默认 gateway.ganzhibin.icu
 ```
 
 自托管或同域反代时才需要 `apps/web/.env.production`（见 `.env.production.example`）。
@@ -123,7 +125,7 @@ Gateway 已启用 CORS；WebSocket 须 `wss://`。
 pnpm build:desktop
 ```
 
-安装后：**登录 → 侧栏打开远程控制**，自动连 `learnbuddy.ganzhibin.iuc`。无需配置 Gateway URL。
+安装后：**登录 → 侧栏打开远程控制**，自动连 `gateway.ganzhibin.icu`。
 
 开发者可选 `apps/desktop/.env`（API Key、本地 Gateway 覆盖）。Gateway 服务端见 `gateway/.env`。
 
@@ -138,8 +140,8 @@ pnpm build:desktop
 
 ## 上线前自检
 
-- [ ] `curl …/health` → `ok: true`
-- [ ] Web 邮箱登录 → bootstrap 成功
+- [ ] `curl https://gateway.ganzhibin.icu/health` → `ok: true`
+- [ ] 打开 `https://learnbuddy.ganzhibin.icu` 能登录
 - [ ] Desktop 远程控制已连接（health 中 `desktops ≥ 1`）
 - [ ] Web 发消息有流式回复（非 503）
 - [ ] 新建对话同步到 Desktop 侧栏

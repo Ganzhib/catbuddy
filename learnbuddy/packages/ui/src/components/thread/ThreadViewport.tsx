@@ -242,8 +242,16 @@ export function ThreadViewport({
       >
         {hasMessages ? (
           <div ref={contentRef} className="mx-auto flex min-h-full w-full max-w-[64rem] flex-col">
-            <div className="flex-1 px-4 pb-20 pt-4">
-              <div className="mx-auto w-full max-w-[49.5rem]">
+            <div className="relative flex-1 px-4 pb-4 pt-4">
+              <div
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-28",
+                  "bg-gradient-to-t from-[hsl(220_28%_92%)] via-[hsl(215_32%_94%)/0.55] to-transparent",
+                  "dark:from-background dark:via-background/50",
+                )}
+              />
+              <div className="relative z-0 mx-auto w-full max-w-[49.5rem] pb-16">
                 <ThreadMessages
                   messages={visibleMessages}
                   isStreaming={isStreaming}
@@ -256,11 +264,9 @@ export function ThreadViewport({
             <div
               ref={composerDockRef}
               data-testid="thread-composer-dock"
-              className="sticky bottom-0 z-10 mt-auto bg-background"
+              className="sticky bottom-0 z-10 mt-auto px-4 pb-3 pt-1"
             >
-              <div className="px-4 pb-3">
-                {composer}
-              </div>
+              {composer}
             </div>
           </div>
         ) : (

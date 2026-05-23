@@ -2,34 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens — HSL form; light mode uses warm cream (米黄护眼). */
+/* Design tokens — HSL form; light mode uses cool blue-gray (呼应登录页冷色调). */
 @layer base {
   :root {
-    --background: 44 38% 96%;
-    --foreground: 32 16% 17%;
-    --card: 44 42% 97.5%;
-    --card-foreground: 32 16% 17%;
-    --popover: 44 42% 97.5%;
-    --popover-foreground: 32 16% 17%;
-    --primary: 36 20% 22%;
-    --primary-foreground: 44 40% 97%;
-    --secondary: 42 28% 92%;
-    --secondary-foreground: 32 16% 14%;
-    --muted: 42 26% 91%;
-    --muted-foreground: 32 10% 42%;
-    --accent: 43 30% 89.5%;
-    --accent-foreground: 32 16% 14%;
+    --background: 210 38% 97%;
+    --foreground: 220 28% 18%;
+    --card: 210 32% 98%;
+    --card-foreground: 220 28% 18%;
+    --popover: 210 32% 98%;
+    --popover-foreground: 220 28% 18%;
+    --primary: 220 38% 28%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 215 28% 93%;
+    --secondary-foreground: 220 25% 16%;
+    --muted: 215 26% 92%;
+    --muted-foreground: 220 12% 42%;
+    --accent: 214 30% 90%;
+    --accent-foreground: 220 25% 16%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 40 22% 84%;
-    --input: 40 22% 84%;
-    --ring: 38 18% 32%;
+    --border: 215 22% 84%;
+    --input: 215 22% 84%;
+    --ring: 220 35% 32%;
     --radius: 0.4375rem;
-    --sidebar: 43 34% 94%;
-    --sidebar-foreground: 32 16% 14%;
-    --sidebar-accent: 42 28% 88%;
-    --sidebar-accent-foreground: 32 16% 12%;
-    --sidebar-border: 40 20% 82%;
+    --sidebar: 212 34% 95%;
+    --sidebar-foreground: 220 25% 16%;
+    --sidebar-accent: 215 28% 89%;
+    --sidebar-accent-foreground: 220 25% 14%;
+    --sidebar-border: 215 20% 82%;
   }
 
   .dark {
@@ -75,7 +75,29 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  ::selection {
+  /* 浅色：冷色渐变（与登录页一致）；暗色：纯色背景，保持原黑夜模式 */
+  html:not(.dark) body {
+    background-image:
+      radial-gradient(ellipse 90% 55% at 100% 0%, hsl(210 55% 94% / 0.45), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 0% 100%, hsl(220 45% 92% / 0.35), transparent 50%),
+      linear-gradient(
+        135deg,
+        hsl(var(--background)) 0%,
+        hsl(215 32% 94%) 50%,
+        hsl(220 28% 92%) 100%
+      );
+    background-attachment: fixed;
+  }
+
+  html.dark body {
+    background-image: none;
+  }
+
+  html:not(.dark) ::selection {
+    @apply bg-sky-500/20;
+  }
+
+  html.dark ::selection {
     @apply bg-primary/15;
   }
 }

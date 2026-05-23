@@ -182,16 +182,33 @@ export class GatewayDesktopClient {
   }
 
   private connect(): void {
+    // Prevent overlapping connections
+    if (this.ws) {
+      disposeWebSocket(this.ws)
+      this.ws = null
+    }
+
+    let ws: WebSocket
     try {
-      this.ws = new WebSocket(this.config.url)
+      ws = new WebSocket(this.config.url)
     } catch (err) {
       this._lastError = err instanceof Error ? err.message : String(err)
       this.options.onError?.(this._lastError)
       this.scheduleReconnect()
       return
     }
+    this.ws = ws
 
-    this.ws.on('open', () => {
+    // Attach error listener FIRST — ws may emit 'error' synchronously in edge cases
+    ws.on('error', (err) => {
+      if (ws !== this.ws) return  // already disposed, ignore stale events
+      this._lastError = err instanceof Error ? err.message : 'websocket_error'
+      console.warn('[gateway] error:', this._lastError)
+      this.options.onError?.(this._lastError)
+    })
+
+    ws.on('open', () => {
+      if (ws !== this.ws) return
       this.send({
         type: 'register',
         role: 'desktop',
@@ -201,23 +218,17 @@ export class GatewayDesktopClient {
       })
     })
 
-    this.ws.on('message', (data) => {
+    ws.on('message', (data) => {
+      if (ws !== this.ws) return
       let msg: GatewaySessionServerMessage
       try {
         msg = JSON.parse(data.toString()) as GatewaySessionServerMessage
-      } catch {
-        return
-      }
+      } catch { return }
       this.handleServerMessage(msg)
     })
 
-    this.ws.on('error', (err) => {
-      this._lastError = err instanceof Error ? err.message : 'websocket_error'
-      console.warn('[gateway] error:', this._lastError)
-      this.options.onError?.(this._lastError)
-    })
-
-    this.ws.on('close', () => {
+    ws.on('close', () => {
+      if (ws !== this.ws) return
       this._connected = false
       console.log('[gateway] disconnected')
       this.options.onDisconnected?.()
@@ -226,6 +237,14 @@ export class GatewayDesktopClient {
   }
 
   private handleServerMessage(msg: GatewaySessionServerMessage): void {
+    try {
+      this._handleServerMessageImpl(msg)
+    } catch (err) {
+      console.error('[gateway] handleServerMessage error:', err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  private _handleServerMessageImpl(msg: GatewaySessionServerMessage): void {
     if (msg.type === 'registered') {
       this._connected = true
       this._lastError = undefined
@@ -349,16 +368,23 @@ export class GatewayDesktopClient {
   }
 
   private send(msg: GatewaySessionClientMessage): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    try {
       this.ws.send(JSON.stringify(msg))
+    } catch {
+      // socket in bad state — close will trigger reconnect
+      try { this.ws.terminate() } catch { /* ignore */ }
     }
   }
 
   private scheduleReconnect(): void {
-    if (!this._reconnectEnabled || this.reconnectTimer) return
+    if (!this._reconnectEnabled || this.reconnectTimer || !this.ws) return
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      this.connect()
+      // Re-check: stop() may have been called, or a new connect() succeeded in between
+      if (this._reconnectEnabled && !this._connected) {
+        this.connect()
+      }
     }, GATEWAY_DESKTOP_RECONNECT_MS)
   }
 }
@@ -403,20 +429,20 @@ export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
   return loadGatewayConfigFromSources()
 }
 
-/** Avoid `close()` on CONNECTING sockets — `ws` throws and crashes Electron main. */
+/** Safely dispose a WebSocket — never throw, even on CONNECTING / CLOSING states.
+ *  The `ws` library throws "WebSocket was closed before the connection was established"
+ *  when terminate/close is called on a socket whose TCP handshake hasn't completed. */
 function disposeWebSocket(ws: WebSocket): void {
-  ws.removeAllListeners()
-  const state = ws.readyState
-  if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) {
-    return
-  }
-  if (state === WebSocket.CONNECTING) {
-    ws.terminate()
-    return
-  }
+  try { ws.removeAllListeners() } catch { /* ignore */ }
   try {
+    const state = ws.readyState
+    if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) return
+    if (state === WebSocket.CONNECTING) {
+      ws.terminate()
+      return
+    }
     ws.close()
   } catch {
-    ws.terminate()
+    try { ws.terminate() } catch { /* final fallback */ }
   }
 }

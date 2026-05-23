@@ -56,7 +56,16 @@ function listReleaseDirs() {
   if (preferred) {
     return [path.join(desktopRoot, preferred)];
   }
-  return [path.join(desktopRoot, 'release-fresh'), path.join(desktopRoot, 'release')];
+  const names = fs
+    .readdirSync(desktopRoot, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && /^release/.test(d.name))
+    .map((d) => d.name)
+    .sort((a, b) => {
+      const ta = fs.statSync(path.join(desktopRoot, a)).mtimeMs;
+      const tb = fs.statSync(path.join(desktopRoot, b)).mtimeMs;
+      return tb - ta;
+    });
+  return names.map((n) => path.join(desktopRoot, n));
 }
 
 function findInstaller({ expectedName }) {

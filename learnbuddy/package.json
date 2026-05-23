@@ -30,7 +30,8 @@
     "deploy:gateway:local": "node deploy/deploy.cjs --local",
     "deploy:gateway:pack": "node deploy/deploy.cjs --skip-upload",
     "deploy:gateway:nginx": "node deploy/deploy.cjs --nginx-only",
-    "deploy:web": "node deploy/deploy-web.cjs"
+    "deploy:web": "node deploy/deploy-web.cjs",
+    "deploy:web:full": "node deploy/deploy-web.cjs --with-desktop"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

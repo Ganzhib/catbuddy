@@ -37,6 +37,12 @@ function copyMainAssetsPlugin() {
     if (fs.existsSync(preloadSrc)) {
       copyDirRecursive(preloadSrc, preloadDest);
     }
+    for (const envName of [".env.production"]) {
+      const envSrc = path.join(__dirname, envName);
+      if (fs.existsSync(envSrc)) {
+        fs.copyFileSync(envSrc, path.join(__dirname, "dist-electron", envName));
+      }
+    }
   }
 
   return {

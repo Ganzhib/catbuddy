@@ -70,7 +70,7 @@ Verbose 会启用：
 1. 手动关掉正在运行的 learnbuddy（含从 `release/win-unpacked` 启动的实例）
 2. `pnpm run kill-app` 后再 `pnpm run build`
 3. 任务管理器结束残留的 `learnbuddy.exe` / 从本目录启动的 `electron.exe`
-4. 仍锁文件时：构建会自动改到 `release-fresh/` 输出（安装包在 `apps/desktop/release-fresh/`）
+4. 仍锁文件时：构建会自动改用 `release-fresh/` 或 `release-build-<时间戳>/`（安装包在该目录下）
 5. 或手动删除整个 `apps/desktop/release` 后再打包
 6. Windows 可对 `apps/desktop/release` 加 Defender 排除，避免扫描占用 `app.asar`
 

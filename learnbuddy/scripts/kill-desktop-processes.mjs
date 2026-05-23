@@ -1,42 +1,57 @@
 #!/usr/bin/env node
 /**
- * Stop processes that lock apps/desktop/release, then unlock release/win-unpacked.
- * Exit 0 = ok; 2 = still locked (caller may use release-fresh output).
+ * Stop processes that lock apps/desktop/release* (cross-platform, no .ps1).
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { unlockDesktopRelease } from './unlock-desktop-release.mjs';
 
-const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
-const desktopRoot = path.resolve(scriptsDir, '..', 'apps', 'desktop');
+import { unlockAllReleaseDirs } from './unlock-desktop-release.mjs';
+
+const desktopRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'apps',
+  'desktop',
+);
 
 function log(msg) {
   console.log(`[kill-desktop] ${msg}`);
 }
 
-function runExe(command, args) {
-  return spawnSync(command, args, {
-    stdio: 'inherit',
+function taskkill(image) {
+  const r = spawnSync('taskkill', ['/F', '/IM', image], {
+    stdio: 'pipe',
+    encoding: 'utf8',
     windowsHide: true,
   });
+  if (r.status === 0) log(`stopped ${image}`);
 }
 
 function killWindows() {
-  const ps1 = path.join(scriptsDir, 'kill-desktop-win.ps1');
-  const r = runExe('powershell.exe', [
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    ps1,
-    '-DesktopRoot',
-    desktopRoot,
-  ]);
-  if (r.error) {
-    log(`powershell failed: ${r.error.message}`);
-    process.exit(1);
-  }
+  taskkill('learnbuddy.exe');
+  taskkill('app-builder.exe');
+
+  const root = desktopRoot.replace(/\\/g, '\\\\');
+  const ps = [
+    'Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |',
+    'Where-Object {',
+    "  ($_.Name -eq 'learnbuddy.exe') -or",
+    "  ($_.Name -eq 'electron.exe' -and (",
+    `    ($_.CommandLine -match 'learnbuddy') -or`,
+    `    ($_.ExecutablePath -match '${root}\\\\release') -or`,
+    `    ($_.CommandLine -match 'win-unpacked')`,
+    '  ))',
+    '} | ForEach-Object {',
+    "  Write-Host ('[kill-desktop] Stop ' + $_.Name + ' PID ' + $_.ProcessId);",
+    '  Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue',
+    '}',
+  ].join(' ');
+
+  spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps], {
+    stdio: 'inherit',
+    windowsHide: true,
+  });
 }
 
 function killUnix() {
@@ -52,10 +67,5 @@ if (process.platform === 'win32') {
   killUnix();
 }
 
-const unlock = unlockDesktopRelease();
-if (!unlock.ok) {
-  log('done (still locked — build will use release-fresh if supported)');
-  process.exit(2);
-}
+unlockAllReleaseDirs();
 log('done');
-process.exit(0);

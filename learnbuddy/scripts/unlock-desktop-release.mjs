@@ -1,35 +1,34 @@
 #!/usr/bin/env node
 /**
- * Unlock apps/desktop/release for electron-builder.
- * Returns exit 0 if release/win-unpacked is gone or removable; 2 if still locked.
+ * Clear apps/desktop release folders (win-unpacked); pick electron-builder output dir.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
-const desktopRoot = path.resolve(scriptsDir, '..', 'apps', 'desktop');
-const releaseDir = path.join(desktopRoot, 'release');
-const releaseUnpacked = path.join(releaseDir, 'win-unpacked');
+const desktopRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'apps',
+  'desktop',
+);
+
+const PREFERRED_OUTPUT_DIRS = ['release', 'release-fresh'];
 
 function log(msg) {
   console.log(`[unlock-release] ${msg}`);
 }
 
 function sleepMs(ms) {
-  if (process.platform === 'win32') {
-    spawnSync('powershell.exe', ['-NoProfile', '-Command', `Start-Sleep -Milliseconds ${ms}`], {
-      stdio: 'ignore',
-      windowsHide: true,
-    });
-  } else {
-    spawnSync('sleep', [String(ms / 1000)], { stdio: 'ignore' });
-  }
+  spawnSync(process.execPath, ['-e', `const d=Date.now();while(Date.now()-d<${ms});`], {
+    stdio: 'ignore',
+    windowsHide: true,
+  });
 }
 
 function tryRm(target) {
-  fs.rmSync(target, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+  fs.rmSync(target, { recursive: true, force: true, maxRetries: 3, retryDelay: 250 });
 }
 
 function tryRmdirWindows(target) {
@@ -39,52 +38,70 @@ function tryRmdirWindows(target) {
   });
 }
 
-function tryRenameAway(dir) {
-  if (!fs.existsSync(dir)) return true;
-  const backup = `${dir}.bak.${Date.now()}`;
-  fs.renameSync(dir, backup);
-  log(`renamed to ${path.basename(backup)}`);
-  return true;
-}
+function tryClearUnpacked(unpacked) {
+  if (!fs.existsSync(unpacked)) return true;
 
-export function unlockDesktopRelease() {
-  if (!fs.existsSync(releaseUnpacked)) {
-    log('release/win-unpacked absent (ok)');
-    return { ok: true, usedFreshOutput: false };
-  }
-
-  for (let attempt = 1; attempt <= 4; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      tryRm(releaseUnpacked);
-      log('removed release/win-unpacked');
-      return { ok: true, usedFreshOutput: false };
+      tryRm(unpacked);
+      return true;
     } catch {
-      if (process.platform === 'win32') tryRmdirWindows(releaseUnpacked);
-      if (!fs.existsSync(releaseUnpacked)) {
-        log('removed via rmdir');
-        return { ok: true, usedFreshOutput: false };
-      }
-      sleepMs(500);
+      if (process.platform === 'win32') tryRmdirWindows(unpacked);
+      if (!fs.existsSync(unpacked)) return true;
+      sleepMs(400);
     }
   }
 
   try {
-    tryRenameAway(releaseUnpacked);
-    return { ok: true, usedFreshOutput: false };
+    const backup = `${unpacked}.bak.${Date.now()}`;
+    fs.renameSync(unpacked, backup);
+    log(`renamed ${path.basename(path.dirname(unpacked))}/win-unpacked → ${path.basename(backup)}`);
+    return true;
   } catch (err) {
-    log(`rename failed: ${err instanceof Error ? err.message : err}`);
+    log(`${path.relative(desktopRoot, unpacked)} locked: ${err instanceof Error ? err.message : err}`);
+    return false;
+  }
+}
+
+/** Try release + release-fresh (best effort). */
+export function unlockAllReleaseDirs() {
+  for (const name of PREFERRED_OUTPUT_DIRS) {
+    const unpacked = path.join(desktopRoot, name, 'win-unpacked');
+    if (fs.existsSync(unpacked)) {
+      if (tryClearUnpacked(unpacked)) {
+        log(`cleared ${name}/win-unpacked`);
+      }
+    }
+  }
+}
+
+/**
+ * Directory name for electron-builder `directories.output` (under apps/desktop).
+ */
+export function pickElectronBuilderOutputDir() {
+  const forced = process.env.LEARNBUDDY_BUILD_OUTPUT?.trim();
+  if (forced) {
+    log(`output dir (env): ${forced}`);
+    return forced;
   }
 
-  return { ok: false, usedFreshOutput: false };
+  for (const name of PREFERRED_OUTPUT_DIRS) {
+    const unpacked = path.join(desktopRoot, name, 'win-unpacked');
+    if (tryClearUnpacked(unpacked)) {
+      log(`output dir: ${name}`);
+      return name;
+    }
+  }
+
+  const stamp = `release-build-${Date.now()}`;
+  log(`release & release-fresh locked → output dir: ${stamp}`);
+  return stamp;
 }
 
 function main() {
-  const result = unlockDesktopRelease();
-  if (result.ok) process.exit(0);
-  log('release/win-unpacked still locked');
-  process.exit(2);
+  unlockAllReleaseDirs();
+  pickElectronBuilderOutputDir();
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  main();
-}
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) main();

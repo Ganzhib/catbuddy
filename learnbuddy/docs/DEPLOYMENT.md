@@ -81,7 +81,14 @@ pnpm build:web
 
 （已包含 `stage:desktop-installer`；仅改前端、安装包已就位时用 `pnpm build:web:only`。）
 
-或一键：`pnpm build:release`（desktop → web）。
+生产上传：
+
+```bash
+pnpm deploy:web:full    # 桌面包 + web 构建 + 上传到服务器（推荐）
+# 或已打过桌面包：pnpm deploy:web
+```
+
+或本地一键：`pnpm build:release`（desktop → web，不上传）。
 
 可选：`apps/web/.env.production` 中设置 `VITE_DESKTOP_DOWNLOAD_URL` 指向 CDN 完整 URL。
 

@@ -15,6 +15,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { pickElectronBuilderOutputDir } from './unlock-desktop-release.mjs';
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const desktopRoot = path.join(repoRoot, 'apps', 'desktop');
 
@@ -91,8 +93,6 @@ if (verbose && !process.env.DEBUG) {
   log(`DEBUG=${ebEnv.DEBUG}`);
 }
 
-let useFreshOutput = process.env.LEARNBUDDY_BUILD_OUTPUT === 'release-fresh';
-
 if (!noKill) {
   const killScript = path.join(scriptsDir, 'kill-desktop-processes.mjs');
   log('▶ Stop processes & unlock release/');
@@ -101,30 +101,22 @@ if (!noKill) {
     stdio: 'inherit',
     windowsHide: true,
   });
-  if (killResult.status === 2) {
-    useFreshOutput = true;
-    log('release/win-unpacked still locked → output directory: release-fresh');
-    log('  (close learnbuddy.exe / dev Electron; or delete apps/desktop/release manually)');
-  } else if (killResult.status !== 0) {
+  if (killResult.status !== 0) {
     log(`kill script exit ${killResult.status ?? 1}`);
     process.exit(killResult.status ?? 1);
-  } else {
-    log('✓ release/ unlocked');
   }
 } else {
   log('Skipping process kill (LEARNBUDDY_BUILD_NO_KILL / --no-kill)');
 }
 
-if (useFreshOutput) {
-  ebArgs.push('--config.directories.output=release-fresh');
-}
+const outputDirName = pickElectronBuilderOutputDir();
+ebArgs.push(`--config.directories.output=${outputDirName}`);
 
 log(`▶ electron-builder → ${targetLabel}`);
 log('  Typical slow steps: copy Electron → asar → NSIS (makensis + compression)');
 runStep(`Package (${targetLabel})`, 'pnpm', ebArgs, ebEnv);
 
-const outDirName = useFreshOutput ? 'release-fresh' : 'release';
-const outDir = path.join(desktopRoot, outDirName);
+const outDir = path.join(desktopRoot, outputDirName);
 log(`Done. Output folder: ${outDir}`);
 
 const pkg = JSON.parse(fs.readFileSync(path.join(desktopRoot, 'package.json'), 'utf8'));

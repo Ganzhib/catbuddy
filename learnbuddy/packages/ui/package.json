@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@learnbuddy/client": "workspace:*",
+    "@learnbuddy/gateway-sdk-web": "workspace:*",
     "@learnbuddy/platform": "workspace:*",
     "@learnbuddy/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",

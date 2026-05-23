@@ -16,13 +16,13 @@
     "lint": "tsc --noEmit",
     "gateway:dev": "pnpm --filter @learnbuddy/gateway dev",
     "gateway:test": "node ../../gateway/test-all.mjs",
-    "gateway:web": "vite --open /gateway-web.html",
     "brand:generate": "node ../../scripts/generate-brand.mjs",
     "brand:cutout": "node ../../scripts/remove-icon-background.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
     "@learnbuddy/client": "workspace:*",
+    "@learnbuddy/gateway-sdk-desktop": "workspace:*",
     "@learnbuddy/platform": "workspace:*",
     "@learnbuddy/shared": "workspace:*",
     "@learnbuddy/ui": "workspace:*",

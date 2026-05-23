@@ -6,12 +6,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./globals.css": "./src/globals.css",
-    "./i18n": "./src/i18n/index.ts",
-    "./gateway-web/*": "./src/gateway-web/*"
+    "./i18n": "./src/i18n/index.ts"
   },
   "dependencies": {
     "@learnbuddy/client": "workspace:*",
-    "@learnbuddy/gateway-sdk-web": "workspace:*",
     "@learnbuddy/platform": "workspace:*",
     "@learnbuddy/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",

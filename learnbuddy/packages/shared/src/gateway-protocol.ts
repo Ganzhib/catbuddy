@@ -1,8 +1,7 @@
 /**
  * Unified learnbuddy Gateway wire protocol.
  *
- * - **Session WS** (`register` / `ui_event` …): production Web ↔ Gateway ↔ Desktop.
- * - **MessageFrame** (`auth` / `push` / `ack` …): push gateway experiment / future scale-out.
+ * Session WebSocket (`register` / `ui_event` / `inbound_message` …): Web ↔ Gateway ↔ Desktop.
  */
 
 // ─── Session WebSocket (production) ─────────────────────────────────────────
@@ -35,6 +34,12 @@ export type GatewaySessionClientMessage =
       type: 'thread_snapshot'
       sessionKey: string
       payload: Record<string, unknown> | null
+    }
+  | {
+      type: 'ui_event'
+      sessionKey: string
+      chatId: string
+      event: Record<string, unknown>
     }
 
 export type GatewaySessionServerMessage =

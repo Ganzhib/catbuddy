@@ -5,7 +5,6 @@ export default {
   presets: [uiPreset],
   content: [
     "./index.html",
-    "./gateway-web.html",
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],

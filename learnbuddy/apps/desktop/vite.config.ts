@@ -54,6 +54,10 @@ export default defineConfig({
             alias: {
               "@learnbuddy/shared/brand": path.resolve(repoRoot, "packages/shared/src/brand.mjs"),
               "@learnbuddy/shared": path.resolve(repoRoot, "packages/shared/src/index.ts"),
+              "@learnbuddy/gateway-sdk-desktop": path.resolve(
+                repoRoot,
+                "gateway/packages/sdk-desktop/src/index.ts",
+              ),
             },
           },
         },
@@ -71,6 +75,10 @@ export default defineConfig({
       { find: /^@learnbuddy\/shared$/, replacement: path.resolve(repoRoot, "packages/shared/src/index.ts") },
       { find: "@learnbuddy/client", replacement: path.resolve(repoRoot, "packages/client/src/index.ts") },
       { find: "@learnbuddy/platform", replacement: path.resolve(repoRoot, "packages/platform/src/index.ts") },
+      {
+        find: "@learnbuddy/gateway-sdk-desktop",
+        replacement: path.resolve(repoRoot, "gateway/packages/sdk-desktop/src/index.ts"),
+      },
     ],
   },
   server: {
@@ -108,7 +116,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        "gateway-web": path.resolve(__dirname, "gateway-web.html"),
       },
     },
   },

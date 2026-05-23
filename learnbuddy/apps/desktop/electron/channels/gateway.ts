@@ -2,7 +2,7 @@
  * Fan-out Agent outbound events to Gateway as ui_event (for Web clients).
  */
 import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "@learnbuddy/shared";
-import type { GatewayWsClient } from "../sync/gateway-ws-client.js";
+import type { GatewayDesktopClient } from "@learnbuddy/gateway-sdk-desktop";
 import { toolEventToUiHint } from "../sync/tool-event-map.js";
 import type { BaseChannel } from "./base";
 
@@ -12,7 +12,7 @@ export class GatewayChannel implements BaseChannel {
 
   private _running = false;
 
-  constructor(private readonly gateway: GatewayWsClient) {}
+  constructor(private readonly gateway: GatewayDesktopClient) {}
 
   get running(): boolean {
     return this._running;

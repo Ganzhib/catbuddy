@@ -20,8 +20,7 @@
     "gateway:start": "pnpm --filter @learnbuddy/gateway start",
     "gateway:test": "pnpm --dir gateway test:e2e",
     "gateway:test:acceptance": "pnpm --dir gateway test:acceptance",
-    "gateway:test:all": "pnpm --dir gateway test:all",
-    "gateway:web": "pnpm --filter @learnbuddy/web gateway:web"
+    "gateway:test:all": "pnpm --dir gateway test:all"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

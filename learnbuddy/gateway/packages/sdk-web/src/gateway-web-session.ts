@@ -1,6 +1,6 @@
 /**
  * Shared Web ⇄ Gateway session protocol (WS subscribe + HTTP send).
- * Used by {@link GatewayTransport} and UI helpers in `@learnbuddy/ui`.
+ * Used by {@link GatewayTransport} (`@learnbuddy/gateway-sdk-web`).
  */
 import type {
   GatewayHttpSendResponse,

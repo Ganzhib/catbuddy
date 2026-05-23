@@ -40,7 +40,7 @@ GATEWAY_SECRET=your-desktop-secret
 
 ### 3. Web
 
-1. 在 `apps/web`（或 gateway-web）**用同一邮箱登录**（OTP/JWT）。
+1. 在 `apps/web` **用同一邮箱登录**（OTP/JWT）。
 2. Bearer 自动为登录后的 JWT，**无需** `/api/pair` 或自选 token。
 3. 发消息：`POST /api/sessions/{sessionKey}/messages`，`Authorization: Bearer <JWT>`。
 
@@ -102,6 +102,6 @@ ws.send(JSON.stringify({
 | 路径 | 说明 |
 |------|------|
 | `gateway/.../gateway-state.ts` | `deviceIdByAccountEmail` 路由 |
-| `electron/sync/gateway-ws-client.ts` | 桌面 WS + `accountEmail` |
-| `packages/ui/.../AuthGate.tsx` | 登录后 `setGatewayAccountEmail` |
-| `packages/ui/src/lib/gateway-api.ts` | Web HTTP/WS（JWT） |
+| `gateway/packages/sdk-desktop` | 桌面 `GatewayDesktopClient` |
+| `gateway/packages/sdk-web` | Web `GatewayTransport` |
+| `packages/ui/.../AuthGate.tsx` | 登录后 `setGatewayAccountEmail` + `createLearnbuddyClient` |

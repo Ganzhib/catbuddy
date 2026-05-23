@@ -69,8 +69,6 @@ pnpm install
 
 | `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
 
-| `pnpm gateway:web` | 仅打开远程对话页 `/gateway-web.html` |
-
 | `pnpm build:desktop` | 桌面安装包 |
 
 | `pnpm build:web` | Web 静态资源 |
@@ -122,11 +120,7 @@ pnpm dev:web
 
 
 
-浏览器打开 `http://127.0.0.1:5173/`。Bootstrap 使用 dev Web token（`dev-web`），消息由桌面 Agent 处理。
-
-
-
-- 轻量远程对话页：`http://127.0.0.1:5173/gateway-web.html` 或 `pnpm gateway:web`
+浏览器打开 `http://127.0.0.1:5173/`。邮箱登录后由 `AuthGate` + `GatewayTransport` 连 Gateway，消息由桌面 Agent 处理。
 
 - 桌面 **设置 → 远程控制**：须与 Web **同一邮箱** 登录；开启远程控制后自动注册 Gateway
 

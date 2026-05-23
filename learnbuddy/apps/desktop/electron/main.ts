@@ -14,9 +14,10 @@ import { log } from "./utils";
 import { MessageBus } from "./bus/index.js";
 import { ChannelManager, DesktopChannel, GatewayChannel } from "./channels/index.js";
 import {
+  GatewayDesktopClient,
   loadGatewayConfigFromEnv,
-  GatewayWsClient,
-} from "./sync/gateway-ws-client.js";
+} from "@learnbuddy/gateway-sdk-desktop";
+import { buildWebuiThreadFromSession } from "./sync/session-thread.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 按优先级加载 .env（延迟到 app ready 后）
@@ -26,7 +27,7 @@ let agentLoop: AgentLoop | null = null;
 let sessions: SessionManager | null = null;
 let bus: MessageBus | null = null;
 let channelManager: ChannelManager | null = null;
-let gatewayWsClient: GatewayWsClient | null = null;
+let gatewayWsClient: GatewayDesktopClient | null = null;
 let appConfig: any = null;
 let appConfigFile = "";
 let appSessions: SessionManager | null = null;
@@ -53,22 +54,37 @@ function applyGatewayRemote(): void {
     gatewayAccountEmail?.trim()
     || gwCfg.accountEmail?.trim()
     || undefined;
-  gatewayWsClient = new GatewayWsClient({ ...gwCfg, accountEmail: email }, appBus);
-  gatewayWsClient.setSessionProvider({
-    list: () => appSessions!.list(),
-    getDetail: (key) => appSessions!.getDetail(key),
-    getOrCreate: (key) => appSessions!.getOrCreate(key),
-    importWebuiThread: (key, payload) =>
-      appSessions!.importWebuiThread(key, payload),
-  });
-  gatewayWsClient.setCreateSessionHandler((sessionKey, chatId) => {
-    appSessions!.getOrCreate(sessionKey);
-    gatewayWsClient!.focusSession(sessionKey);
-    console.log("[main] Gateway create_session:", sessionKey);
-    for (const win of BrowserWindow.getAllWindows()) {
-      win.webContents.send("session:created", { sessionKey, chatId });
-    }
-  });
+  gatewayWsClient = new GatewayDesktopClient(
+    { ...gwCfg, accountEmail: email },
+    {
+      sessionProvider: {
+        list: () => appSessions!.list(),
+        getDetail: (key) => appSessions!.getDetail(key),
+        getOrCreate: (key) => appSessions!.getOrCreate(key),
+        importWebuiThread: (key, payload) =>
+          appSessions!.importWebuiThread(key, payload),
+      },
+      buildThreadSnapshot: buildWebuiThreadFromSession,
+      publishInbound: (msg) => {
+        appBus!.publishInbound(msg);
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send("agent:gateway-inbound", {
+            chatId: msg.chatId,
+            sessionKey: msg.sessionKeyOverride ?? `desktop:${msg.chatId}`,
+            content: msg.content,
+          });
+        }
+      },
+      onCreateSession: (sessionKey, chatId) => {
+        appSessions!.getOrCreate(sessionKey);
+        gatewayWsClient!.focusSession(sessionKey);
+        console.log("[main] Gateway create_session:", sessionKey);
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send("session:created", { sessionKey, chatId });
+        }
+      },
+    },
+  );
   gatewayWsClient.start();
   appChannelManager.register(new GatewayChannel(gatewayWsClient));
   const rows = appSessions.list();

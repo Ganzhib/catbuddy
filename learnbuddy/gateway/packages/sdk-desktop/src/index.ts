@@ -1,7 +1,17 @@
-/**
- * Desktop Gateway session client lives in the Electron app:
- * `apps/desktop/electron/sync/gateway-ws-client.ts`
- *
- * This package is reserved for a future extracted SDK; no runtime exports yet.
- */
-export {}
+/** Desktop session WebSocket client (Node). */
+export {
+  GatewayDesktopClient,
+  loadGatewayConfigFromEnv,
+  type GatewayCreateSessionHandler,
+  type GatewayDesktopClientConfig,
+  type GatewayDesktopClientOptions,
+  type GatewayDesktopClientStatus,
+  type GatewayInboundHandler,
+  type GatewaySessionProvider,
+  type ThreadSnapshotBuilder,
+} from './gateway-desktop-client.js'
+
+export {
+  GATEWAY_DESKTOP_RECONNECT_MS,
+  type GatewayInboundMessage,
+} from './gateway-desktop-session.js'

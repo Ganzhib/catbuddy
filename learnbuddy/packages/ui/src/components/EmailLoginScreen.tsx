@@ -208,8 +208,15 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
         </p>
       </aside>
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-10 sm:px-10">
-        <div className="mb-6 flex w-full max-w-[420px] flex-col gap-4 lg:hidden">
+      <main
+        className={cn(
+          'relative z-10 flex min-h-full flex-1 flex-col items-center justify-center',
+          glassPanel,
+          'rounded-none border-y-0 border-r-0 border-l-0',
+          'px-8 py-10 sm:px-12',
+        )}
+      >
+        <div className="mb-8 flex w-full flex-col gap-4 lg:hidden">
           <div className="flex items-center gap-3">
             <span className={cn(glassChip, 'p-2')}>
               <BrandMark className="h-9 w-9 object-contain" />
@@ -222,11 +229,11 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
           <DesktopClientDownload variant="login" />
         </div>
 
-        <div className={cn('w-full max-w-[420px] p-8 sm:p-9', glassPanel, 'shadow-2xl shadow-black/5')}>
+        <div className="w-full max-w-[420px]">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             {formEyebrow}
           </p>
-          <h2 className="mt-2 text-center text-2xl font-semibold tracking-tight">
+          <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight">
             {mode === 'login'
               ? '登录'
               : registerStep === 'verify'
@@ -246,7 +253,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             />
           )}
 
-          <p className="mb-5 mt-5 text-sm leading-relaxed text-muted-foreground">
+          <p className="mb-8 mt-6 text-center text-sm leading-relaxed text-muted-foreground">
             {mode === 'login'
               ? '登录后即可在网页继续对话；若桌面已开启「远程控制」，两侧会实时同步。'
               : registerStep === 'verify'
@@ -405,11 +412,11 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
               </div>
             </form>
           )}
-        </div>
 
-        <p className="mt-6 max-w-[420px] text-center text-[11px] leading-relaxed text-muted-foreground/90">
-          继续即表示您同意 learnbuddy 的服务条款与隐私政策。
-        </p>
+          <p className="mt-10 text-center text-[11px] leading-relaxed text-muted-foreground/90">
+            继续即表示您同意 learnbuddy 的服务条款与隐私政策。
+          </p>
+        </div>
       </main>
     </div>
   )
@@ -574,7 +581,7 @@ function SwitchModeButton({
   onClick: () => void
 }) {
   return (
-    <div className="space-y-2 pt-1">
+    <div className="space-y-2 pt-2">
       <p className="text-center text-xs text-muted-foreground">{label}</p>
       <Button
         type="button"
@@ -598,7 +605,7 @@ function ModeTabs({
   return (
     <div
       className={cn(
-        'mt-6 flex rounded-xl p-1',
+        'mt-8 flex rounded-xl p-1',
         'bg-[hsl(215_28%_90%/0.45)] dark:bg-white/[0.06] backdrop-blur-md',
         'border border-[hsl(215_22%_84%/0.5)] dark:border-white/10',
       )}
@@ -744,7 +751,7 @@ function OtpInput({
   return (
     <fieldset disabled={disabled}>
       <legend className="sr-only">验证码</legend>
-      <div className="flex justify-center gap-2 sm:gap-2.5" onPaste={handlePaste}>
+      <div className="flex justify-center gap-2.5 sm:gap-3" onPaste={handlePaste}>
         {digits.map((digit, index) => (
           <input
             key={index}

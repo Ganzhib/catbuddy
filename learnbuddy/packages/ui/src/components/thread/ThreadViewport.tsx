@@ -228,6 +228,28 @@ export function ThreadViewport({
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const syncKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty(
+        "--keyboard-offset",
+        `${Math.round(offset)}px`,
+      );
+    };
+
+    syncKeyboardOffset();
+    vv.addEventListener("resize", syncKeyboardOffset);
+    vv.addEventListener("scroll", syncKeyboardOffset);
+    return () => {
+      vv.removeEventListener("resize", syncKeyboardOffset);
+      vv.removeEventListener("scroll", syncKeyboardOffset);
+      document.documentElement.style.removeProperty("--keyboard-offset");
+    };
+  }, []);
+
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
       <div
@@ -242,7 +264,7 @@ export function ThreadViewport({
       >
         {hasMessages ? (
           <div ref={contentRef} className="mx-auto flex min-h-full w-full max-w-[64rem] flex-col">
-            <div className="relative flex-1 px-4 pb-4 pt-4">
+            <div className="relative flex-1 px-3 pb-4 pt-3 sm:px-4 sm:pt-4">
               <div
                 aria-hidden
                 className={cn(
@@ -264,15 +286,15 @@ export function ThreadViewport({
             <div
               ref={composerDockRef}
               data-testid="thread-composer-dock"
-              className="sticky bottom-0 z-10 mt-auto px-4 pb-3 pt-1"
+              className="sticky bottom-0 z-10 mt-auto px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px)+var(--keyboard-offset,0px))] pt-1 sm:px-4"
             >
               {composer}
             </div>
           </div>
         ) : (
-          <div ref={contentRef} className="mx-auto flex min-h-full w-full max-w-[72rem] flex-col px-4">
-            <div className="flex w-full flex-1 items-center justify-center pb-[7vh] pt-8">
-              <div className="flex w-full max-w-[58rem] flex-col gap-6">
+          <div ref={contentRef} className="mx-auto flex min-h-full w-full max-w-[72rem] flex-col px-3 sm:px-4">
+            <div className="flex w-full flex-1 items-center justify-center pb-[5vh] pt-6 sm:pb-[7vh] sm:pt-8">
+              <div className="flex w-full max-w-[58rem] flex-col gap-4 sm:gap-6">
                 {emptyState}
                 <div className="w-full">{composer}</div>
               </div>

@@ -24,18 +24,18 @@ export function ThreadHeader({
   const { t } = useTranslation();
   if (minimal) {
     return (
-      <div className="relative z-10 flex h-11 items-center justify-between gap-3 px-3 py-2">
+      <div className="relative z-10 flex h-11 items-center justify-between gap-3 px-3 py-2 pt-safe">
         <Button
           variant="ghost"
           size="icon"
           aria-label={t("thread.header.toggleSidebar")}
           onClick={onToggleSidebar}
           className={cn(
-            "h-7 w-7 rounded-md text-muted-foreground hover:bg-accent/35 hover:text-foreground",
+            "h-9 w-9 rounded-md text-muted-foreground hover:bg-accent/35 hover:text-foreground lg:h-7 lg:w-7",
             hideSidebarToggleOnDesktop && "lg:pointer-events-none lg:opacity-0",
           )}
         >
-          <Menu className="h-3.5 w-3.5" />
+          <Menu className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
         </Button>
         <ThemeButton theme={theme} onToggleTheme={onToggleTheme} label={t("thread.header.toggleTheme")} />
       </div>
@@ -43,7 +43,7 @@ export function ThreadHeader({
   }
 
   return (
-    <div className="relative z-10 flex items-center justify-between gap-3 px-3 py-2">
+    <div className="relative z-10 flex items-center justify-between gap-3 px-3 py-2 pt-safe">
       <div className="relative flex min-w-0 items-center gap-2">
         <Button
           variant="ghost"
@@ -51,14 +51,14 @@ export function ThreadHeader({
           aria-label={t("thread.header.toggleSidebar")}
           onClick={onToggleSidebar}
           className={cn(
-            "h-7 w-7 rounded-md text-muted-foreground hover:bg-accent/35 hover:text-foreground",
+            "h-9 w-9 rounded-md text-muted-foreground hover:bg-accent/35 hover:text-foreground lg:h-7 lg:w-7",
             hideSidebarToggleOnDesktop && "lg:pointer-events-none lg:opacity-0",
           )}
         >
-          <Menu className="h-3.5 w-3.5" />
+          <Menu className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
         </Button>
         <div className="flex min-w-0 items-center rounded-md px-1.5 py-1 text-[12px] font-medium text-muted-foreground">
-          <span className="max-w-[min(60vw,32rem)] truncate">{title}</span>
+          <span className="max-w-[min(52vw,32rem)] truncate sm:max-w-[min(60vw,32rem)]">{title}</span>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ function ThemeButton({
       size="icon"
       aria-label={label}
       onClick={onToggleTheme}
-      className="h-8 w-8 rounded-full text-muted-foreground/85 hover:bg-accent/40 hover:text-foreground"
+      className="h-9 w-9 rounded-full text-muted-foreground/85 hover:bg-accent/40 hover:text-foreground lg:h-8 lg:w-8"
     >
       {theme === "dark" ? (
         <Sun className="h-4 w-4" />

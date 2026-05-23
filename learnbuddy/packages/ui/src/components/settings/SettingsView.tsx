@@ -319,7 +319,13 @@ export function SettingsView({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_50%_0%,hsl(var(--muted))_0%,hsl(var(--background))_42%)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_50%_0%,hsl(var(--muted))_0%,hsl(var(--background))_42%)] lg:flex-row">
+      <SettingsMobileNav
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        onBackToChat={onBackToChat}
+        onLogout={onLogout}
+      />
       <SettingsSidebar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
@@ -328,12 +334,12 @@ export function SettingsView({
       />
 
       <main className="min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-[840px] px-6 py-10 sm:px-10 lg:py-14">
-          <div className="mb-8">
-            <p className="mb-2 text-[13px] font-medium text-muted-foreground">
+        <div className="mx-auto w-full max-w-[840px] px-4 py-6 sm:px-6 sm:py-10 lg:px-10 lg:py-14">
+          <div className="mb-6 sm:mb-8">
+            <p className="mb-2 hidden text-[13px] font-medium text-muted-foreground lg:block">
               {t("settings.sidebar.title")}
             </p>
-            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.035em] text-foreground sm:text-[34px]">
+            <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.035em] text-foreground sm:text-[28px] lg:text-[34px]">
               {t(`settings.nav.${activeSection}`)}
             </h1>
           </div>
@@ -422,6 +428,71 @@ const SETTINGS_NAV_ITEMS = [
   { key: "byok", icon: KeyRound },
 ] as const;
 
+function SettingsMobileNav({
+  activeSection,
+  onSelectSection,
+  onBackToChat,
+  onLogout,
+}: {
+  activeSection: SettingsSectionKey;
+  onSelectSection: (section: SettingsSectionKey) => void;
+  onBackToChat: () => void;
+  onLogout?: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <header className="shrink-0 border-b border-border/55 bg-card/62 px-3 pb-3 pt-safe backdrop-blur-xl dark:bg-card/45 lg:hidden">
+      <div className="flex items-center justify-between gap-2 py-2">
+        <button
+          type="button"
+          onClick={onBackToChat}
+          className="inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          {t("settings.backToChat")}
+        </button>
+        {onLogout ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onLogout}
+            aria-label={t("app.account.logout")}
+            className="h-9 w-9 rounded-full text-muted-foreground hover:bg-destructive/8 hover:text-destructive"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+          </Button>
+        ) : null}
+      </div>
+      <nav
+        aria-label={t("settings.sidebar.ariaLabel")}
+        className="grid grid-cols-2 gap-1 rounded-[14px] bg-muted/45 p-1"
+      >
+        {SETTINGS_NAV_ITEMS.map(({ key, icon: Icon }) => {
+          const active = key === activeSection;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-current={active ? "page" : undefined}
+              onClick={() => onSelectSection(key)}
+              className={cn(
+                "flex h-9 items-center justify-center gap-1.5 rounded-[10px] text-[13px] font-medium transition-colors",
+                active
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+              <span className="truncate">{t(`settings.nav.${key}`)}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </header>
+  );
+}
+
 function SettingsSidebar({
   activeSection,
   onSelectSection,
@@ -435,7 +506,7 @@ function SettingsSidebar({
 }) {
   const { t } = useTranslation();
   return (
-    <aside className="flex w-[17rem] shrink-0 flex-col border-r border-border/55 bg-card/62 px-3 py-4 shadow-[inset_-1px_0_0_rgba(255,255,255,0.55)] backdrop-blur-xl dark:bg-card/45 dark:shadow-none">
+    <aside className="hidden w-[17rem] shrink-0 flex-col border-r border-border/55 bg-card/62 px-3 py-4 shadow-[inset_-1px_0_0_rgba(255,255,255,0.55)] backdrop-blur-xl dark:bg-card/45 dark:shadow-none lg:flex">
       <button
         type="button"
         onClick={onBackToChat}
@@ -648,7 +719,7 @@ function GeneralSettings({
             <Input
               value={form.model}
               onChange={(event) => setForm((prev) => ({ ...prev, model: event.target.value }))}
-              className="h-8 w-[280px] rounded-full text-[13px]"
+              className="h-8 w-full max-w-[280px] rounded-full text-[13px] sm:w-[280px]"
             />
           </SettingsRow>
 
@@ -732,7 +803,7 @@ function ProviderPicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "h-8 w-[210px] justify-between rounded-full border-input bg-background px-3 text-[13px] font-normal shadow-none",
+            "h-8 w-full max-w-[210px] justify-between rounded-full border-input bg-background px-3 text-[13px] font-normal shadow-none sm:w-[210px]",
             "hover:bg-accent/55 focus-visible:ring-2 focus-visible:ring-ring",
             disabled && "text-muted-foreground",
           )}
@@ -843,7 +914,7 @@ function WebSearchByokSettings({
             title={t("settings.byok.apiKey")}
             description={t("settings.byok.webSearch.apiKeyHelp")}
           >
-            <div className="relative w-[280px] max-w-full">
+            <div className="relative w-full max-w-[280px]">
               {showKeyInput ? (
                 <>
                   <Input
@@ -908,7 +979,7 @@ function WebSearchByokSettings({
                 onChangeForm((prev) => ({ ...prev, baseUrl: event.target.value }))
               }
               placeholder={t("settings.byok.webSearch.baseUrlPlaceholder")}
-              className="h-9 w-[280px] rounded-full text-[13px]"
+              className="h-9 w-full max-w-[280px] rounded-full text-[13px] sm:w-[280px]"
             />
           </SettingsRow>
         ) : null}
@@ -1361,7 +1432,7 @@ function SettingsRow({
           </div>
         ) : null}
       </div>
-      {children ? <div className="shrink-0 sm:ml-6">{children}</div> : null}
+      {children ? <div className="w-full min-w-0 shrink sm:ml-6 sm:w-auto">{children}</div> : null}
     </div>
   );
 }

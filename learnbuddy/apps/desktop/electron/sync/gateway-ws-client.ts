@@ -278,6 +278,8 @@ export class GatewayWsClient {
     }
 
     if (msg.type === "inbound_message") {
+      const sk = msg.sessionKey.trim();
+      if (sk) this.subscribeSession(sk);
       if (this.onInbound) {
         this.onInbound(msg);
         return;

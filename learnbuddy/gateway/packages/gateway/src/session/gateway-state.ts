@@ -391,16 +391,32 @@ export class GatewayStateService {
     if (!owner.includes('@')) return []
     if (!exec) return this.store.listRowsForOwner(owner)
 
-    const cached = this.sessionCatalogByDevice.get(exec.deviceId)
-    if (cached?.length) {
-      await this.store.mergeSessionRows(cached)
+    let catalog = this.sessionCatalogByDevice.get(exec.deviceId)
+    if (catalog?.length) {
+      await this.store.mergeSessionRows(catalog)
     } else {
       const rows = await this.requestSessionsRpc(exec)
       if (rows?.length) {
         await this.applySessionsSync(exec.deviceId, rows, { notifyWebClients: false })
+        catalog = this.sessionCatalogByDevice.get(exec.deviceId)
       }
     }
-    return this.store.listRowsForOwner(owner)
+
+    // Include desktop-synced sessions (e.g. created in Electron) even before Web POST.
+    const byKey = new Map<string, GatewaySessionRow>()
+    for (const row of catalog ?? []) {
+      if (!row.key) continue
+      const existingOwner = await this.store.getSessionOwner(row.key)
+      if (existingOwner && existingOwner !== owner) continue
+      if (!existingOwner) await this.store.setSessionOwner(row.key, owner)
+      byKey.set(row.key, row)
+    }
+    for (const row of await this.store.listRowsForOwner(owner)) {
+      byKey.set(row.key, row)
+    }
+    return [...byKey.values()].sort((a, b) =>
+      (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''),
+    )
   }
 
   /**
@@ -606,6 +622,8 @@ export class GatewayStateService {
     if (!sessionKey || !payload) return
     this.putThreadCache(sessionKey, payload)
     await this.store.importWebuiPayload(sessionKey, payload)
+    const deviceId = this.sessionDesktop.get(sessionKey)
+    this.notifyWebClientsSessionListChanged(deviceId)
   }
 
   registerDesktop(
@@ -721,6 +739,11 @@ export class GatewayStateService {
   ): void {
     const client = this.clients.get(clientKey)
     if (!client || client.role !== 'desktop') return
+    const sk = sessionKey.trim()
+    if (sk) {
+      this.sessionDesktop.set(sk, client.deviceId)
+      client.sessions.add(sk)
+    }
     const cid = chatId || this.chatIdFromSessionKey(sessionKey)
     if (this.isSessionFocusEvent(event)) {
       void this.broadcastSessionFocus(client.deviceId, sessionKey, cid, event)

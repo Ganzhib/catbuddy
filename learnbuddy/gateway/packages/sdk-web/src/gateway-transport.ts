@@ -6,6 +6,17 @@ import type {
 } from '@learnbuddy/shared'
 import { bareChatId, gatewayWsUrl, toSessionKey } from '@learnbuddy/shared'
 
+function resolveWebToken(configured: string): string {
+  const fromConfig = configured.trim()
+  if (fromConfig) return fromConfig
+  if (typeof window === 'undefined') return ''
+  try {
+    return window.localStorage.getItem('learnbuddy-webui.auth-token')?.trim() || ''
+  } catch {
+    return ''
+  }
+}
+
 export interface GatewayTransportConfig {
   httpBase: string
   webToken: string
@@ -35,8 +46,11 @@ export class GatewayTransport implements AgentTransport {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private callbacks: TransportCallbacks | null = null
 
+  private readonly webToken: string
+
   constructor(private readonly config: GatewayTransportConfig) {
     this.wsUrl = gatewayWsUrl(config.httpBase)
+    this.webToken = resolveWebToken(config.webToken)
   }
 
   attach(callbacks: TransportCallbacks): () => void {
@@ -67,7 +81,7 @@ export class GatewayTransport implements AgentTransport {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.webToken}`,
+          Authorization: `Bearer ${this.webToken}`,
         },
         body: JSON.stringify({ chatId: id }),
       }).catch(() => {})
@@ -77,7 +91,7 @@ export class GatewayTransport implements AgentTransport {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.webToken}`,
+        Authorization: `Bearer ${this.webToken}`,
       },
       body: JSON.stringify({ content }),
     })
@@ -119,7 +133,7 @@ export class GatewayTransport implements AgentTransport {
           type: 'register',
           role: 'web',
           deviceId: this.config.deviceId ?? `web-${crypto.randomUUID().slice(0, 8)}`,
-          token: this.config.webToken,
+          token: this.webToken,
         }),
       )
     }

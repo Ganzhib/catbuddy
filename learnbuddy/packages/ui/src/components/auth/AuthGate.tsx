@@ -7,6 +7,7 @@ import {
   clearSavedSecret,
   fetchBootstrap,
   hasAuthToken,
+  loadAuthToken,
   hasLearnbuddyIpc,
   requiresEmailLogin,
   resolveGatewayHttpBase,
@@ -52,16 +53,18 @@ export function AuthGate({
       const useGateway =
         !hasLearnbuddyIpc()
         && boot.gateway_mode === 'gateway'
+      if (hasLearnbuddyIpc()) {
+        await syncDesktopGatewayAccountEmail()
+      }
+      const storedJwt = loadAuthToken().trim()
+      const gatewayToken = useGateway && storedJwt ? storedJwt : boot.token
       const client = createLearnbuddyClient({
-        token: boot.token,
+        token: gatewayToken,
         wsPath: boot.ws_path,
         transportMode: useGateway ? 'gateway' : undefined,
         gatewayHttpBase: useGateway ? resolveGatewayHttpBase() : undefined,
       })
       client.connect()
-      if (hasLearnbuddyIpc()) {
-        void syncDesktopGatewayAccountEmail()
-      }
       setSession({
         client,
         token: boot.token,

@@ -29,7 +29,7 @@ const ROOT = path.resolve(__dirname, '..')
 const BRAND_DIR = path.join(ROOT, 'public', 'brand')
 const SOURCE_DIR = path.join(BRAND_DIR, 'source')
 const ELECTRON_ICON = path.join(ROOT, electronIcon)
-const INDEX_HTML = path.join(ROOT, 'index.html')
+const INDEX_HTML = path.join(ROOT, 'apps/desktop/src/renderer/index.html')
 
 const PREFIX = process.env.BRAND_PREFIX || BRAND_PREFIX
 
@@ -187,7 +187,7 @@ Then run:
 Outputs:
   public/brand/${PREFIX}_*.png
   public/brand/${PREFIX}_logo.webp
-  electron/assets/icon.png (${ELECTRON_ICON_SIZE}px, for electron-builder)
+  apps/desktop/src/main/assets/icon.png (${ELECTRON_ICON_SIZE}px, for electron-builder)
 `)
 }
 
@@ -261,7 +261,7 @@ async function main() {
   console.log('\nHTML:')
   syncIndexHtml()
 
-  console.log('\nDone. Commit public/brand/* and electron/assets/icon.png if they changed.')
+  console.log('\nDone. Commit public/brand/* and apps/desktop/src/main/assets/icon.png if they changed.')
 }
 
 main().catch((err) => {

@@ -7,6 +7,7 @@
  *
  * Env:
  *   LEARNBUDDY_BUILD_VERBOSE=1  — same as --verbose
+ *   LEARNBUDDY_BUILD_NO_KILL=1  — skip stopping learnbuddy/electron before pack
  *   DEBUG                       — if set, not overwritten unless --verbose
  */
 import { spawnSync } from 'node:child_process';
@@ -22,7 +23,12 @@ const verbose =
   process.env.LEARNBUDDY_BUILD_VERBOSE === '1' ||
   process.env.LEARNBUDDY_BUILD_VERBOSE === 'true';
 const dirOnly = rawArgs.includes('--dir');
-const ebExtraArgs = rawArgs.filter((a) => a !== '--verbose' && a !== '--dir');
+const noKill =
+  rawArgs.includes('--no-kill') ||
+  process.env.LEARNBUDDY_BUILD_NO_KILL === '1' ||
+  process.env.LEARNBUDDY_BUILD_NO_KILL === 'true';
+const ebExtraArgs = rawArgs.filter((a) => a !== '--verbose' && a !== '--dir' && a !== '--no-kill');
+const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 
 function stamp() {
   return new Date().toISOString();
@@ -33,6 +39,8 @@ function log(msg) {
 }
 
 function runStep(label, command, args, extraEnv = {}) {
+  // Windows: pnpm is a .cmd shim — spawn without shell → EINVAL
+  const useShell = process.platform === 'win32' && command === 'pnpm';
   log(`▶ ${label}`);
   log(`  $ ${command} ${args.join(' ')}`);
   const started = Date.now();
@@ -40,9 +48,14 @@ function runStep(label, command, args, extraEnv = {}) {
     cwd: desktopRoot,
     stdio: 'inherit',
     env: { ...process.env, ...extraEnv },
-    shell: process.platform === 'win32',
+    shell: useShell,
+    windowsHide: true,
   });
   const sec = ((Date.now() - started) / 1000).toFixed(1);
+  if (result.error) {
+    log(`✗ ${label} spawn failed: ${result.error.message}`);
+    process.exit(1);
+  }
   if (result.status !== 0) {
     log(`✗ ${label} failed after ${sec}s (exit ${result.status ?? 1})`);
     process.exit(result.status ?? 1);
@@ -77,8 +90,38 @@ if (verbose && !process.env.DEBUG) {
   log(`DEBUG=${ebEnv.DEBUG}`);
 }
 
+let useFreshOutput = process.env.LEARNBUDDY_BUILD_OUTPUT === 'release-fresh';
+
+if (!noKill) {
+  const killScript = path.join(scriptsDir, 'kill-desktop-processes.mjs');
+  log('▶ Stop processes & unlock release/');
+  const killResult = spawnSync(process.execPath, [killScript], {
+    cwd: desktopRoot,
+    stdio: 'inherit',
+    windowsHide: true,
+  });
+  if (killResult.status === 2) {
+    useFreshOutput = true;
+    log('release/win-unpacked still locked → output directory: release-fresh');
+    log('  (close learnbuddy.exe / dev Electron; or delete apps/desktop/release manually)');
+  } else if (killResult.status !== 0) {
+    log(`kill script exit ${killResult.status ?? 1}`);
+    process.exit(killResult.status ?? 1);
+  } else {
+    log('✓ release/ unlocked');
+  }
+} else {
+  log('Skipping process kill (LEARNBUDDY_BUILD_NO_KILL / --no-kill)');
+}
+
+if (useFreshOutput) {
+  ebArgs.push('--config.directories.output=release-fresh');
+}
+
 log(`▶ electron-builder → ${targetLabel}`);
 log('  Typical slow steps: copy Electron → asar → NSIS (makensis + compression)');
 runStep(`Package (${targetLabel})`, 'pnpm', ebArgs, ebEnv);
 
-log(`Done. Output: apps/desktop/release/`);
+log(
+  `Done. Output: apps/desktop/${useFreshOutput ? 'release-fresh/' : 'release/'} (NSIS .exe inside)`,
+);

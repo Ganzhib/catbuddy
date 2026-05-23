@@ -17,7 +17,7 @@
     "build:unpack:verbose": "node ../../scripts/desktop-build.mjs --dir --verbose",
     "build:vite": "tsc --noEmit && vite build",
     "build:unpack:fresh": "node ../../scripts/desktop-build.mjs --dir --config.directories.output=release-fresh",
-    "kill-app": "taskkill /IM learnbuddy.exe /F 2>nul || exit 0",
+    "kill-app": "node ../../scripts/kill-desktop-processes.mjs",
     "rebuild:unpack": "pnpm run kill-app && pnpm run build:unpack",
     "preview": "vite preview",
     "lint": "tsc --noEmit",

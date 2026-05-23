@@ -63,6 +63,21 @@ Verbose 会启用：
 
 仅调试前端产物、不打包时：`pnpm run build:vite`。
 
+### `app.asar` 被占用 / `The process cannot access the file`
+
+打包前会自动执行 `kill-desktop-processes.mjs`（PowerShell 脚本结束相关进程，并尝试删除 `release/win-unpacked`）。若仍失败：
+
+1. 手动关掉正在运行的 learnbuddy（含从 `release/win-unpacked` 启动的实例）
+2. `pnpm run kill-app` 后再 `pnpm run build`
+3. 任务管理器结束残留的 `learnbuddy.exe` / 从本目录启动的 `electron.exe`
+4. 仍锁文件时：构建会自动改到 `release-fresh/` 输出（安装包在 `apps/desktop/release-fresh/`）
+5. 或手动删除整个 `apps/desktop/release` 后再打包
+6. Windows 可对 `apps/desktop/release` 加 Defender 排除，避免扫描占用 `app.asar`
+
+跳过自动结束进程（不推荐）：`LEARNBUDDY_BUILD_NO_KILL=1 pnpm run build`
+
+强制使用 `release-fresh`：`LEARNBUDDY_BUILD_OUTPUT=release-fresh pnpm run build`
+
 ## 构建产物
 
 | 目录 | 内容 |

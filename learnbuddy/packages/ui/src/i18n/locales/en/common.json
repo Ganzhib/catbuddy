@@ -47,10 +47,10 @@
     "newChat": "New chat",
     "remote": {
       "label": "Remote control",
-      "off": "Local only — Web sync disabled",
-      "connected": "Gateway connected — syncing with Web",
-      "waitingDesktop": "Enabled — waiting for desktop on Gateway",
-      "envMissing": "Set GATEWAY_ENABLED and GATEWAY_URL in .env"
+      "off": "Local only — not synced with the web app",
+      "connected": "Synced with the web app",
+      "connecting": "Connecting…",
+      "loginRequired": "Sign in before turning this on"
     },
     "searchAria": "Search chats",
     "searchPlaceholder": "Search chats",
@@ -90,7 +90,22 @@
       "copy": "Copy",
       "sessionKey": "Subscribed sessions",
       "sessionKeyHelp": "Web POST must use the same sessionKey as the chat open on desktop (e.g. desktop:1730_abc). Switching chats updates subscriptions automatically.",
-      "lastError": "Last error"
+      "lastError": "Last error",
+      "builtinService": "Cloud Gateway",
+      "builtinHelp": "Built-in official relay — pairs with Web automatically; no URL or secret needed.",
+      "localDevHint": "Dev build: connects to local gateway:dev (127.0.0.1:18765)",
+      "enableSidebarHint": "Turn on Remote control in the sidebar to sync with Web.",
+      "showAdvanced": "Self-host / advanced",
+      "hideAdvanced": "Hide advanced",
+      "selfHostHelp": "Only when running your own Gateway",
+      "useBuiltin": "Use official Gateway",
+      "resetBuiltin": "Restored official Gateway",
+      "gatewayUrl": "Gateway URL",
+      "gatewaySecret": "Gateway secret",
+      "secretPlaceholderKeep": "Leave blank to keep",
+      "save": "Save",
+      "saved": "Saved",
+      "saveFailed": "Save failed"
     },
     "rows": {
       "theme": "Theme",

@@ -10,6 +10,7 @@
     "dev:web": "pnpm --filter @learnbuddy/web dev",
     "dev:web:full": "concurrently -k -n gateway,web \"pnpm gateway:dev\" \"pnpm --filter @learnbuddy/web dev\"",
     "build": "pnpm --filter @learnbuddy/desktop build",
+    "build:all": "pnpm gateway:build && pnpm build:web && pnpm build:desktop",
     "build:desktop": "pnpm --filter @learnbuddy/desktop build",
     "build:web": "pnpm --filter @learnbuddy/web build",
     "lint": "pnpm -r lint",

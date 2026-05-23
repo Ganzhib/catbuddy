@@ -64,6 +64,10 @@ function createLearnbuddyApi() {
     getGatewayRemoteEnabled: () => ipcRenderer.invoke('gateway:get-remote-enabled'),
     setGatewayRemoteEnabled: (enabled) =>
       ipcRenderer.invoke('gateway:set-remote-enabled', { enabled }),
+    getGatewayConnectionSettings: () =>
+      ipcRenderer.invoke('gateway:get-connection-settings'),
+    setGatewayConnectionSettings: (payload) =>
+      ipcRenderer.invoke('gateway:set-connection-settings', payload),
   }
 }
 

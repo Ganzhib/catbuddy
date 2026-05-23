@@ -2,25 +2,53 @@ import { useCallback, useEffect, useState } from "react";
 import { Radio } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { syncDesktopGatewayAccountEmail } from "@learnbuddy/platform";
+import {
+  resolveGatewayAccountEmail,
+  syncDesktopGatewayAccountEmail,
+} from "@learnbuddy/platform";
 import { cn } from "@/lib/utils";
 
 type RemoteState = {
   enabled: boolean;
-  envConfigured: boolean;
   connected: boolean;
 };
+
+function friendlyRemoteHint(
+  t: (key: string) => string,
+  state: RemoteState,
+  lastError: string | undefined,
+  loginRequired: boolean,
+): string {
+  if (loginRequired) return t("sidebar.remote.loginRequired");
+  if (!state.enabled) return t("sidebar.remote.off");
+  if (state.connected) return t("sidebar.remote.connected");
+  if (lastError === "account_email_required") {
+    return t("sidebar.remote.loginRequired");
+  }
+  if (lastError) return t("sidebar.remote.connecting");
+  return t("sidebar.remote.connecting");
+}
 
 export function GatewayRemoteSwitch() {
   const { t } = useTranslation();
   const [state, setState] = useState<RemoteState | null>(null);
+  const [lastError, setLastError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const [loginRequired, setLoginRequired] = useState(false);
 
   const refresh = useCallback(async () => {
     const api = window.learnbuddy?.getGatewayRemoteEnabled;
     if (!api) return;
     try {
-      setState(await api());
+      const remote = await api();
+      setState({
+        enabled: remote.enabled,
+        connected: remote.connected,
+      });
+      if (window.learnbuddy?.getGatewayStatus) {
+        const st = await window.learnbuddy.getGatewayStatus();
+        setLastError(st.lastError);
+      }
     } catch {
       setState(null);
     }
@@ -37,28 +65,31 @@ export function GatewayRemoteSwitch() {
   const onToggle = async () => {
     if (!state || busy) return;
     setBusy(true);
+    setLoginRequired(false);
     try {
       if (!state.enabled) {
+        const email = resolveGatewayAccountEmail();
+        if (!email) {
+          setLoginRequired(true);
+          return;
+        }
         await syncDesktopGatewayAccountEmail();
       }
       const next = await window.learnbuddy!.setGatewayRemoteEnabled!(!state.enabled);
-      setState((prev) => ({
+      setState({
         enabled: next.enabled,
-        envConfigured: prev?.envConfigured ?? true,
         connected: next.connected,
-      }));
+      });
+      void refresh();
     } finally {
       setBusy(false);
     }
   };
 
-  const hint = !state?.envConfigured
-    ? t("sidebar.remote.envMissing")
-    : state.enabled && state.connected
-      ? t("sidebar.remote.connected")
-      : state.enabled
-        ? t("sidebar.remote.waitingDesktop")
-        : t("sidebar.remote.off");
+  const hint =
+    state == null
+      ? ""
+      : friendlyRemoteHint(t, state, lastError, loginRequired);
 
   return (
     <div className="pb-1.5">
@@ -66,7 +97,7 @@ export function GatewayRemoteSwitch() {
         type="button"
         role="switch"
         aria-checked={state?.enabled ?? false}
-        disabled={busy || !state?.envConfigured}
+        disabled={busy}
         onClick={() => void onToggle()}
         className={cn(
           "flex h-9 w-full items-center justify-between gap-2.5 rounded-full px-3.5 text-left text-[13px]",
@@ -100,7 +131,11 @@ export function GatewayRemoteSwitch() {
           />
         </span>
       </button>
-      <p className="pb-0.5 pl-10 pr-3.5 pt-1 text-[12px] leading-relaxed text-muted-foreground/80">{hint}</p>
+      {hint ? (
+        <p className="pb-0.5 pl-10 pr-3.5 pt-1 text-[12px] leading-relaxed text-muted-foreground/80">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

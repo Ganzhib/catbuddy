@@ -35,10 +35,10 @@
     "newChat": "新建对话",
     "remote": {
       "label": "远程控制",
-      "off": "仅本机对话，不同步 Web",
-      "connected": "已连接 Gateway，与 Web 同步",
-      "waitingDesktop": "已开启，等待桌面连接 Gateway",
-      "envMissing": "请在 .env 配置 GATEWAY_ENABLED 与 GATEWAY_URL"
+      "off": "仅本机对话，不与网页版同步",
+      "connected": "已与网页版同步",
+      "connecting": "正在连接…",
+      "loginRequired": "请先登录账号后再开启"
     },
     "searchAria": "搜索会话",
     "searchPlaceholder": "搜索会话",
@@ -78,7 +78,22 @@
       "copy": "复制",
       "sessionKey": "已订阅会话",
       "sessionKeyHelp": "Web 发消息的 sessionKey 须与桌面当前对话一致（如 desktop:1730_abc）；切换对话会自动订阅。",
-      "lastError": "最近错误"
+      "lastError": "最近错误",
+      "builtinService": "云端 Gateway",
+      "builtinHelp": "内置官方中继，与 Web 自动配对；无需填写地址或密钥。",
+      "localDevHint": "开发版：连接本机 gateway:dev（127.0.0.1:18765）",
+      "enableSidebarHint": "在侧栏打开「远程控制」即可与 Web 同步。",
+      "showAdvanced": "自托管 / 高级",
+      "hideAdvanced": "收起高级",
+      "selfHostHelp": "仅自建 Gateway 时修改",
+      "useBuiltin": "恢复官方 Gateway",
+      "resetBuiltin": "已恢复官方 Gateway",
+      "gatewayUrl": "Gateway 地址",
+      "gatewaySecret": "Gateway 密钥",
+      "secretPlaceholderKeep": "留空则不修改",
+      "save": "保存",
+      "saved": "已保存",
+      "saveFailed": "保存失败"
     },
     "rows": {
       "theme": "主题",

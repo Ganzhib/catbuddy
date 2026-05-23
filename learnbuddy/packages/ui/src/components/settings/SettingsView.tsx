@@ -490,76 +490,6 @@ function SettingsSidebar({
   );
 }
 
-function GatewayRemoteSettings() {
-  const { t } = useTranslation();
-  const [status, setStatus] = useState<{
-    enabled: boolean;
-    connected: boolean;
-    accountEmail?: string;
-    lastError?: string;
-    subscribedSessions?: string[];
-  } | null>(null);
-
-  useEffect(() => {
-    if (!window.learnbuddy?.getGatewayStatus) return;
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const st = await window.learnbuddy!.getGatewayStatus!();
-        if (!cancelled) setStatus(st);
-      } catch {
-        if (!cancelled) setStatus(null);
-      }
-    };
-    void poll();
-    const id = setInterval(() => void poll(), 2000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  if (!status?.enabled) return null;
-
-  return (
-    <section>
-      <SettingsSectionTitle>{t("settings.gatewayRemote.section")}</SettingsSectionTitle>
-      <SettingsGroup>
-        <SettingsRow
-          title={t("settings.gatewayRemote.connection")}
-          description={t("settings.gatewayRemote.connectionHelp")}
-        >
-          <span
-            className={cn(
-              "text-[13px] font-medium",
-              status.connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
-            )}
-          >
-            {status.connected
-              ? t("settings.gatewayRemote.connected")
-              : t("settings.gatewayRemote.disconnected")}
-          </span>
-        </SettingsRow>
-        <SettingsRow
-          title={t("settings.gatewayRemote.accountEmail")}
-          description={t("settings.gatewayRemote.accountHelp")}
-        >
-          <code className="rounded-md bg-muted px-2.5 py-1 text-[13px]">
-            {status.accountEmail || "—"}
-          </code>
-        </SettingsRow>
-        {status.lastError ? (
-          <SettingsRow title={t("settings.gatewayRemote.lastError")}>
-            <span className="max-w-[420px] text-right text-xs text-destructive break-all">
-              {status.lastError}
-            </span>
-          </SettingsRow>
-        ) : null}
-      </SettingsGroup>
-    </section>
-  );
-}
-
 function CompactionSettings() {
   const { t } = useTranslation()
   const [enabled, setEnabled] = useState(true)
@@ -775,7 +705,6 @@ function GeneralSettings({
         </section>
       )}
 
-      <GatewayRemoteSettings />
       <CompactionSettings />
     </div>
   );

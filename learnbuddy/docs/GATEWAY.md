@@ -40,8 +40,8 @@ Vite 开发代理：`/gateway-api` → `http://127.0.0.1:18765`，`/gateway-ws` 
 | `GATEWAY_SECRET` | 桌面端 WS 注册密钥（role=desktop） | `dev-secret` |
 | `GATEWAY_DEV_WEB_TOKEN` | 开发 bootstrap token | `dev-web` |
 | `GATEWAY_WS_PATH` | bootstrap 返回的 WS 路径 | `/gateway-ws/ws` |
-| `GATEWAY_AUTH_REQUIRE_EMAIL` | 强制邮箱 OTP | `false` |
-| `GATEWAY_AUTH_DEV_BYPASS` | 开发跳过邮箱登录 | 非 production 为 `true` |
+| `GATEWAY_AUTH_REQUIRE_EMAIL` | 强制邮箱 OTP | `true` |
+| `GATEWAY_AUTH_DEV_BYPASS` | 开发跳过邮箱登录 | `false` |
 
 旧名 `RELAY_*` 仍可读（兼容）。
 
@@ -135,21 +135,20 @@ Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面端�
 
 实时流式仍走 WS `ui_event`（`delta` / `turn_end` 等）。
 
-**存储分工（双端 JSONL）**：
+**存储（Gateway 侧）**：
 
-| 位置 | 路径 |
+| 位置 | 说明 |
 |------|------|
-| Gateway | `~/.learnbuddy-gateway/workspace/sessions/*.jsonl` |
-| 桌面 | `~/.learnbuddy-desktop/workspace/sessions/*.jsonl` |
+| Gateway | **MySQL**（会话元数据、消息、用户/OTP） |
+| 桌面 | `~/.learnbuddy-desktop/workspace/sessions/*.jsonl`（Agent 本地会话） |
 
-- Web 的 `GET /api/sessions`、`GET /api/webui-thread` **优先读 Gateway 本地 JSONL**（桌面未启动也有数据）。
-- 用户发消息会先写入 Gateway，再转发桌面；**桌面离线**时 Gateway 通过 WS 返回系统提示（不 503）。
-- 桌面连接且开启「远程控制」后，Gateway 发送 `sync_push` 把本地会话合并到桌面；桌面 `sessions_sync` 再写回 Gateway。
-- 环境变量 `GATEWAY_DATA_DIR` 可改 Gateway 数据目录。
+- Web 的 `GET /api/sessions`、`GET /api/webui-thread` 经 Gateway 向在线 Desktop RPC；离线时读 Gateway MySQL 缓存。
+- 用户发消息写入 Gateway，再转发 Desktop；**Desktop 离线**时 Gateway 经 WS 返回系统提示（不 503）。
+- Desktop 连接且开启「远程控制」后双向同步会话列表与历史。
 
-**桌面远程控制**：侧栏「新建对话」上方开关。关闭时不连 Gateway，仅本机；开启且 `.env` 配置 `GATEWAY_*` 时连接并双向同步。
+**桌面远程控制**：侧栏「新建对话」上方开关。关闭时不连 Gateway，仅本机；开启且 `apps/desktop/.env` 配置 `GATEWAY_*` 时连接并同步。
 
-若侧边栏已有大量空的「新建对话」，可手动删除 workspace 下仅有一行元数据的 `.jsonl` 文件，或发一条消息后刷新列表。
+若 Desktop workspace 下有大量空会话，可删除仅含元数据的 `.jsonl` 文件，或发一条消息后刷新列表。
 
 > **注意**：仓库中若仍存在 `gateway-legacy-removed/` 目录，为迁移遗留副本，**仅维护 `gateway/`**。可安全删除 `gateway-legacy-removed/` 以免混淆。
 

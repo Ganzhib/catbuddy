@@ -145,6 +145,7 @@ function Shell({
       const key = toSessionKey(chatId)
       setActiveKey((prev) => (prev === key ? prev : key))
       setView('chat')
+      client.attach(chatId)
     })
   }, [client])
 

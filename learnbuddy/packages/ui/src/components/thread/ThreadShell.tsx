@@ -187,9 +187,14 @@ export function ThreadShell({
   useEffect(() => {
     if (!chatId) return;
     return client.onSessionUpdate((updatedChatId, scope) => {
+      if (scope === "metadata") {
+        if (gatewayWebOnly) {
+          pendingCanonicalHydrateRef.current.add(chatId);
+          refreshHistory();
+        }
+        return;
+      }
       if (updatedChatId !== chatId) return;
-      if (scope === "metadata") return;
-      if (gatewayWebOnly) return;
       pendingCanonicalHydrateRef.current.add(chatId);
       refreshHistory();
     });

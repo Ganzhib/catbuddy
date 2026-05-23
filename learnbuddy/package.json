@@ -12,6 +12,7 @@
     "build": "pnpm --filter @learnbuddy/desktop build",
     "build:all": "pnpm gateway:build && pnpm build:web && pnpm build:desktop",
     "build:desktop": "pnpm --filter @learnbuddy/desktop build",
+    "build:desktop:verbose": "pnpm --filter @learnbuddy/desktop build:verbose",
     "build:web": "pnpm --filter @learnbuddy/web build",
     "lint": "pnpm -r lint",
     "clean:packages": "node scripts/clean-package-emit.mjs",

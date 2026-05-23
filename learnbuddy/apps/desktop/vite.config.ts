@@ -58,6 +58,8 @@ function copyMainAssetsPlugin() {
 }
 
 export default defineConfig({
+  // file:// loadFile: absolute /brand/* would point at disk root — use relative assets
+  base: "./",
   root: path.resolve(__dirname, "src/renderer"),
   publicDir: path.resolve(__dirname, "public"),
   plugins: [

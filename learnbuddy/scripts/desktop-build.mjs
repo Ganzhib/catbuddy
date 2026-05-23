@@ -11,6 +11,7 @@
  *   DEBUG                       — if set, not overwritten unless --verbose
  */
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -122,6 +123,19 @@ log(`▶ electron-builder → ${targetLabel}`);
 log('  Typical slow steps: copy Electron → asar → NSIS (makensis + compression)');
 runStep(`Package (${targetLabel})`, 'pnpm', ebArgs, ebEnv);
 
-log(
-  `Done. Output: apps/desktop/${useFreshOutput ? 'release-fresh/' : 'release/'} (NSIS .exe inside)`,
-);
+const outDirName = useFreshOutput ? 'release-fresh' : 'release';
+const outDir = path.join(desktopRoot, outDirName);
+log(`Done. Output folder: ${outDir}`);
+
+const pkg = JSON.parse(fs.readFileSync(path.join(desktopRoot, 'package.json'), 'utf8'));
+const setupName = `${pkg.build?.productName ?? 'learnbuddy'} Setup ${pkg.version}.exe`;
+const setupPath = path.join(outDir, setupName);
+if (fs.existsSync(setupPath)) {
+  log(`NSIS installer: ${setupPath}`);
+} else {
+  const found = fs.existsSync(outDir)
+    ? fs.readdirSync(outDir).filter((f) => f.endsWith('.exe') && f.includes('Setup'))
+    : [];
+  if (found.length) log(`NSIS installer: ${path.join(outDir, found[0])}`);
+  else log(`(no Setup .exe found in ${outDir} — check build log)`);
+}

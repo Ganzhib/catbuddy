@@ -121,20 +121,6 @@ export class GatewayStateService {
     return online.length === 1 ? online[0] : online[0] ?? null
   }
 
-  private pickDesktopForSession(sessionKey: string): string | null {
-    let deviceId = this.sessionDesktop.get(sessionKey)
-    if (deviceId) return deviceId
-    const online = [...this.clients.values()].filter(
-      (c) => c.role === 'desktop' && c.ws.readyState === 1,
-    )
-    if (online.length === 1) {
-      deviceId = online[0].deviceId
-      this.sessionDesktop.set(sessionKey, deviceId)
-      return deviceId
-    }
-    return null
-  }
-
   channelFromSessionKey(sessionKey: string): string {
     const idx = sessionKey.indexOf(':')
     return idx === -1 ? 'desktop' : sessionKey.slice(0, idx)

@@ -13,6 +13,7 @@
   "dependencies": {
     "@fastify/cors": "^9.0.0",
     "@learnbuddy/shared": "workspace:*",
+    "dotenv": "16.6.1",
     "fastify": "^4.26.0",
     "jsonwebtoken": "^9.0.0",
     "mysql2": "^3.14.0",

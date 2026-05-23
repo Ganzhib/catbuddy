@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { BrandMark } from '@/components/BrandMark'
+import {
+  BootstrapErrorScreen,
+  BootstrapLoadingScreen,
+} from '@/components/auth/BootstrapFallbackScreen'
 import { EmailLoginScreen } from '@/components/EmailLoginScreen'
 import {
   BootstrapAuthRequired,
@@ -113,28 +116,15 @@ export function AuthGate({
   }
 
   if (!session) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        {bootError ? (
-          <div className="flex flex-col items-center gap-4 max-w-sm text-center px-6">
-            <p className="text-red-500 text-sm font-medium">Connection Failed</p>
-            <p className="text-xs text-gray-400 break-all">{bootError}</p>
-            <button
-              type="button"
-              onClick={() => setBootAttempts((n) => n + 1)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
-            <BrandMark className="h-12 w-12 object-contain opacity-90" />
-            <span>Loading learnbuddy…</span>
-          </div>
-        )}
-      </div>
-    )
+    if (bootError) {
+      return (
+        <BootstrapErrorScreen
+          error={bootError}
+          onRetry={() => setBootAttempts((n) => n + 1)}
+        />
+      )
+    }
+    return <BootstrapLoadingScreen />
   }
 
   return (

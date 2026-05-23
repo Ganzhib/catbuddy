@@ -28,9 +28,19 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: '本地执行更安心',
-    desc: 'Agent 在你的电脑上运行，文件操作与学习资料留在本机，账号登录后即可跨端使用。',
+    desc: '助手在你的电脑上运行，学习与文件操作留在本机，同一账号可在网页继续对话。',
   },
 ] as const
+
+const authOutlineBtn = cn(
+  'rounded-xl border-[hsl(215_22%_84%/0.85)] bg-[hsl(210_32%_98%/0.5)] backdrop-blur-sm',
+  'hover:bg-[hsl(210_34%_96%/0.72)]',
+)
+
+const authPrimaryBtn = cn(
+  'rounded-xl bg-[hsl(220_38%_28%)] text-[hsl(210_40%_98%)] shadow-md',
+  'hover:bg-[hsl(220_38%_24%)] shadow-[0_8px_24px_rgba(48,72,118,0.22)]',
+)
 
 export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
   const [mode, setMode] = useState<AuthMode>('login')
@@ -123,6 +133,28 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
+  const goToRegister = () => {
+    setMode('register')
+    setError(null)
+    setHint(null)
+    resetRegister()
+  }
+
+  const goToLogin = () => {
+    setMode('login')
+    setError(null)
+    setHint(null)
+    resetRegister()
+    setConfirmPassword('')
+  }
+
+  const formEyebrow =
+    mode === 'login'
+      ? '欢迎回来'
+      : registerStep === 'verify'
+        ? '邮箱验证'
+        : '创建账号'
+
   return (
     <div className="relative flex min-h-full w-full overflow-hidden">
       <AmbientBackground />
@@ -155,8 +187,8 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
           <ul className="mt-10 space-y-4">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
               <li key={title} className={cn('flex gap-3 rounded-xl p-3', glassChip)}>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/12">
+                  <Icon className="h-4 w-4 text-sky-700/75 dark:text-sky-400/85" strokeWidth={1.75} />
                 </span>
                 <div>
                   <p className="text-sm font-medium">{title}</p>
@@ -184,7 +216,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
 
         <div className={cn('w-full max-w-[420px] p-8 sm:p-9', glassPanel, 'shadow-2xl shadow-black/5')}>
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            邮箱登录 · 注册
+            {formEyebrow}
           </p>
           <h2 className="mt-2 text-center text-2xl font-semibold tracking-tight">
             {mode === 'login'
@@ -208,7 +240,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
 
           <p className="mb-5 mt-5 text-sm leading-relaxed text-muted-foreground">
             {mode === 'login'
-              ? '使用已注册邮箱与密码登录。登录过期后重新输入即可。'
+              ? '登录后即可在网页继续对话；若桌面已开启「远程控制」，两侧会实时同步。'
               : registerStep === 'verify'
                 ? (
                   <>
@@ -233,10 +265,15 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                 showPassword={showPassword}
                 onToggleShow={() => setShowPassword((v) => !v)}
               />
-              <AuthAlerts error={error} hint={null} />
+              <AuthFeedback
+                error={error}
+                hint={null}
+                onGoRegister={goToRegister}
+                onGoLogin={goToLogin}
+              />
               <Button
                 type="submit"
-                className="w-full shadow-md"
+                className={cn('w-full', authPrimaryBtn)}
                 size="lg"
                 disabled={busy || !canSubmitLogin}
               >
@@ -249,14 +286,10 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   '登录'
                 )}
               </Button>
-              <SwitchModeLink
+              <SwitchModeButton
                 label="还没有账号？"
-                action="去注册"
-                onClick={() => {
-                  setMode('register')
-                  setError(null)
-                  resetRegister()
-                }}
+                actionLabel="去注册"
+                onClick={goToRegister}
               />
             </form>
           ) : registerStep === 'form' ? (
@@ -286,10 +319,15 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   className={glassInput}
                 />
               </div>
-              <AuthAlerts error={error} hint={null} />
+              <AuthFeedback
+                error={error}
+                hint={null}
+                onGoRegister={goToRegister}
+                onGoLogin={goToLogin}
+              />
               <Button
                 type="submit"
-                className="w-full shadow-md"
+                className={cn('w-full', authPrimaryBtn)}
                 size="lg"
                 disabled={busy || !canSubmitRegisterForm}
               >
@@ -302,24 +340,24 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   '获取验证码'
                 )}
               </Button>
-              <SwitchModeLink
+              <SwitchModeButton
                 label="已有账号？"
-                action="去登录"
-                onClick={() => {
-                  setMode('login')
-                  setError(null)
-                  resetRegister()
-                  setConfirmPassword('')
-                }}
+                actionLabel="去登录"
+                onClick={goToLogin}
               />
             </form>
           ) : (
             <form className="space-y-5" onSubmit={(e) => void onVerifySubmit(e)}>
               <OtpInput value={code} onChange={setCode} disabled={busy} />
-              <AuthAlerts error={error} hint={hint} />
+              <AuthFeedback
+                error={error}
+                hint={hint}
+                onGoRegister={goToRegister}
+                onGoLogin={goToLogin}
+              />
               <Button
                 type="submit"
-                className="w-full rounded-xl shadow-md"
+                className={cn('w-full', authPrimaryBtn)}
                 size="lg"
                 disabled={busy || !canSubmitVerify}
               >
@@ -336,7 +374,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full rounded-xl border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.45)] backdrop-blur-sm"
+                  className={cn('w-full', authOutlineBtn)}
                   disabled={busy}
                   onClick={() => void resendCode()}
                 >
@@ -345,7 +383,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full rounded-xl border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.45)] backdrop-blur-sm"
+                  className={cn('w-full', authOutlineBtn)}
                   disabled={busy}
                   onClick={() => {
                     setError(null)
@@ -445,7 +483,26 @@ function PasswordField({
   )
 }
 
-function AuthAlerts({ error, hint }: { error: string | null; hint: string | null }) {
+function resolveAuthErrorAction(message: string): 'go_register' | 'go_login' | null {
+  if (message.includes('尚未注册')) return 'go_register'
+  if (message.includes('已注册')) return 'go_login'
+  return null
+}
+
+function AuthFeedback({
+  error,
+  hint,
+  onGoRegister,
+  onGoLogin,
+}: {
+  error: string | null
+  hint: string | null
+  onGoRegister?: () => void
+  onGoLogin?: () => void
+}) {
+  const action = error ? resolveAuthErrorAction(error) : null
+  const guidance = action === 'go_register' || action === 'go_login'
+
   return (
     <>
       {hint ? (
@@ -454,37 +511,72 @@ function AuthAlerts({ error, hint }: { error: string | null; hint: string | null
         </p>
       ) : null}
       {error ? (
-        <p
+        <div
           role="alert"
-          className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs text-destructive backdrop-blur-sm"
+          className={cn(
+            'rounded-xl border px-3.5 py-2.5 backdrop-blur-sm',
+            guidance
+              ? 'border-sky-400/25 bg-sky-500/[0.06]'
+              : 'border-destructive/25 bg-destructive/10',
+          )}
         >
-          {error}
-        </p>
+          <p
+            className={cn(
+              'text-xs leading-relaxed',
+              guidance ? 'text-muted-foreground' : 'text-destructive',
+            )}
+          >
+            {error}
+          </p>
+          {action === 'go_register' && onGoRegister ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={cn('mt-2.5 w-full', authOutlineBtn)}
+              onClick={onGoRegister}
+            >
+              去注册
+            </Button>
+          ) : null}
+          {action === 'go_login' && onGoLogin ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={cn('mt-2.5 w-full', authOutlineBtn)}
+              onClick={onGoLogin}
+            >
+              去登录
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </>
   )
 }
 
-function SwitchModeLink({
+function SwitchModeButton({
   label,
-  action,
+  actionLabel,
   onClick,
 }: {
   label: string
-  action: string
+  actionLabel: string
   onClick: () => void
 }) {
   return (
-    <p className="text-center text-xs text-muted-foreground">
-      {label}
-      <button
+    <div className="space-y-2 pt-1">
+      <p className="text-center text-xs text-muted-foreground">{label}</p>
+      <Button
         type="button"
-        className="ml-1 font-medium text-foreground underline-offset-2 hover:underline"
+        variant="outline"
+        className={cn('w-full', authOutlineBtn)}
         onClick={onClick}
       >
-        {action}
-      </button>
-    </p>
+        {actionLabel}
+      </Button>
+    </div>
   )
 }
 
@@ -499,8 +591,8 @@ function ModeTabs({
     <div
       className={cn(
         'mt-6 flex rounded-xl p-1',
-        'bg-black/[0.04] dark:bg-white/[0.06] backdrop-blur-md',
-        'border border-white/50 dark:border-white/10',
+        'bg-[hsl(215_28%_90%/0.45)] dark:bg-white/[0.06] backdrop-blur-md',
+        'border border-[hsl(215_22%_84%/0.5)] dark:border-white/10',
       )}
       role="tablist"
       aria-label="登录或注册"
@@ -515,7 +607,7 @@ function ModeTabs({
           className={cn(
             'flex-1 rounded-lg py-2.5 text-sm font-medium transition-all duration-200',
             mode === m
-              ? 'bg-card/90 text-foreground shadow-sm dark:bg-white/15'
+              ? 'bg-[hsl(210_32%_98%/0.95)] text-foreground shadow-sm dark:bg-white/15'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -529,25 +621,25 @@ function ModeTabs({
 function AmbientBackground() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(44_38%_96%)] via-[hsl(43_36%_93%)] to-[hsl(40_32%_90%)] dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
-      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-amber-200/35 blur-3xl dark:bg-sky-500/20" />
-      <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-orange-200/25 blur-3xl dark:bg-violet-600/15" />
-      <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-yellow-100/40 blur-3xl dark:bg-amber-500/10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_38%_97%)] via-[hsl(215_32%_94%)] to-[hsl(220_28%_91%)] dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
+      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl dark:bg-sky-500/20" />
+      <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-blue-100/45 blur-3xl dark:bg-indigo-600/15" />
+      <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-violet-100/40 blur-3xl dark:bg-violet-600/10" />
     </div>
   )
 }
 
 const glassPanel = cn(
-  'border border-[hsl(40_22%_84%/0.65)] dark:border-white/[0.12]',
-  'bg-[hsl(44_42%_97.5%/0.72)] dark:bg-neutral-900/45',
+  'border border-[hsl(215_22%_84%/0.65)] dark:border-white/[0.12]',
+  'bg-[hsl(210_32%_98%/0.72)] dark:bg-neutral-900/45',
   'backdrop-blur-2xl backdrop-saturate-150',
-  'shadow-[0_8px_40px_rgba(92,72,40,0.08)]',
+  'shadow-[0_8px_40px_rgba(48,72,118,0.09)]',
   'rounded-2xl',
 )
 
 const glassChip = cn(
-  'border border-[hsl(40_22%_84%/0.55)] dark:border-white/10',
-  'bg-[hsl(44_38%_96%/0.55)] dark:bg-white/5',
+  'border border-[hsl(215_22%_84%/0.55)] dark:border-white/10',
+  'bg-[hsl(210_36%_97%/0.55)] dark:bg-white/5',
   'backdrop-blur-xl',
 )
 
@@ -675,8 +767,8 @@ function OtpInput({
 
 const otpCell = cn(
   'h-12 w-10 rounded-xl text-center text-lg font-semibold tabular-nums sm:h-14 sm:w-12 sm:text-xl',
-  'border border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.65)] dark:border-white/15 dark:bg-white/5',
-  'backdrop-blur-md shadow-inner shadow-black/[0.03]',
+  'border border-[hsl(215_22%_84%/0.75)] bg-[hsl(210_32%_98%/0.65)] dark:border-white/15 dark:bg-white/5',
+  'backdrop-blur-md shadow-inner shadow-[rgba(48,72,118,0.04)]',
   'transition-colors duration-150',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
   'disabled:cursor-not-allowed disabled:opacity-50',
@@ -684,8 +776,8 @@ const otpCell = cn(
 
 const glassInput = cn(
   'flex h-11 w-full rounded-xl px-3 py-2 text-sm transition-all',
-  'border border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.65)] dark:border-white/15 dark:bg-white/5',
+  'border border-[hsl(215_22%_84%/0.75)] bg-[hsl(210_32%_98%/0.65)] dark:border-white/15 dark:bg-white/5',
   'backdrop-blur-md placeholder:text-muted-foreground/70',
-  'shadow-inner shadow-black/[0.03]',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+  'shadow-inner shadow-[rgba(48,72,118,0.04)]',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
 )

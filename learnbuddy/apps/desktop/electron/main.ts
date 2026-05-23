@@ -139,7 +139,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: "learnbuddy",
+    title: "Learnbuddy",
     autoHideMenuBar: true,
     icon: path.join(__dirname, "../electron/assets/icon.png"),
     webPreferences: {

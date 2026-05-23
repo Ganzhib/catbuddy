@@ -34,14 +34,22 @@ const FEATURES = [
   },
 ] as const
 
+const authSecondaryBtn = cn(
+  'rounded-lg border border-blue-200 bg-blue-50 text-blue-700',
+  'hover:bg-blue-100 hover:border-blue-300 transition-all duration-200',
+  'dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20',
+)
+
 const authOutlineBtn = cn(
-  'rounded-xl border-[hsl(215_22%_84%/0.85)] bg-[hsl(210_32%_98%/0.5)] backdrop-blur-sm',
-  'hover:bg-[hsl(210_34%_96%/0.72)]',
+  'rounded-lg border border-gray-200 bg-white text-gray-700',
+  'hover:bg-gray-50 hover:border-gray-300 transition-all duration-200',
+  'dark:border-white/15 dark:bg-white/5 dark:text-foreground dark:hover:bg-white/10',
 )
 
 const authPrimaryBtn = cn(
-  'rounded-xl bg-[hsl(220_38%_28%)] text-[hsl(210_40%_98%)] shadow-md',
-  'hover:bg-[hsl(220_38%_24%)] shadow-[0_8px_24px_rgba(48,72,118,0.22)]',
+  'rounded-lg bg-blue-600 text-white shadow-md',
+  'hover:bg-blue-700 hover:shadow-lg transition-all duration-200',
+  'disabled:opacity-60 disabled:hover:bg-blue-600 disabled:hover:shadow-md',
 )
 
 export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
@@ -166,59 +174,59 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
       <aside
         className={cn(
           'relative z-10 hidden w-[min(44%,520px)] shrink-0 flex-col justify-between lg:flex',
-          glassPanel,
-          'rounded-none border-y-0 border-l-0',
+          leftPanel,
         )}
       >
         <div className="relative flex flex-1 flex-col justify-center px-10 py-12 xl:px-14">
           <div className="mb-10 flex items-center gap-3">
-            <span className={cn(glassChip, 'p-2')}>
+            <span className={cn(brandChip, 'p-2')}>
               <BrandMark className="h-10 w-10 object-contain" />
             </span>
             <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-widest text-gray-500 dark:text-muted-foreground">
                 learnbuddy
               </p>
-              <p className="text-lg font-semibold tracking-tight">智能学习助手</p>
+              <p className="text-lg font-semibold tracking-tight text-gray-800 dark:text-foreground">
+                智能学习助手
+              </p>
             </div>
           </div>
-          <h1 className="max-w-md text-3xl font-semibold leading-tight tracking-tight xl:text-[2rem]">
+          <h1 className="max-w-md text-[2rem] font-bold leading-tight tracking-tight text-[#222222] xl:text-[2.25rem] dark:text-foreground">
             你的 AI 学习助手，随时待命
           </h1>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-4 max-w-sm text-sm font-normal leading-relaxed text-[#666666] dark:text-muted-foreground">
             桌面端负责思考与执行，网页端随身接入——提问、跟进、远程遥控，一套账号打通。
           </p>
-          <ul className="mt-10 space-y-4">
+          <ul className="mt-10">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <li key={title} className={cn('flex gap-3 rounded-xl p-3', glassChip)}>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/12">
-                  <Icon className="h-4 w-4 text-sky-700/75 dark:text-sky-400/85" strokeWidth={1.75} />
+              <li key={title} className={cn('mb-4 flex items-start gap-4 last:mb-0', featureCard)}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-500/15">
+                  <Icon className="h-[18px] w-[18px] text-blue-600 dark:text-blue-400" strokeWidth={1.75} />
                 </span>
-                <div>
-                  <p className="text-sm font-medium">{title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</p>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-foreground">{title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-muted-foreground">{desc}</p>
                 </div>
               </li>
             ))}
           </ul>
           <DesktopClientDownload variant="login" className="max-w-sm" />
         </div>
-        <p className="relative px-10 pb-8 text-[11px] text-muted-foreground/70 xl:px-14">
-          © learnbuddy
+        <p className="relative px-10 pb-8 text-right text-xs text-gray-400 xl:px-14">
+          © learnbuddy · 作者：甘智斌
         </p>
       </aside>
 
       <main
         className={cn(
           'relative z-10 flex min-h-full flex-1 flex-col items-center justify-center',
-          glassPanel,
-          'rounded-none border-y-0 border-r-0 border-l-0',
+          authPanel,
           'px-8 py-10 sm:px-12',
         )}
       >
         <div className="mb-8 flex w-full flex-col gap-4 lg:hidden">
           <div className="flex items-center gap-3">
-            <span className={cn(glassChip, 'p-2')}>
+            <span className={cn(brandChip, 'p-2')}>
               <BrandMark className="h-9 w-9 object-contain" />
             </span>
             <div>
@@ -230,10 +238,10 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <div className="w-full max-w-[420px]">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">
             {formEyebrow}
           </p>
-          <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight">
+          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-[#222222] dark:text-foreground">
             {mode === 'login'
               ? '登录'
               : registerStep === 'verify'
@@ -253,7 +261,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             />
           )}
 
-          <p className="mb-8 mt-6 text-center text-sm leading-relaxed text-muted-foreground">
+          <p className="mb-8 mt-6 text-center text-sm font-normal leading-relaxed text-gray-500 dark:text-muted-foreground">
             {mode === 'login'
               ? '登录后即可在网页继续对话；若桌面已开启「远程控制」，两侧会实时同步。'
               : registerStep === 'verify'
@@ -321,7 +329,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                 onToggleShow={() => setShowPassword((v) => !v)}
               />
               <div className="space-y-2">
-                <label htmlFor="register-password-confirm" className="text-sm font-medium">
+                <label htmlFor="register-password-confirm" className="text-sm font-medium text-gray-700 dark:text-foreground">
                   确认密码
                 </label>
                 <input
@@ -331,7 +339,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   placeholder="再次输入密码"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={glassInput}
+                  className={authInput}
                 />
               </div>
               <AuthFeedback
@@ -413,8 +421,11 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             </form>
           )}
 
-          <p className="mt-10 text-center text-[11px] leading-relaxed text-muted-foreground/90">
+          <p className="mt-10 text-center text-xs leading-relaxed text-gray-400">
             继续即表示您同意 learnbuddy 的服务条款与隐私政策。
+          </p>
+          <p className="mt-2 text-center text-xs text-gray-400 lg:hidden">
+            © learnbuddy · 作者：甘智斌
           </p>
         </div>
       </main>
@@ -433,7 +444,7 @@ function EmailField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-foreground">
         邮箱地址
       </label>
       <input
@@ -443,7 +454,7 @@ function EmailField({
         placeholder="you@email.com"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={glassInput}
+        className={authInput}
         autoFocus
       />
     </div>
@@ -471,7 +482,7 @@ function PasswordField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-foreground">
         {label}
       </label>
       <div className="relative">
@@ -482,13 +493,13 @@ function PasswordField({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={cn(glassInput, 'pr-10')}
+          className={cn(authInput, 'pr-10')}
         />
         <button
           type="button"
           tabIndex={-1}
           aria-label={showPassword ? '隐藏密码' : '显示密码'}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-gray-400 transition-all duration-150 hover:scale-110 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/15 dark:hover:text-blue-400"
           onClick={onToggleShow}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -521,7 +532,7 @@ function AuthFeedback({
   return (
     <>
       {hint ? (
-        <p className="rounded-xl border border-sky-400/25 bg-sky-500/[0.06] px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground backdrop-blur-sm">
+        <p className="rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-xs leading-relaxed text-gray-600 dark:border-blue-500/25 dark:bg-blue-500/10 dark:text-muted-foreground">
           {hint}
         </p>
       ) : null}
@@ -529,10 +540,10 @@ function AuthFeedback({
         <div
           role="alert"
           className={cn(
-            'rounded-xl border px-3.5 py-2.5 backdrop-blur-sm',
+            'rounded-lg border px-3.5 py-2.5',
             guidance
-              ? 'border-sky-400/25 bg-sky-500/[0.06]'
-              : 'border-destructive/25 bg-destructive/10',
+              ? 'border-blue-200 bg-blue-50 dark:border-blue-500/25 dark:bg-blue-500/10'
+              : 'border-red-200 bg-red-50 dark:border-destructive/25 dark:bg-destructive/10',
           )}
         >
           <p
@@ -548,7 +559,7 @@ function AuthFeedback({
               type="button"
               variant="outline"
               size="sm"
-              className={cn('mt-2.5 w-full', authOutlineBtn)}
+              className={cn('mt-2.5 w-full', authSecondaryBtn)}
               onClick={onGoRegister}
             >
               去注册
@@ -559,7 +570,7 @@ function AuthFeedback({
               type="button"
               variant="outline"
               size="sm"
-              className={cn('mt-2.5 w-full', authOutlineBtn)}
+              className={cn('mt-2.5 w-full', authSecondaryBtn)}
               onClick={onGoLogin}
             >
               去登录
@@ -586,7 +597,7 @@ function SwitchModeButton({
       <Button
         type="button"
         variant="outline"
-        className={cn('w-full', authOutlineBtn)}
+        className={cn('w-full', authSecondaryBtn)}
         onClick={onClick}
       >
         {actionLabel}
@@ -605,9 +616,8 @@ function ModeTabs({
   return (
     <div
       className={cn(
-        'mt-8 flex rounded-xl p-1',
-        'bg-[hsl(215_28%_90%/0.45)] dark:bg-white/[0.06] backdrop-blur-md',
-        'border border-[hsl(215_22%_84%/0.5)] dark:border-white/10',
+        'mt-8 flex rounded-lg border border-gray-200 bg-gray-100 p-1',
+        'dark:border-white/10 dark:bg-white/[0.06]',
       )}
       role="tablist"
       aria-label="登录或注册"
@@ -620,10 +630,10 @@ function ModeTabs({
           aria-selected={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            'flex-1 rounded-lg py-2.5 text-sm font-medium transition-all duration-200',
+            'flex-1 rounded-md py-2.5 text-sm font-medium transition-all duration-200',
             mode === m
-              ? 'bg-[hsl(210_32%_98%/0.95)] text-foreground shadow-sm dark:bg-white/15'
-              : 'text-muted-foreground hover:text-foreground',
+              ? 'bg-white text-blue-600 shadow-sm dark:bg-white/15 dark:text-blue-400'
+              : 'text-gray-500 hover:text-gray-700 dark:text-muted-foreground dark:hover:text-foreground',
           )}
         >
           {m === 'login' ? '登录' : '注册'}
@@ -636,26 +646,39 @@ function ModeTabs({
 function AmbientBackground() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(210_38%_97%)] via-[hsl(215_32%_94%)] to-[hsl(220_28%_91%)] dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
-      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl dark:bg-sky-500/20" />
+      <div className="absolute inset-0 bg-gray-100 dark:bg-gradient-to-br dark:from-neutral-950 dark:via-slate-900 dark:to-indigo-950/40" />
+      <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-blue-100/50 blur-3xl dark:bg-blue-500/20" />
       <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-blue-100/45 blur-3xl dark:bg-indigo-600/15" />
       <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-violet-100/40 blur-3xl dark:bg-violet-600/10" />
     </div>
   )
 }
 
-const glassPanel = cn(
-  'border border-[hsl(215_22%_84%/0.65)] dark:border-white/[0.12]',
-  'bg-[hsl(210_32%_98%/0.72)] dark:bg-neutral-900/45',
-  'backdrop-blur-2xl backdrop-saturate-150',
-  'shadow-[0_8px_40px_rgba(48,72,118,0.09)]',
-  'rounded-2xl',
+const leftPanel = cn(
+  'border-r border-gray-200/80 bg-gray-100/95',
+  'dark:border-white/10 dark:bg-neutral-900/45',
 )
 
-const glassChip = cn(
-  'border border-[hsl(215_22%_84%/0.55)] dark:border-white/10',
-  'bg-[hsl(210_36%_97%/0.55)] dark:bg-white/5',
-  'backdrop-blur-xl',
+const authPanel = cn(
+  'bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]',
+  'dark:bg-neutral-900/60 dark:shadow-none',
+)
+
+const brandChip = cn(
+  'rounded-xl border border-gray-200/80 bg-white',
+  'dark:border-white/10 dark:bg-white/5',
+)
+
+const featureCard = cn(
+  'rounded-xl border border-gray-200/80 bg-white p-5',
+  'dark:border-white/10 dark:bg-white/5',
+)
+
+const authInput = cn(
+  'flex h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700',
+  'placeholder:text-gray-400 transition-all duration-150',
+  'focus-visible:outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600/20',
+  'dark:border-white/15 dark:bg-white/5 dark:text-foreground dark:placeholder:text-muted-foreground/60',
 )
 
 function otpHint(expiresIn: number, delivery?: 'email' | 'console'): string {
@@ -771,7 +794,7 @@ function OtpInput({
             onFocus={(e) => e.target.select()}
             className={cn(
               otpCell,
-              digit && 'border-sky-400/45 bg-sky-500/[0.04] text-foreground',
+              digit && 'border-blue-500 bg-blue-50/50 text-foreground dark:bg-blue-500/10',
             )}
           />
         ))}
@@ -781,18 +804,9 @@ function OtpInput({
 }
 
 const otpCell = cn(
-  'h-12 w-10 rounded-xl text-center text-lg font-semibold tabular-nums sm:h-14 sm:w-12 sm:text-xl',
-  'border border-[hsl(215_22%_84%/0.75)] bg-[hsl(210_32%_98%/0.65)] dark:border-white/15 dark:bg-white/5',
-  'backdrop-blur-md shadow-inner shadow-[rgba(48,72,118,0.04)]',
+  'h-12 w-10 rounded-lg text-center text-lg font-semibold tabular-nums sm:h-14 sm:w-12 sm:text-xl',
+  'border border-gray-300 bg-white dark:border-white/15 dark:bg-white/5',
   'transition-colors duration-150',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+  'focus-visible:outline-none focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600/20',
   'disabled:cursor-not-allowed disabled:opacity-50',
-)
-
-const glassInput = cn(
-  'flex h-11 w-full rounded-xl px-3 py-2 text-sm transition-all',
-  'border border-[hsl(215_22%_84%/0.75)] bg-[hsl(210_32%_98%/0.65)] dark:border-white/15 dark:bg-white/5',
-  'backdrop-blur-md placeholder:text-muted-foreground/70',
-  'shadow-inner shadow-[rgba(48,72,118,0.04)]',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
 )

@@ -191,7 +191,7 @@ function Shell({
 
   return (
     <ThemeProvider theme={theme}>
-      <div className="relative flex h-full w-full overflow-hidden">
+      <div className="relative flex h-dvh max-h-dvh w-full overflow-hidden">
         {/* Desktop sidebar */}
         <aside
           className={cn(

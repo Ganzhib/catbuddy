@@ -825,10 +825,10 @@ export function ThreadComposer({
         <div
           className={cn(
             "flex items-center justify-between gap-2",
-            isHero ? "px-4 pb-4" : "px-3 pb-2",
+            isHero ? "px-3 pb-3 sm:px-4 sm:pb-4" : "px-2.5 pb-2 sm:px-3",
           )}
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto sm:gap-2 [&::-webkit-scrollbar]:hidden">
             <input
               ref={fileInputRef}
               type="file"
@@ -866,15 +866,15 @@ export function ThreadComposer({
                   textareaRef.current?.focus();
                 }}
                 className={cn(
-                  "rounded-full border border-border/55 px-2.5 font-medium shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
-                  isHero ? "h-9 text-[12px]" : "h-7.5 text-[10.5px]",
+                  "rounded-full border border-border/55 px-2 font-medium shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
+                  isHero ? "h-9 text-[12px] sm:px-2.5" : "h-8 w-8 px-0 sm:h-7.5 sm:w-auto sm:px-2.5 sm:text-[10.5px]",
                   imageMode
                     ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/12"
                     : "bg-card text-muted-foreground hover:bg-card hover:text-foreground",
                 )}
               >
-                <ImageIcon className={cn("mr-1.5", isHero ? "h-4 w-4" : "h-3.5 w-3.5")} />
-                {t("thread.composer.imageMode.label")}
+                <ImageIcon className={cn(isHero ? "h-4 w-4 sm:mr-1.5" : "h-3.5 w-3.5 sm:mr-1.5")} />
+                <span className="hidden sm:inline">{t("thread.composer.imageMode.label")}</span>
               </Button>
               {imageMode ? (
                 <Button
@@ -886,8 +886,8 @@ export function ThreadComposer({
                   aria-label={t("thread.composer.imageMode.aspectAria")}
                   onClick={() => setAspectMenuOpen((open) => !open)}
                   className={cn(
-                    "rounded-full border border-border/55 bg-card px-2.5 font-medium text-foreground/80 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:bg-card",
-                    isHero ? "h-9 text-[12px]" : "h-7.5 text-[10.5px]",
+                    "shrink-0 rounded-full border border-border/55 bg-card px-2 font-medium text-foreground/80 shadow-[0_2px_8px_rgba(15,23,42,0.04)] hover:bg-card",
+                    isHero ? "h-9 text-[12px] sm:px-2.5" : "h-8 px-2 text-[10.5px] sm:h-7.5 sm:px-2.5",
                   )}
                 >
                   <span>{t(`thread.composer.imageMode.aspect.${imageAspectRatio.replace(":", "_")}`)}</span>
@@ -910,7 +910,7 @@ export function ThreadComposer({
               <span
                 title={modelLabel}
                 className={cn(
-                  "inline-flex min-w-0 items-center gap-1.5 rounded-full border px-2.5 py-1",
+                  "hidden min-w-0 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 md:inline-flex",
                   "border-foreground/10 bg-foreground/[0.035] font-medium text-foreground/80",
                   isHero
                     ? "max-w-[13rem] text-[12px] shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
@@ -938,13 +938,13 @@ export function ThreadComposer({
             aria-label={showStopButton ? t("thread.composer.stop") : t("thread.composer.send")}
             onClick={showStopButton ? onStop : undefined}
             className={cn(
-              "rounded-full transition-transform",
+              "shrink-0 rounded-full transition-transform",
               showStopButton
                 ? "border border-border/70 bg-card text-foreground/85 shadow-[0_3px_10px_rgba(15,23,42,0.08)] hover:bg-muted/65 hover:text-foreground disabled:text-muted-foreground/50"
                 : isHero
                   ? "border border-foreground bg-foreground text-background shadow-[0_4px_12px_rgba(15,23,42,0.20)] hover:bg-foreground/90 disabled:border-foreground/35 disabled:bg-foreground/35 disabled:text-background/80"
                   : "border border-foreground bg-foreground text-background shadow-[0_3px_10px_rgba(15,23,42,0.18)] hover:bg-foreground/90 disabled:border-foreground/35 disabled:bg-foreground/35 disabled:text-background/80",
-              isHero ? "" : "h-7.5 w-7.5",
+              isHero ? "h-9 w-9" : "h-8 w-8 sm:h-7.5 sm:w-7.5",
               (canSend || showStopButton) && "hover:scale-[1.03] active:scale-95",
             )}
           >

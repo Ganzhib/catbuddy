@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#EFF6FF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/learnbuddy_favicon_32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/learnbuddy_apple_touch.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -26,7 +29,7 @@
       })();
     </script>
     <style>
-      html, body, #root { height: 100%; }
+      html, body, #root { height: 100dvh; max-height: 100dvh; }
       body { margin: 0; background: #171717; color: #fafafa; font-family: system-ui, sans-serif; }
     </style>
   </head>

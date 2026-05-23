@@ -68,7 +68,7 @@
   html,
   body,
   #root {
-    @apply h-full;
+    @apply h-full overflow-hidden;
   }
 
   body {
@@ -78,13 +78,13 @@
   /* 浅色：冷色渐变（与登录页一致）；暗色：纯色背景，保持原黑夜模式 */
   html:not(.dark) body {
     background-image:
-      radial-gradient(ellipse 90% 55% at 100% 0%, hsl(210 55% 94% / 0.45), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 0% 100%, hsl(220 45% 92% / 0.35), transparent 50%),
+      radial-gradient(ellipse 85% 60% at 80% 10%, hsl(210 100% 96% / 0.7), transparent 55%),
+      radial-gradient(ellipse 75% 55% at 15% 90%, hsl(214 95% 94% / 0.5), transparent 50%),
       linear-gradient(
-        135deg,
-        hsl(var(--background)) 0%,
-        hsl(215 32% 94%) 50%,
-        hsl(220 28% 92%) 100%
+        160deg,
+        #EFF6FF 0%,
+        #E8F2FC 42%,
+        #DBEAFE 100%
       );
     background-attachment: fixed;
   }
@@ -276,5 +276,160 @@
   }
   .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.42);
+  }
+
+  /* Frosted glass login card — saturation boost for richer blur on soft gradients */
+  .auth-glass-card {
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+  }
+
+  @media (max-height: 720px) {
+    .auth-hide-short {
+      display: none;
+    }
+  }
+
+  .auth-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Login page mascot & ambient orbs */
+  @keyframes auth-mascot-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-2deg);
+    }
+    50% {
+      transform: translateY(-10px) rotate(2deg);
+    }
+  }
+  @keyframes auth-mascot-bubble {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-3px) scale(1.02);
+    }
+  }
+  @keyframes auth-mascot-orbit-a {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate(-4px, -6px) rotate(-8deg);
+    }
+  }
+  @keyframes auth-mascot-orbit-b {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate(5px, 4px) rotate(10deg);
+    }
+  }
+  @keyframes auth-mascot-orbit-c {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(3px, -5px);
+    }
+  }
+  @keyframes auth-orb-drift-a {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(24px, 16px) scale(1.08);
+    }
+  }
+  @keyframes auth-orb-drift-b {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(-20px, 12px) scale(1.05);
+    }
+  }
+  @keyframes auth-orb-drift-c {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(12px, -16px) scale(1.06);
+    }
+  }
+  @keyframes auth-wave-drift-a {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(2%) translateY(-1.5%);
+    }
+  }
+  @keyframes auth-wave-drift-b {
+    0%,
+    100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-1.5%) translateY(1%);
+    }
+  }
+  .auth-wave-drift-a {
+    animation: auth-wave-drift-a 22s ease-in-out infinite;
+  }
+  .auth-wave-drift-b {
+    animation: auth-wave-drift-b 26s ease-in-out infinite 2s;
+  }
+  .auth-mascot-float {
+    animation: auth-mascot-float 3.5s ease-in-out infinite;
+  }
+  .auth-mascot-bubble {
+    animation: auth-mascot-bubble 2.8s ease-in-out infinite;
+  }
+  .auth-mascot-orbit-a {
+    animation: auth-mascot-orbit-a 4s ease-in-out infinite;
+  }
+  .auth-mascot-orbit-b {
+    animation: auth-mascot-orbit-b 4.5s ease-in-out infinite 0.3s;
+  }
+  .auth-mascot-orbit-c {
+    animation: auth-mascot-orbit-c 3.8s ease-in-out infinite 0.6s;
+  }
+  .auth-orb-drift-a {
+    animation: auth-orb-drift-a 14s ease-in-out infinite;
+  }
+  .auth-orb-drift-b {
+    animation: auth-orb-drift-b 18s ease-in-out infinite 1s;
+  }
+  .auth-orb-drift-c {
+    animation: auth-orb-drift-c 16s ease-in-out infinite 2s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-mascot-float,
+    .auth-mascot-bubble,
+    .auth-mascot-orbit-a,
+    .auth-mascot-orbit-b,
+    .auth-mascot-orbit-c,
+    .auth-orb-drift-a,
+    .auth-orb-drift-b,
+    .auth-orb-drift-c,
+    .auth-wave-drift-a,
+    .auth-wave-drift-b {
+      animation: none;
+    }
   }
 }

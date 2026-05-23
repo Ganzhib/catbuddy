@@ -1,0 +1,60 @@
+/**
+ * Desktop ⇄ Gateway session protocol helpers (mirrors sdk-web session helpers).
+ */
+import type {
+  GatewaySessionClientMessage,
+  GatewaySessionRow,
+  GatewaySessionServerMessage,
+} from '@learnbuddy/shared'
+import { bareChatId } from '@learnbuddy/shared'
+
+export const GATEWAY_DESKTOP_RECONNECT_MS = 3_000
+
+export type GatewayInboundMessage = Extract<
+  GatewaySessionServerMessage,
+  { type: 'inbound_message' }
+>
+
+export function sessionRowFromKey(
+  key: string,
+  meta: { createdAt: string; updatedAt: string; title?: string; preview?: string },
+): GatewaySessionRow {
+  const channel = key.includes(':') ? key.slice(0, key.indexOf(':')) : 'desktop'
+  const chatId = bareChatId(key)
+  return {
+    key,
+    channel,
+    chatId,
+    createdAt: meta.createdAt,
+    updatedAt: meta.updatedAt,
+    title: meta.title ?? '',
+    preview: meta.preview ?? '',
+  }
+}
+
+export function buildUiEventMessage(
+  sessionKey: string,
+  chatId: string,
+  event: Record<string, unknown>,
+): GatewaySessionClientMessage {
+  return {
+    type: 'ui_event',
+    sessionKey,
+    chatId,
+    event,
+  }
+}
+
+export function buildFocusSessionEvent(sessionKey: string): Record<string, unknown> {
+  const chatId = bareChatId(sessionKey)
+  return {
+    event: 'session_updated',
+    chat_id: chatId,
+    scope: 'focus',
+  }
+}
+
+export function channelFromSessionKey(sessionKey: string): string {
+  const idx = sessionKey.indexOf(':')
+  return idx === -1 ? 'desktop' : sessionKey.slice(0, idx)
+}

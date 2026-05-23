@@ -6,14 +6,14 @@ import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
 import type { learnbuddyConfig } from "@learnbuddy/shared"
-import type { GatewayWsClient } from '../sync/gateway-ws-client.js'
+import type { GatewayDesktopClient } from '@learnbuddy/gateway-sdk-desktop'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
   config: learnbuddyConfig,
   configFile: string,
-  gatewayWsClient: GatewayWsClient | null = null,
+  gatewayWsClient: GatewayDesktopClient | null = null,
 ) {
   const persistConfig = () => saveConfig(configFile, config)
 

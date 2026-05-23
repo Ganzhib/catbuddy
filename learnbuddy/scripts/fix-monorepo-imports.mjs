@@ -35,14 +35,6 @@ const dirs = [
   path.join(root, 'apps/desktop/electron'),
 ]
 
-// gateway-api relative types
-const relayApi = path.join(root, 'packages/ui/src/lib/gateway-api.ts')
-if (fs.existsSync(relayApi)) {
-  let t = fs.readFileSync(relayApi, 'utf8')
-  t = t.replace(/from ['"]\.\/types['"]/, 'from "@learnbuddy/shared"')
-  fs.writeFileSync(relayApi, t, 'utf8')
-}
-
 for (const dir of dirs) {
   if (!fs.existsSync(dir)) continue
   for (const file of walk(dir)) {

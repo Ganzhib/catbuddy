@@ -1,5 +1,5 @@
 /**
- * Remove accidental TypeScript emit files co-located with package sources.
+ * Remove accidental TypeScript emit files co-located with package/app sources.
  * Run: node scripts/clean-package-emit.mjs  (or pnpm clean:packages)
  */
 import fs from 'node:fs'
@@ -7,7 +7,6 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const packagesDir = path.join(root, 'packages')
 
 /** Hand-written declarations — never delete. */
 const KEEP_DTS = new Set([
@@ -36,16 +35,26 @@ function walk(dir, out = []) {
   return out
 }
 
-let removed = 0
-for (const pkg of fs.readdirSync(packagesDir, { withFileTypes: true })) {
-  if (!pkg.isDirectory()) continue
-  const src = path.join(packagesDir, pkg.name, 'src')
-  if (!fs.existsSync(src)) continue
-  for (const file of walk(src)) {
-    if (!shouldRemove(file)) continue
-    fs.unlinkSync(file)
-    removed += 1
+function cleanSrcUnder(parentDir) {
+  if (!fs.existsSync(parentDir)) return 0
+  let removed = 0
+  for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const src = path.join(parentDir, entry.name, 'src')
+    if (!fs.existsSync(src)) continue
+    for (const file of walk(src)) {
+      if (!shouldRemove(file)) continue
+      fs.unlinkSync(file)
+      removed += 1
+    }
   }
+  return removed
 }
 
-console.log(`[clean-package-emit] removed ${removed} file(s) under packages/*/src`)
+let removed = 0
+removed += cleanSrcUnder(path.join(root, 'packages'))
+removed += cleanSrcUnder(path.join(root, 'apps'))
+
+console.log(
+  `[clean-package-emit] removed ${removed} file(s) under packages/*/src and apps/*/src`,
+)

@@ -13,7 +13,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow: BrowserWindow | null = null;
 
 app.whenReady().then(async () => {
-  loadEnvFile(path.join(__dirname, "../../../.env"));
   loadEnvFile(path.join(__dirname, "../.env"));
   loadEnvFile(path.join(app.getPath("home"), ".learnbuddy.env"));
 

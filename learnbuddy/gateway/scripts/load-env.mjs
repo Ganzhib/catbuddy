@@ -4,11 +4,9 @@ import dotenv from 'dotenv'
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url))
 const gatewayRoot = path.resolve(scriptsDir, '..')
-const monorepoRoot = path.resolve(gatewayRoot, '..')
 
-/** gateway/.env 优先；learnbuddy/.env 仅补缺（与 packages/gateway `load-env.ts` 一致）。 */
+/** gateway/.env（与 packages/gateway `load-env.ts` 一致）。 */
 export function loadGatewayEnvFiles() {
-  dotenv.config({ path: path.join(monorepoRoot, '.env'), override: false })
   dotenv.config({ path: path.join(gatewayRoot, '.env'), override: true })
 }
 

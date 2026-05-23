@@ -109,7 +109,7 @@ HTTP 列表（`GET /api/sessions`）在 Gateway 在线时仍可走代理；**实
 `POST /gateway-api/api/sessions/.../messages` 返回 **503** 表示 gateway **没有在线的桌面端**（不是 Vite 代理坏了）。
 
 1. 终端 A：`pnpm gateway:dev`（监听 `18765`）
-2. 复制 `.env.example` → `.env`，设置：
+2. 复制 `apps/desktop/.env.example` → `apps/desktop/.env`，设置：
    ```env
    GATEWAY_ENABLED=true
    GATEWAY_URL=ws://127.0.0.1:18765/ws

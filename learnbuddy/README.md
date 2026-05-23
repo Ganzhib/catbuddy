@@ -74,7 +74,7 @@ pnpm install
 | `pnpm build:web` | Web 静态资源 |
 
 | `pnpm lint` | 全 workspace TypeScript 检查 |
-| `pnpm clean:packages` | 删除 `packages/*/src` 下误生成的 `.js` / `.map` / `.d.ts` |
+| `pnpm clean:packages` | 删除 `packages/*/src`、`apps/*/src` 下误生成的 `.js` / `.map` / `.d.ts` |
 
 
 
@@ -99,21 +99,16 @@ pnpm gateway:dev
 
 
 # 2) 桌面（需开启 gateway）
-
-# apps/desktop/.env 或环境变量：
-
+# 复制 apps/desktop/.env.example → apps/desktop/.env，或写入 ~/.learnbuddy.env：
 #   GATEWAY_ENABLED=true
-
-#   RELAY_URL=ws://127.0.0.1:18765/ws
-
+#   GATEWAY_URL=ws://127.0.0.1:18765/ws
 #   GATEWAY_SECRET=dev-secret
-
 pnpm dev:desktop
 
 
 
-# 3) Web 前端（apps/web/.env.development 已默认 VITE_USE_GATEWAY=true）
-
+# 3) Web 前端
+# 复制 apps/web/.env.development.example → apps/web/.env.development（可选；dev 默认已走 Gateway）
 pnpm dev:web
 
 ```
@@ -144,21 +139,22 @@ pnpm dev:web
 
 
 
+### 环境变量示例文件
+
+| 端 | 模板 | 复制为 |
+|----|------|--------|
+| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.learnbuddy.env` |
+| Web（开发） | `apps/web/.env.development.example` | `apps/web/.env.development` |
+| Web（生产 build） | `apps/web/.env.production.example` | `apps/web/.env.production` |
+| Gateway | `gateway/.env.example` | `gateway/.env` |
+
 ### 环境变量（`apps/web`）
 
-
-
 | 变量 | 说明 |
-
 |------|------|
-
-| `VITE_USE_GATEWAY` | `true`（默认 dev）→ learnbuddy gateway |
-
-| `VITE_USE_GATEWAY` | 同义兼容 |
-
-| `VITE_GATEWAY_URL` | nanobot HTTP（`false` 时，默认 `http://127.0.0.1:8765`） |
-
-| `VITE_GATEWAY_HTTP_URL` | learnbuddy gateway（默认 `http://127.0.0.1:18765`） |
+| `VITE_USE_GATEWAY` | `true`（dev 默认）→ learnbuddy gateway；`false` → nanobot gateway |
+| `VITE_GATEWAY_URL` | nanobot HTTP（`VITE_USE_GATEWAY=false` 时，默认 `http://127.0.0.1:8765`） |
+| `VITE_GATEWAY_HTTP_URL` | learnbuddy gateway HTTP（dev 默认 `http://127.0.0.1:18765`；生产建议 `/gateway-api` 或公网 URL） |
 
 详见 [docs/GATEWAY.md](./docs/GATEWAY.md)。
 
@@ -176,9 +172,9 @@ pnpm dev:web
 
 
 
-## `packages/` 不要出现编译产物
+## `packages/` 与 `apps/*/src/` 不要出现编译产物
 
-`packages/*` 只放 **TypeScript 源码**，由 Vite 直接引用（`noEmit: true`）。若在 `src/` 里看到成对的 `Foo.ts` + `Foo.js` + `Foo.js.map`，是误跑了 `tsc`（或 IDE「编译项目」）生成的，可执行：
+`packages/*` 与 `apps/web` 等只放 **TypeScript 源码**，由 Vite 直接引用（`noEmit: true`）。若在 `src/` 里看到成对的 `Foo.ts` + `Foo.js` + `Foo.js.map`，是误跑了 `tsc`（或 IDE「编译项目」）生成的，可执行：
 
 ```bash
 pnpm clean:packages

@@ -23,6 +23,11 @@ packages/*/src/**/*.d.ts.map
 !packages/platform/src/preload-api.d.ts
 !packages/ui/vite-env.d.ts
 !packages/ui/src/types/react-syntax-highlighter-subpaths.d.ts
+# apps — same rule (e.g. apps/web/src/main.js from mistaken tsc)
+apps/*/src/**/*.js
+apps/*/src/**/*.js.map
+apps/*/src/**/*.d.ts
+apps/*/src/**/*.d.ts.map
 
 # relay-server — stray shell/node eval artifacts
 relay-server/console.log*
@@ -113,6 +118,7 @@ nano.*.save
 # Environment & secrets (keep examples tracked if needed)
 .env.*
 !.env.example
+!.env.*.example
 
 # Logs & temp
 *.log

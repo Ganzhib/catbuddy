@@ -119,6 +119,7 @@ Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于
 
 环境变量加载顺序（`src/main/index.ts`）：
 
-1. `learnbuddy/.env`（monorepo 根）
-2. `apps/desktop/.env`
-3. `~/.learnbuddy.env`
+1. `apps/desktop/.env`
+2. `~/.learnbuddy.env`
+
+模板见 `apps/desktop/.env.example`。

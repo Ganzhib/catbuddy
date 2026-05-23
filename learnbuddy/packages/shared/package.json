@@ -14,6 +14,10 @@
     "./brand": {
       "types": "./src/brand.d.ts",
       "default": "./src/brand.mjs"
+    },
+    "./desktop-download": {
+      "types": "./src/desktop-download.ts",
+      "default": "./src/desktop-download.ts"
     }
   }
 }

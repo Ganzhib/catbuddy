@@ -70,6 +70,21 @@ pnpm build:web
 # 产出: apps/web/dist/ — 部署到 learnbuddy.ganzhibin.icu；API 默认 gateway.ganzhibin.icu
 ```
 
+### Web 提供桌面安装包下载
+
+1. 打包桌面：`pnpm build:desktop`（安装包多在 `apps/desktop/release-fresh/`）。
+2. 复制到 Web 静态目录（Node，跨平台）：
+
+```bash
+pnpm build:web
+```
+
+（已包含 `stage:desktop-installer`；仅改前端、安装包已就位时用 `pnpm build:web:only`。）
+
+或一键：`pnpm build:release`（desktop → web）。
+
+可选：`apps/web/.env.production` 中设置 `VITE_DESKTOP_DOWNLOAD_URL` 指向 CDN 完整 URL。
+
 自托管或同域反代时才需要 `apps/web/.env.production`（见 `.env.production.example`）。
 
 ### 可选：同域反代
@@ -132,8 +147,9 @@ pnpm build:desktop
 ## 一键构建
 
 ```bash
-pnpm build:all    # gateway + web + desktop
-pnpm build:web    # 仅 Web
+pnpm build:release   # desktop + web（含安装包拷贝）
+pnpm build:all       # gateway + desktop + web
+pnpm build:web:only  # 仅 Vite，不拷贝安装包
 pnpm gateway:build
 pnpm build:desktop
 ```

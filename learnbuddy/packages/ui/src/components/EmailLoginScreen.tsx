@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { Eye, EyeOff, Laptop, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { BrandMark } from '@/components/BrandMark'
+import { DesktopClientDownload } from '@/components/DesktopClientDownload'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
@@ -200,6 +201,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
               </li>
             ))}
           </ul>
+          <DesktopClientDownload variant="login" className="max-w-sm" />
         </div>
         <p className="relative px-10 pb-8 text-[11px] text-muted-foreground/70 xl:px-14">
           © learnbuddy
@@ -207,14 +209,17 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
       </aside>
 
       <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-10 sm:px-10">
-        <div className="mb-6 flex w-full max-w-[420px] items-center gap-3 lg:hidden">
-          <span className={cn(glassChip, 'p-2')}>
-            <BrandMark className="h-9 w-9 object-contain" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold">邮箱登录 · 注册</p>
-            <p className="text-xs text-muted-foreground">登录后网页与桌面互通</p>
+        <div className="mb-6 flex w-full max-w-[420px] flex-col gap-4 lg:hidden">
+          <div className="flex items-center gap-3">
+            <span className={cn(glassChip, 'p-2')}>
+              <BrandMark className="h-9 w-9 object-contain" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">邮箱登录 · 注册</p>
+              <p className="text-xs text-muted-foreground">登录后网页与桌面互通</p>
+            </div>
           </div>
+          <DesktopClientDownload variant="login" />
         </div>
 
         <div className={cn('w-full max-w-[420px] p-8 sm:p-9', glassPanel, 'shadow-2xl shadow-black/5')}>

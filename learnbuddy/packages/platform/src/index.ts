@@ -12,6 +12,10 @@ export {
 } from './create-platform'
 export { resolveGatewayHttpBase, useLearnbuddyGateway } from './gateway-http'
 export {
+  resolveDesktopDownloadUrl,
+  shouldOfferDesktopDownload,
+} from './desktop-download'
+export {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,
 } from './gateway-account-sync'

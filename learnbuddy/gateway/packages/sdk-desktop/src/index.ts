@@ -2,6 +2,7 @@
 export {
   GatewayDesktopClient,
   loadGatewayConfigFromEnv,
+  loadGatewayConfigFromSources,
   type GatewayCreateSessionHandler,
   type GatewayDesktopClientConfig,
   type GatewayDesktopClientOptions,

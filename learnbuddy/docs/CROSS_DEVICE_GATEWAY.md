@@ -19,9 +19,10 @@ apps/web                 gateway (@learnbuddy)      apps/desktop
 ### 1. 启动 Gateway
 
 ```bash
-cd learnbuddy/gateway
-pnpm install
-GATEWAY_SECRET=your-desktop-secret pnpm start
+# 在 learnbuddy/ 根目录
+docker compose -f gateway/docker-compose.yml up -d mysql   # 可选
+cp gateway/.env.example gateway/.env
+pnpm gateway:dev    # 或 pnpm gateway:build && pnpm gateway:start
 ```
 
 `GATEWAY_SECRET` **仅用于桌面 WS 注册**，不能作为 Web 的 Bearer。

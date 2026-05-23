@@ -358,12 +358,29 @@ export class GatewayDesktopClient {
   }
 }
 
-export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
-  const enabled =
-    process.env.GATEWAY_ENABLED === 'true' || process.env.GATEWAY_ENABLED === '1'
-  const url = process.env.GATEWAY_URL?.trim()
-  const secret = process.env.GATEWAY_SECRET?.trim()
-  if (!enabled || !url || !secret) return null
+import {
+  resolveBuiltinGatewaySecret,
+  resolveBuiltinGatewayWsUrl,
+} from '@learnbuddy/shared'
+
+export function loadGatewayConfigFromSources(
+  stored?: { url?: string; secret?: string },
+  options?: { useLocalDefaults?: boolean },
+): GatewayDesktopClientConfig | null {
+  const envFlag = process.env.GATEWAY_ENABLED?.trim()
+  if (envFlag === 'false' || envFlag === '0') return null
+
+  const useLocal = options?.useLocalDefaults === true
+  const url =
+    process.env.GATEWAY_URL?.trim()
+    || stored?.url?.trim()
+    || resolveBuiltinGatewayWsUrl(useLocal)
+  const secret =
+    process.env.GATEWAY_SECRET?.trim()
+    || stored?.secret?.trim()
+    || resolveBuiltinGatewaySecret(useLocal)
+  if (!url || !secret) return null
+
   const sessions = process.env.GATEWAY_DEFAULT_SESSIONS?.trim()
   const accountEmail = process.env.GATEWAY_ACCOUNT_EMAIL?.trim() || undefined
   return {
@@ -375,4 +392,8 @@ export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
       ? sessions.split(',').map((s) => s.trim()).filter(Boolean)
       : undefined,
   }
+}
+
+export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
+  return loadGatewayConfigFromSources()
 }

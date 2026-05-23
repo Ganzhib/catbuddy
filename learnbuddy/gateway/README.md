@@ -22,6 +22,8 @@ pnpm gateway:build && pnpm gateway:start
 
 复制 `gateway/.env.example` → `gateway/.env`，配置 MySQL / SMTP / `GATEWAY_SECRET`。
 
+Docker（Gateway + MySQL）：在 `learnbuddy/` 根目录执行 `docker compose -f gateway/docker-compose.yml up -d --build`。详见 [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)。
+
 ## SDK 对称设计
 
 | 包 | 角色 | 主入口 |

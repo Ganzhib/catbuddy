@@ -1,8 +1,8 @@
-# Local MySQL for learnbuddy gateway
-# Usage:
-#   docker compose up -d
-#   cp .env.example .env
-#   pnpm run build && pnpm start
+# learnbuddy Gateway + MySQL
+# Usage (from learnbuddy/ root):
+#   cp gateway/.env.example gateway/.env
+#   docker compose -f gateway/docker-compose.yml up -d --build
+#   curl http://127.0.0.1:18765/health
 
 services:
   mysql:
@@ -23,6 +23,22 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: gateway/Dockerfile
+    container_name: learnbuddy-gateway
+    restart: unless-stopped
+    ports:
+      - '18765:18765'
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 volumes:
   gateway_mysql_data:

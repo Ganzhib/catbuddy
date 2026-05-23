@@ -70,12 +70,29 @@ export interface LearnbuddyPreloadApi {
   getGatewayRemoteEnabled(): Promise<{
     enabled: boolean
     envConfigured: boolean
+    configured?: boolean
     connected: boolean
   }>
   setGatewayRemoteEnabled(enabled: boolean): Promise<{
     enabled: boolean
     connected: boolean
   }>
+  getGatewayConnectionSettings(): Promise<{
+    host: string
+    mode: string
+    useLocal: boolean
+    url: string
+    hasSecret: boolean
+    configured: boolean
+    envOverridesUrl: boolean
+    envOverridesSecret: boolean
+    selfHostCustom: boolean
+  }>
+  setGatewayConnectionSettings(payload: {
+    url?: string
+    secret?: string
+    clearCustom?: boolean
+  }): Promise<{ ok: boolean; configured: boolean; connected: boolean }>
 }
 
 declare global {

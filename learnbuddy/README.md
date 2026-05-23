@@ -70,8 +70,8 @@ pnpm install
 | `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
 
 | `pnpm build:desktop` | 桌面安装包 |
-
 | `pnpm build:web` | Web 静态资源 |
+| `pnpm build:all` | Gateway + Web + Desktop 依次构建 |
 
 | `pnpm lint` | 全 workspace TypeScript 检查 |
 | `pnpm clean:packages` | 删除 `packages/*/src`、`apps/*/src` 下误生成的 `.js` / `.map` / `.d.ts` |
@@ -82,7 +82,7 @@ pnpm install
 
 
 
-无需本地 `nanobot gateway`。Web UI 通过 **learnbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)。
+无需本地 `nanobot gateway`。Web UI 通过 **learnbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)、[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
 
 
 

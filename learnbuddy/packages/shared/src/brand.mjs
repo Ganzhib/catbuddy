@@ -26,4 +26,4 @@ export const brandSource = {
   iconOriginal: 'public/brand/source/icon.original.png',
 }
 
-export const electronIcon = 'electron/assets/icon.png'
+export const electronIcon = 'apps/desktop/src/main/assets/icon.png'

@@ -15,7 +15,6 @@
   },
   "include": [
     "src/**/*",
-    "electron/**/*",
     "../../packages/shared/src/**/*",
     "../../packages/client/src/**/*",
     "../../packages/platform/src/**/*",

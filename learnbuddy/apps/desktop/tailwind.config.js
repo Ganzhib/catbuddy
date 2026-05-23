@@ -4,8 +4,8 @@ import uiPreset from "../../packages/ui/tailwind.preset.cjs";
 export default {
   presets: [uiPreset],
   content: [
-    "./index.html",
-    "./src/**/*.{ts,tsx}",
+    "./src/renderer/index.html",
+    "./src/renderer/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

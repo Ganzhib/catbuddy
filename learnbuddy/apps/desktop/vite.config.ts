@@ -11,33 +11,53 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
 const uiRoot = path.resolve(repoRoot, "packages/ui/src");
 
-function copyPreloadPlugin() {
-  const src = path.join(__dirname, "electron/preload.cjs");
-  const dest = path.join(__dirname, "dist-electron/preload.cjs");
+function copyDirRecursive(src: string, dest: string) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const from = path.join(src, entry.name);
+    const to = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(from, to);
+    } else {
+      fs.copyFileSync(from, to);
+    }
+  }
+}
 
-  function copyPreload() {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(src, dest);
+function copyMainAssetsPlugin() {
+  const assetsSrc = path.join(__dirname, "src/main/assets");
+  const assetsDest = path.join(__dirname, "dist-electron/assets");
+  const preloadSrc = path.join(__dirname, "src/preload");
+  const preloadDest = path.join(__dirname, "dist-electron/preload");
+
+  function copy() {
+    if (fs.existsSync(assetsSrc)) {
+      copyDirRecursive(assetsSrc, assetsDest);
+    }
+    if (fs.existsSync(preloadSrc)) {
+      copyDirRecursive(preloadSrc, preloadDest);
+    }
   }
 
   return {
-    name: "copy-preload",
+    name: "copy-main-assets",
     buildStart() {
-      copyPreload();
+      copy();
     },
     closeBundle() {
-      copyPreload();
+      copy();
     },
   };
 }
 
 export default defineConfig({
-  root: __dirname,
+  root: path.resolve(__dirname, "src/renderer"),
+  publicDir: path.resolve(__dirname, "public"),
   plugins: [
     react(),
     electron([
       {
-        entry: "electron/main.ts",
+        entry: path.resolve(__dirname, "src/main/index.ts"),
         vite: {
           build: {
             outDir: "dist-electron",
@@ -64,7 +84,7 @@ export default defineConfig({
       },
     ]),
     electronRenderer(),
-    copyPreloadPlugin(),
+    copyMainAssetsPlugin(),
   ],
   resolve: {
     alias: [
@@ -97,25 +117,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
       },
-      "/gateway-api": {
-        target: "http://127.0.0.1:18765",
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/gateway-api/, ""),
-      },
-      "/gateway-ws": {
-        target: "http://127.0.0.1:18765",
-        ws: true,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
-      },
     },
   },
   build: {
-    outDir: "dist",
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, "index.html"),
+        main: path.resolve(__dirname, "src/renderer/index.html"),
       },
     },
   },

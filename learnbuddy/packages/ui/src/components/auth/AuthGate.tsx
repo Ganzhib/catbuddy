@@ -10,6 +10,7 @@ import {
   hasLearnbuddyIpc,
   requiresEmailLogin,
   resolveGatewayHttpBase,
+  syncDesktopGatewayAccountEmail,
 } from '@learnbuddy/platform'
 import { createLearnbuddyClient, type learnbuddyClient } from '@learnbuddy/client'
 
@@ -58,6 +59,9 @@ export function AuthGate({
         gatewayHttpBase: useGateway ? resolveGatewayHttpBase() : undefined,
       })
       client.connect()
+      if (hasLearnbuddyIpc()) {
+        void syncDesktopGatewayAccountEmail()
+      }
       setSession({
         client,
         token: boot.token,

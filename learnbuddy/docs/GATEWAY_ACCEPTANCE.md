@@ -40,7 +40,7 @@ pnpm dev:web
 
 1. 桌面打开一条对话，记下 `sessionKey`（如 `desktop:1730_abc`）。
 2. Web 发消息，确认流式回复、工具卡、`turn_end`。
-3. 设置 → 远程控制：配对码 + `POST /api/pair`（或使用 `gateway-web.html`）。
+3. Web 与桌面用**同一邮箱**登录；设置 → 远程控制确认已连接（无配对码）。
 
 ## 邮箱鉴权验收
 

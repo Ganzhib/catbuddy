@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
+import { hasAuthToken } from "@learnbuddy/platform";
 import { loadGatewayWebPrefs, useGatewayChat } from "./useGatewayChat";
 
 export function GatewayChatApp() {
   const prefs = loadGatewayWebPrefs();
   const [httpBase, setHttpBase] = useState(prefs.httpBase);
-  const [pairingCode, setPairingCode] = useState("");
-  const [webToken, setWebToken] = useState(prefs.webToken);
   const [sessionKey, setSessionKey] = useState(prefs.sessionKey);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const loggedIn = hasAuthToken();
 
   const {
     messages,
@@ -29,7 +29,7 @@ export function GatewayChatApp() {
   }, [messages]);
 
   const onConnect = () => {
-    void connect({ httpBase, pairingCode, webToken, sessionKey });
+    void connect({ httpBase, sessionKey });
   };
 
   const onSend = () => {
@@ -46,7 +46,7 @@ export function GatewayChatApp() {
           <div>
             <h1 className="text-lg font-semibold tracking-tight">learnbuddy 远程对话</h1>
             <p className="text-xs text-zinc-500">
-              通过中继控制桌面 Agent · 配对码见桌面「设置 → 远程控制」
+              使用与 Web 相同的登录账号；桌面须开启远程控制并以同一邮箱注册 Gateway
             </p>
           </div>
           {connected ? (
@@ -70,6 +70,11 @@ export function GatewayChatApp() {
               onConnect();
             }}
           >
+            {!loggedIn ? (
+              <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+                请先在主站 Web 登录（邮箱 OTP），本页将自动使用同一账号的 JWT。
+              </p>
+            ) : null}
             <label className="block space-y-1.5 text-sm">
               <span className="text-zinc-400">中继地址</span>
               <input
@@ -80,24 +85,6 @@ export function GatewayChatApp() {
               />
             </label>
             <label className="block space-y-1.5 text-sm">
-              <span className="text-zinc-400">配对码（6 位，桌面设置里复制）</span>
-              <input
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm uppercase tracking-widest outline-none focus:border-blue-500"
-                value={pairingCode}
-                onChange={(e) => setPairingCode(e.target.value.toUpperCase())}
-                placeholder="例如 A1B2C3"
-                autoComplete="off"
-              />
-            </label>
-            <label className="block space-y-1.5 text-sm">
-              <span className="text-zinc-400">Web Token（自选，配对后作 Bearer）</span>
-              <input
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm outline-none focus:border-blue-500"
-                value={webToken}
-                onChange={(e) => setWebToken(e.target.value)}
-              />
-            </label>
-            <label className="block space-y-1.5 text-sm">
               <span className="text-zinc-400">Session Key（与桌面当前对话一致）</span>
               <input
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-xs outline-none focus:border-blue-500"
@@ -105,22 +92,19 @@ export function GatewayChatApp() {
                 onChange={(e) => setSessionKey(e.target.value)}
                 placeholder="desktop:1730_abc"
               />
-              <span className="text-[11px] text-zinc-500">
-                在桌面打开目标对话后，到设置 → 远程控制 → 已订阅会话 中复制。
-              </span>
             </label>
             {error ? (
               <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
             ) : null}
             <button
               type="submit"
-              disabled={connecting || !pairingCode.trim()}
+              disabled={connecting || !loggedIn}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
             >
               {connecting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : null}
-              配对并连接
+              连接
             </button>
           </form>
         </div>
@@ -201,16 +185,13 @@ export function GatewayChatApp() {
                 )}
               </button>
             </div>
-            <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] text-zinc-600">
-              Enter 发送 · Shift+Enter 换行
-            </p>
           </div>
         </>
       )}
 
       {connected ? null : (
         <footer className="shrink-0 px-4 pb-6 text-center text-[11px] text-zinc-600">
-          先启动 gateway-legacy-removed 与桌面（GATEWAY_ENABLED=true），再打开此页。
+          先启动 Gateway 与桌面（远程控制 + 同一登录邮箱），再连接。
         </footer>
       )}
     </div>

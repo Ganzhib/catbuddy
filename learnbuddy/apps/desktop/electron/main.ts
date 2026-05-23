@@ -32,6 +32,8 @@ let appConfigFile = "";
 let appSessions: SessionManager | null = null;
 let appBus: MessageBus | null = null;
 let appChannelManager: ChannelManager | null = null;
+/** Same email as Web JWT (set from renderer after login or GATEWAY_ACCOUNT_EMAIL). */
+let gatewayAccountEmail: string | undefined;
 
 function applyGatewayRemote(): void {
   if (gatewayWsClient) {
@@ -47,7 +49,11 @@ function applyGatewayRemote(): void {
     }
     return;
   }
-  gatewayWsClient = new GatewayWsClient(gwCfg, appBus);
+  const email =
+    gatewayAccountEmail?.trim()
+    || gwCfg.accountEmail?.trim()
+    || undefined;
+  gatewayWsClient = new GatewayWsClient({ ...gwCfg, accountEmail: email }, appBus);
   gatewayWsClient.setSessionProvider({
     list: () => appSessions!.list(),
     getDetail: (key) => appSessions!.getDetail(key),
@@ -76,6 +82,16 @@ function registerGatewayRemoteIpc(): void {
     envConfigured: !!loadGatewayConfigFromEnv(),
     connected: gatewayWsClient?.status.connected ?? false,
   }));
+
+  ipcMain.handle(
+    "gateway:set-account-email",
+    async (_event, { email }: { email?: string }) => {
+      const normalized = String(email || "").trim().toLowerCase();
+      gatewayAccountEmail = normalized.includes("@") ? normalized : undefined;
+      applyGatewayRemote();
+      return { ok: true, accountEmail: gatewayAccountEmail ?? null };
+    },
+  );
 
   ipcMain.handle(
     "gateway:set-remote-enabled",

@@ -128,7 +128,7 @@ pnpm dev:web
 
 - 轻量远程对话页：`http://127.0.0.1:5173/gateway-web.html` 或 `pnpm gateway:web`
 
-- 桌面 **设置 → 远程控制** 可查看配对码；完整 App 开发模式用 bootstrap token，无需手动配对
+- 桌面 **设置 → 远程控制**：须与 Web **同一邮箱** 登录；开启远程控制后自动注册 Gateway
 
 
 

@@ -28,6 +28,8 @@ export interface GatewayWsClientConfig {
   url: string;
   secret: string;
   deviceId?: string;
+  /** Same email as Web login (Gateway routes by account). */
+  accountEmail?: string;
   /** Auto-subscribe these session keys after connect. */
   sessionKeys?: string[];
 }
@@ -35,7 +37,7 @@ export interface GatewayWsClientConfig {
 export interface GatewayWsClientStatus {
   connected: boolean;
   deviceId: string;
-  pairingCode?: string;
+  accountEmail?: string;
   lastError?: string;
 }
 
@@ -46,7 +48,6 @@ export class GatewayWsClient {
   private ws: WebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly deviceId: string;
-  private _pairingCode?: string;
   private _connected = false;
   private _lastError?: string;
   private onInbound: InboundHandler | null = null;
@@ -65,7 +66,7 @@ export class GatewayWsClient {
     return {
       connected: this._connected,
       deviceId: this.deviceId,
-      pairingCode: this._pairingCode,
+      accountEmail: this.config.accountEmail,
       lastError: this._lastError,
     };
   }
@@ -192,6 +193,7 @@ export class GatewayWsClient {
         role: "desktop",
         deviceId: this.deviceId,
         token: this.config.secret,
+        accountEmail: this.config.accountEmail?.trim() || undefined,
       });
     });
 
@@ -220,10 +222,9 @@ export class GatewayWsClient {
   private handleServerMessage(msg: GatewaySessionServerMessage): void {
     if (msg.type === "registered") {
       this._connected = true;
-      this._pairingCode = msg.pairingCode;
       this._lastError = undefined;
       console.log(
-        `[gateway] connected deviceId=${msg.deviceId} pairing=${msg.pairingCode ?? "n/a"}`,
+        `[gateway] connected deviceId=${msg.deviceId} account=${this.config.accountEmail ?? "n/a"}`,
       );
       if (this.config.sessionKeys?.length) {
         this.syncSessions(this.config.sessionKeys);
@@ -369,10 +370,12 @@ export function loadGatewayConfigFromEnv(): GatewayWsClientConfig | null {
   const secret = process.env.GATEWAY_SECRET?.trim();
   if (!enabled || !url || !secret) return null;
   const sessions = process.env.GATEWAY_DEFAULT_SESSIONS?.trim();
+  const accountEmail = process.env.GATEWAY_ACCOUNT_EMAIL?.trim() || undefined;
   return {
     url,
     secret,
     deviceId: process.env.GATEWAY_DEVICE_ID?.trim() || undefined,
+    accountEmail,
     sessionKeys: sessions
       ? sessions.split(",").map((s) => s.trim()).filter(Boolean)
       : undefined,

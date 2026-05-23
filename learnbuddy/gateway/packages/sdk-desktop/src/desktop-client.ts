@@ -9,12 +9,13 @@ export interface DesktopGatewayConfig {
   url: string
   secret: string
   deviceId?: string
+  accountEmail?: string
 }
 
 export interface DesktopGatewayStatus {
   connected: boolean
   deviceId: string
-  pairingCode?: string
+  accountEmail?: string
   lastError?: string
 }
 
@@ -31,7 +32,6 @@ export class DesktopGatewayClient {
   private ws: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   readonly deviceId: string
-  private _pairingCode?: string
   private _connected = false
   private _lastError?: string
 
@@ -46,7 +46,7 @@ export class DesktopGatewayClient {
     return {
       connected: this._connected,
       deviceId: this.deviceId,
-      pairingCode: this._pairingCode,
+      accountEmail: this.config.accountEmail,
       lastError: this._lastError,
     }
   }
@@ -82,6 +82,7 @@ export class DesktopGatewayClient {
           role: 'desktop',
           deviceId: this.deviceId,
           token: this.config.secret,
+          accountEmail: this.config.accountEmail,
         }),
       )
     })
@@ -104,7 +105,6 @@ export class DesktopGatewayClient {
     }
     if (msg.type === 'registered') {
       this._connected = true
-      this._pairingCode = msg.pairingCode as string | undefined
       return
     }
     if (msg.type === 'inbound_message') {

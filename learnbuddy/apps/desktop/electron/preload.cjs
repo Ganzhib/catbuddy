@@ -36,6 +36,7 @@ const IPC = {
   GATEWAY_STATUS: 'gateway:status',
   GATEWAY_SUBSCRIBE: 'gateway:subscribe-session',
   GATEWAY_SYNC_ALL: 'gateway:sync-all-sessions',
+  GATEWAY_SET_ACCOUNT_EMAIL: 'gateway:set-account-email',
 }
 
 const api = {
@@ -84,6 +85,8 @@ const api = {
   getGatewayStatus: () => ipcRenderer.invoke(IPC.GATEWAY_STATUS),
   gatewaySubscribeSession: (payload) => ipcRenderer.invoke(IPC.GATEWAY_SUBSCRIBE, payload),
   gatewaySyncAllSessions: () => ipcRenderer.invoke(IPC.GATEWAY_SYNC_ALL),
+  setGatewayAccountEmail: (payload) =>
+    ipcRenderer.invoke(IPC.GATEWAY_SET_ACCOUNT_EMAIL, payload),
 
   getGatewayRemoteEnabled: () => ipcRenderer.invoke('gateway:get-remote-enabled'),
   setGatewayRemoteEnabled: (enabled) =>

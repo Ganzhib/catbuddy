@@ -28,7 +28,7 @@ export async function fetchBootstrapHttp(
   const headers: Record<string, string> = {}
   if (authToken) headers.Authorization = `Bearer ${authToken}`
 
-  const res = await fetch(url, { credentials: 'include', headers })
+  const res = await fetch(url, { headers })
   if (res.status === 401) {
     let requiresAuth = loginRequired
     try {

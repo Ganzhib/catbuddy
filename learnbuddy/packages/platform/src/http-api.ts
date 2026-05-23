@@ -25,7 +25,7 @@ async function apiFetch<T>(
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
     },
-    credentials: 'include',
+    credentials: 'omit',
   })
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)

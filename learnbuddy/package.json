@@ -21,7 +21,12 @@
     "gateway:start": "pnpm --filter @learnbuddy/gateway start",
     "gateway:test": "pnpm --dir gateway test:e2e",
     "gateway:test:acceptance": "pnpm --dir gateway test:acceptance",
-    "gateway:test:all": "pnpm --dir gateway test:all"
+    "gateway:test:all": "pnpm --dir gateway test:all",
+    "gateway:deploy": "node gateway/deploy/deploy.cjs",
+    "gateway:deploy:local": "node gateway/deploy/deploy.cjs --local",
+    "gateway:deploy:pack": "node gateway/deploy/deploy.cjs --skip-upload",
+    "gateway:deploy:nginx": "node gateway/deploy/deploy.cjs --nginx-only",
+    "deploy:web": "node gateway/deploy/deploy-web.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

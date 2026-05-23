@@ -1,0 +1,12 @@
+# Never bake local secrets into gateway image
+gateway/.env
+gateway/.env.production
+**/.env
+**/.env.local
+**/.env.production
+node_modules
+**/node_modules
+**/dist
+**/dist-electron
+**/release
+.git

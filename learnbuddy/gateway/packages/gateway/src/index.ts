@@ -18,7 +18,7 @@ async function main() {
   const { pool, state, auth } = await createGatewayServices()
 
   const app = Fastify({ logger: true })
-  await app.register(cors, { origin: true })
+  await app.register(cors, { origin: true, credentials: true })
   registerHttpRoutes(app, state, auth)
 
   const port = gatewayEnv.port

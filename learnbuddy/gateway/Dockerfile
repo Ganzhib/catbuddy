@@ -3,7 +3,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable pnpm
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json .npmrc ./
 COPY packages/shared ./packages/shared
 COPY gateway ./gateway
 
@@ -16,7 +16,7 @@ RUN corepack enable pnpm
 
 ENV NODE_ENV=production
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY packages/shared ./packages/shared
 COPY gateway ./gateway
 COPY --from=build /app/gateway/packages/gateway/dist ./gateway/packages/gateway/dist

@@ -1,11 +1,14 @@
 /**
- * Official learnbuddy Gateway endpoints (Web ↔ Desktop relay).
+ * Official learnbuddy production hosts (Web ↔ Gateway relay).
  * Self-hosters may override via env or desktop config; end users use these defaults.
  */
 
-/** Public gateway hostname — Web + packaged Desktop connect here in production. */
-export const LEARNBUDDY_GATEWAY_HOST = 'learnbuddy.ganzhibin.iuc'
+/** Web SPA — 用户浏览器打开的站点 */
+export const LEARNBUDDY_WEB_HOST = 'learnbuddy.ganzhibin.icu'
+export const LEARNBUDDY_WEB_URL = `https://${LEARNBUDDY_WEB_HOST}`
 
+/** Gateway API + WebSocket — Web 与 Desktop 客户端连接 */
+export const LEARNBUDDY_GATEWAY_HOST = 'gateway.ganzhibin.icu'
 export const LEARNBUDDY_GATEWAY_HTTP_URL = `https://${LEARNBUDDY_GATEWAY_HOST}`
 export const LEARNBUDDY_GATEWAY_WS_URL = `wss://${LEARNBUDDY_GATEWAY_HOST}/ws`
 

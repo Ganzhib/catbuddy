@@ -13,6 +13,7 @@ export {
   resolveAuthEmail,
   resolveAuthEmailPrefix,
 } from './email-utils'
+export { emailFromGatewayToken } from './jwt-email'
 export { requestEmailCode, verifyEmailCode } from './email-client'
 export {
   loginWithPassword,

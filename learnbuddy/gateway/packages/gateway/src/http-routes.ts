@@ -63,13 +63,6 @@ export function registerHttpRoutes(
     }
   })
 
-  app.post<{ Body: { pairingCode?: string; token?: string } }>('/api/pair', async (req) => {
-    const pairingCode = String(req.body?.pairingCode || '').trim()
-    const token = String(req.body?.token || '').trim()
-    if (!pairingCode || !token) return { ok: false, error: 'missing_fields' }
-    return state.pairWeb(pairingCode, token)
-  })
-
   app.post<{
     Params: { sessionKey: string }
     Body: { content?: string; media?: unknown[] }
@@ -83,6 +76,7 @@ export function registerHttpRoutes(
     const chatId = state.chatIdFromSessionKey(sessionKey)
     const result = await state.handleWebInboundForUser(
       email,
+      token,
       sessionKey,
       chatId,
       content,
@@ -107,16 +101,23 @@ export function registerHttpRoutes(
 
   app.get('/api/sessions', async (req) => {
     const email = await auth.resolveWebEmail(authHeader(req))
-    return state.fetchSessionsForWeb(email)
+    const token = await auth.resolveWebToken(authHeader(req))
+    return state.fetchSessionsForWeb(email, token)
   })
 
   app.post<{ Body: { chatId?: string } }>('/api/sessions', async (req, reply) => {
     const email = await auth.resolveWebEmail(authHeader(req))
+    const token = await auth.resolveWebToken(authHeader(req))
     const raw = String(req.body?.chatId || '').trim()
     const bare = raw.startsWith('desktop:') ? raw.slice('desktop:'.length) : raw
     const chatId = bare || `${Date.now()}_${randomBytes(3).toString('hex')}`
     const sessionKey = `desktop:${chatId}`
-    const result = await state.forwardCreateSessionToDesktop(sessionKey, chatId, email)
+    const result = await state.forwardCreateSessionToDesktop(
+      sessionKey,
+      chatId,
+      email,
+      token,
+    )
     if (!result.ok) return reply.status(503).send({ ok: false, error: result.error })
     const now = new Date().toISOString()
     return reply.status(201).send({

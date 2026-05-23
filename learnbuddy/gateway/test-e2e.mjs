@@ -45,8 +45,8 @@ async function main() {
   const webToken = String(bootBody.token || "");
   if (!webToken) throw new Error("bootstrap missing token");
 
-  let pairingCode = "";
-  console.log("[test] 2. desktop connect");
+  const testEmail = "e2e@test.local";
+  console.log("[test] 2. desktop connect (accountEmail)");
   const desktopWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("desktop register timeout")), 8000);
@@ -57,15 +57,15 @@ async function main() {
           role: "desktop",
           deviceId: "test-desktop",
           token: SECRET,
+          accountEmail: testEmail,
         }),
       );
     };
     desktopWs.onmessage = (ev) => {
       const msg = JSON.parse(String(ev.data));
       if (msg.type === "registered") {
-        pairingCode = msg.pairingCode;
         clearTimeout(t);
-        console.log("[test] desktop registered pairing=", pairingCode);
+        console.log("[test] desktop registered");
         resolve();
       }
     };
@@ -78,15 +78,6 @@ async function main() {
       console.log("[test] desktop got inbound:", msg.content);
     }
   });
-
-  console.log("[test] 3. pair web");
-  const pairRes = await fetch(`${HTTP}/api/pair`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pairingCode, token: webToken }),
-  });
-  const pairBody = await pairRes.json();
-  if (!pairBody.ok) throw new Error(`pair failed: ${JSON.stringify(pairBody)}`);
 
   const badBearer = await fetch(`${HTTP}/api/sessions/${encodeURIComponent(SESSION)}/messages`, {
     method: "POST",

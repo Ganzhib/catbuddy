@@ -12,6 +12,10 @@ export {
 } from './create-platform'
 export { resolveGatewayHttpBase, useLearnbuddyGateway } from './gateway-http'
 export {
+  resolveGatewayAccountEmail,
+  syncDesktopGatewayAccountEmail,
+} from './gateway-account-sync'
+export {
   BootstrapAuthRequired,
   clearAuthToken,
   emailPrefixFromEmail,
@@ -30,6 +34,7 @@ export {
   registerWithPassword,
   requestRegister,
   verifyRegister,
+  emailFromGatewayToken,
 } from './auth'
 
 import { createPlatformApi } from './create-platform'

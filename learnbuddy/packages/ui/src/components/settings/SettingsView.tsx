@@ -495,7 +495,7 @@ function GatewayRemoteSettings() {
   const [status, setStatus] = useState<{
     enabled: boolean;
     connected: boolean;
-    pairingCode?: string;
+    accountEmail?: string;
     lastError?: string;
     subscribedSessions?: string[];
   } | null>(null);
@@ -521,16 +521,6 @@ function GatewayRemoteSettings() {
 
   if (!status?.enabled) return null;
 
-  const copyPairing = async () => {
-    const code = status.pairingCode;
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      /* ignore */
-    }
-  };
-
   return (
     <section>
       <SettingsSectionTitle>{t("settings.gatewayRemote.section")}</SettingsSectionTitle>
@@ -551,19 +541,12 @@ function GatewayRemoteSettings() {
           </span>
         </SettingsRow>
         <SettingsRow
-          title={t("settings.gatewayRemote.pairingCode")}
-          description={t("settings.gatewayRemote.pairingHelp")}
+          title={t("settings.gatewayRemote.accountEmail")}
+          description={t("settings.gatewayRemote.accountHelp")}
         >
-          <div className="flex items-center gap-2">
-            <code className="rounded-md bg-muted px-2.5 py-1 text-[13px] font-semibold tracking-widest">
-              {status.pairingCode || "—"}
-            </code>
-            {status.pairingCode ? (
-              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => void copyPairing()}>
-                {t("settings.gatewayRemote.copy")}
-              </Button>
-            ) : null}
-          </div>
+          <code className="rounded-md bg-muted px-2.5 py-1 text-[13px]">
+            {status.accountEmail || "—"}
+          </code>
         </SettingsRow>
         {status.lastError ? (
           <SettingsRow title={t("settings.gatewayRemote.lastError")}>

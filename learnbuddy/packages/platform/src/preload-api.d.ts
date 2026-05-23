@@ -54,7 +54,7 @@ export interface LearnbuddyPreloadApi {
     enabled: boolean
     connected: boolean
     deviceId?: string
-    pairingCode?: string
+    accountEmail?: string
     lastError?: string
     subscribedSessions?: string[]
   }>
@@ -63,6 +63,9 @@ export interface LearnbuddyPreloadApi {
     chatId?: string
   }): Promise<{ sessionKey: string; subscribed?: string[] }>
   gatewaySyncAllSessions(): Promise<{ keys: string[]; subscribed?: string[] }>
+  setGatewayAccountEmail(payload: {
+    email: string
+  }): Promise<{ ok: boolean; accountEmail: string | null }>
 
   getGatewayRemoteEnabled(): Promise<{
     enabled: boolean

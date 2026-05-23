@@ -3,10 +3,10 @@
  * See docs/CROSS_DEVICE_GATEWAY.md.
  */
 import type {
-  GatewayHttpPairResponse,
   GatewayHttpSendResponse,
   GatewaySessionServerMessage,
 } from '@learnbuddy/shared'
+import { loadAuthToken } from '@learnbuddy/platform'
 import type { InboundEvent } from '@learnbuddy/shared'
 
 export interface GatewayWebConfig {
@@ -68,17 +68,13 @@ export function gatewayWebConfigFromEnv(): GatewayWebConfig | null {
   }
 }
 
-export async function pairGatewayWeb(
-  httpBase: string,
-  pairingCode: string,
-  webToken: string,
-): Promise<GatewayHttpPairResponse> {
-  const res = await fetch(`${httpBase.replace(/\/$/, '')}/api/pair`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pairingCode, token: webToken }),
-  })
-  return res.json() as Promise<GatewayHttpPairResponse>
+/** JWT from Web login (`learnbuddy-webui.auth-token`) or env dev token. */
+export function resolveGatewayWebToken(override?: string): string {
+  const fromStore = loadAuthToken()?.trim()
+  const raw = override?.trim() || fromStore
+  if (raw) return raw
+  const env = import.meta.env.VITE_GATEWAY_WEB_TOKEN as string | undefined
+  return env?.trim() || ''
 }
 
 export async function sendGatewayMessage(

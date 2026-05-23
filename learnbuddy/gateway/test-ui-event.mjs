@@ -1,5 +1,5 @@
 /**
- * Verify desktop → web ui_event fan-out.
+ * Verify desktop → web ui_event fan-out (dev / single-desktop mode).
  */
 import { WebSocket } from "ws";
 
@@ -9,7 +9,6 @@ const SECRET = process.env.GATEWAY_SECRET || "dev-secret";
 const SESSION = "desktop:gateway-test";
 
 async function main() {
-  let pairingCode = "";
   const desktopWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("desktop register timeout")), 8000);
@@ -26,7 +25,6 @@ async function main() {
     desktopWs.onmessage = (ev) => {
       const msg = JSON.parse(String(ev.data));
       if (msg.type === "registered") {
-        pairingCode = msg.pairingCode;
         desktopWs.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
         clearTimeout(t);
         resolve();
@@ -36,14 +34,6 @@ async function main() {
   });
 
   const webToken = `web-ui-${Date.now()}`;
-  const pairRes = await fetch(`${HTTP}/api/pair`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pairingCode, token: webToken }),
-  });
-  const pair = await pairRes.json();
-  if (!pair.ok) throw new Error(`pair failed ${JSON.stringify(pair)}`);
-
   let uiEvent = null;
   const webWs = new WebSocket(WS_URL);
   await new Promise((resolve, reject) => {
@@ -53,7 +43,7 @@ async function main() {
         JSON.stringify({
           type: "register",
           role: "web",
-          deviceId: "test-web",
+          deviceId: "test-web-ui",
           token: webToken,
         }),
       );
@@ -65,9 +55,7 @@ async function main() {
         clearTimeout(t);
         resolve();
       }
-      if (msg.type === "ui_event") {
-        uiEvent = msg.event;
-      }
+      if (msg.type === "ui_event") uiEvent = msg;
     };
     webWs.onerror = reject;
   });
@@ -77,21 +65,18 @@ async function main() {
       type: "ui_event",
       sessionKey: SESSION,
       chatId: "gateway-test",
-      event: { event: "delta", chat_id: "gateway-test", text: "hello from desktop" },
+      event: { event: "delta", chat_id: "gateway-test", text: "hi", stream_id: "1" },
     }),
   );
 
-  await new Promise((r) => setTimeout(r, 500));
-  webWs.close();
+  await new Promise((r) => setTimeout(r, 300));
+  if (!uiEvent) throw new Error("web did not receive ui_event");
+  console.log("[test-ui-event] ok", uiEvent.event?.event);
   desktopWs.close();
-
-  if (!uiEvent || uiEvent.event !== "delta") {
-    throw new Error(`ui_event not received: ${JSON.stringify(uiEvent)}`);
-  }
-  console.log("[test] PASS ui_event fan-out", uiEvent);
+  webWs.close();
 }
 
 main().catch((e) => {
-  console.error("[test] FAIL", e.message);
+  console.error(e);
   process.exit(1);
 });

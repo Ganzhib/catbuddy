@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Radio } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { syncDesktopGatewayAccountEmail } from "@learnbuddy/platform";
 import { cn } from "@/lib/utils";
 
 type RemoteState = {
@@ -37,6 +38,9 @@ export function GatewayRemoteSwitch() {
     if (!state || busy) return;
     setBusy(true);
     try {
+      if (!state.enabled) {
+        await syncDesktopGatewayAccountEmail();
+      }
       const next = await window.learnbuddy!.setGatewayRemoteEnabled!(!state.enabled);
       setState((prev) => ({
         enabled: next.enabled,

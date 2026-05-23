@@ -15,7 +15,8 @@ export type GatewaySessionClientMessage =
       role: GatewaySessionRole
       deviceId: string
       token: string
-      pairingCode?: string
+      /** Desktop only: same email as Web JWT login (multi-tenant routing). */
+      accountEmail?: string
     }
   | { type: 'subscribe'; sessionKey: string }
   | { type: 'unsubscribe'; sessionKey: string }
@@ -41,7 +42,6 @@ export type GatewaySessionServerMessage =
       type: 'registered'
       deviceId: string
       role: GatewaySessionRole
-      pairingCode?: string
     }
   | {
       type: 'inbound_message'
@@ -80,17 +80,6 @@ export interface GatewayHttpSendResponse {
   ok: boolean
   queued?: boolean
   offline?: boolean
-  error?: string
-}
-
-export interface GatewayHttpPairBody {
-  pairingCode: string
-  token: string
-}
-
-export interface GatewayHttpPairResponse {
-  ok: boolean
-  deviceId?: string
   error?: string
 }
 

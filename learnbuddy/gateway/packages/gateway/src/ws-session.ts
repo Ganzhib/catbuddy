@@ -35,22 +35,16 @@ export function attachGatewaySessionWebSocket(
         const deviceId = String(msg.deviceId || randomBytes(8).toString('hex'))
 
         if (role === 'desktop') {
-          const result = state.registerDesktop(ws, deviceId, token)
+          const accountEmail = String(msg.accountEmail || '')
+          const result = state.registerDesktop(ws, deviceId, token, accountEmail)
           if (!result.ok) {
             ws.send(JSON.stringify({ type: 'error', message: result.error }))
             ws.close()
             return
           }
           clientKey = `desktop:${deviceId}`
-          ws.send(
-            JSON.stringify({
-              type: 'registered',
-              deviceId,
-              role,
-              pairingCode: result.pairingCode,
-            }),
-          )
-          log(`desktop registered deviceId=${deviceId} pairing=${result.pairingCode}`)
+          ws.send(JSON.stringify({ type: 'registered', deviceId, role }))
+          log(`desktop registered deviceId=${deviceId} account=${accountEmail || 'n/a'}`)
         } else {
           void (async () => {
             if (isWebLoginRequired() && !(await auth.registerTokenFromJwt(token))) {

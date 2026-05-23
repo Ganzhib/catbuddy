@@ -62,7 +62,7 @@ export function registerIpcHandlers(
       enabled: !!gatewayWsClient,
       connected: st?.connected ?? false,
       deviceId: st?.deviceId,
-      pairingCode: st?.pairingCode,
+      accountEmail: st?.accountEmail,
       lastError: st?.lastError,
       subscribedSessions: gatewayWsClient?.subscribedSessionKeys ?? [],
     };

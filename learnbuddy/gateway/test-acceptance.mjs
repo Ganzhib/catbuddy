@@ -35,7 +35,6 @@ function eventKey(ev) {
 
 async function connectDesktop() {
   const ws = new WebSocket(WS_URL);
-  let pairingCode = "";
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("desktop timeout")), 8000);
     ws.on("open", () => {
@@ -51,7 +50,6 @@ async function connectDesktop() {
     ws.on("message", (raw) => {
       const msg = JSON.parse(String(raw));
       if (msg.type === "registered") {
-        pairingCode = msg.pairingCode || "";
         ws.send(JSON.stringify({ type: "subscribe", sessionKey: SESSION }));
         clearTimeout(t);
         resolve();
@@ -59,8 +57,7 @@ async function connectDesktop() {
     });
     ws.on("error", reject);
   });
-  if (!pairingCode) throw new Error("no pairing code");
-  return { ws, pairingCode };
+  return { ws };
 }
 
 async function connectWeb(webToken) {
@@ -148,7 +145,7 @@ async function main() {
   console.log("[acceptance] bootstrap ok", { token: webToken.slice(0, 12) + "…", ws_path: boot.body.ws_path });
 
   console.log("[acceptance] 2. desktop + web WS");
-  const { ws: execWs, pairingCode } = await connectDesktop();
+  const { ws: execWs } = await connectDesktop();
   const { ws: webWs, seen } = await connectWeb(webToken);
 
   console.log("[acceptance] 3. publish ui_event sequence");
@@ -182,7 +179,7 @@ async function main() {
     process.exit(1);
   }
   console.log("\n[acceptance] PASS — gateway protocol acceptance");
-  console.log("[acceptance] pairingCode (for manual desktop test):", pairingCode);
+  console.log("[acceptance] done");
 }
 
 main().catch((err) => {

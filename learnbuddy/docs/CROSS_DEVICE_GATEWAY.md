@@ -1,169 +1,107 @@
 # 跨端中继：Web 发消息，桌面执行本地文件
 
-Web 只做输入与展示；**Agent + 本地 workspace 工具只在桌面 Electron 主进程运行**。中转服务负责把用户消息推到桌面，并把 `InboundEvent` 流广播给 Web（及桌面 UI）。
+Web 只做输入与展示；**Agent + 本地 workspace 工具只在桌面 Electron 主进程运行**。Gateway 按 **同一登录邮箱** 把 Web 与桌面绑在一起，不再使用配对码。
 
 ## 架构
 
 ```text
 apps/web                 gateway (@learnbuddy)      apps/desktop
      │                        │                         │
-     │  POST /api/.../messages│                         │
-     ├───────────────────────►│  inbound_message (WS)   │
-     │                        ├────────────────────────►│ bus.publishInbound
-     │                        │                         │ AgentLoop + tools
-     │  WS subscribe          │◄── ui_event (WS) ───────┤ bus.outbound (fan-out)
-     ◄────────────────────────┤                         │ DesktopChannel → 本机 UI
+     │  JWT (email)           │  register(accountEmail)│
+     │  POST .../messages     │  inbound_message (WS)   │
+     ├───────────────────────►├────────────────────────►│ AgentLoop
+     │  WS subscribe          │◄── ui_event (WS) ───────┤
+     ◄────────────────────────┤                         │
 ```
 
 ## 快速开始
 
-### 1. 启动中转
+### 1. 启动 Gateway
 
 ```bash
 cd learnbuddy/gateway
 pnpm install
 GATEWAY_SECRET=your-desktop-secret pnpm start
-# 默认 http://127.0.0.1:18765  WS ws://127.0.0.1:18765/ws
 ```
 
-`GATEWAY_SECRET` **仅用于桌面端注册 WS（role=desktop）**，不能作为 Web HTTP/WS 的 Bearer。
+`GATEWAY_SECRET` **仅用于桌面 WS 注册**，不能作为 Web 的 Bearer。
 
-### 2. 配置桌面 `.env`
+### 2. 桌面
 
 ```env
 GATEWAY_ENABLED=true
 GATEWAY_URL=ws://127.0.0.1:18765/ws
 GATEWAY_SECRET=your-desktop-secret
-# 可选：固定设备 ID
-# GATEWAY_DEVICE_ID=my-desktop-1
-# 勿写 GATEWAY_DEFAULT_SESSIONS=desktop:main — 会话 key 随侧边栏对话变化
+# 可选；桌面 App 登录后会通过 IPC 自动同步邮箱
+# GATEWAY_ACCOUNT_EMAIL=you@example.com
 ```
 
-重启 `pnpm dev`。主进程日志应出现 `[gateway] connected`。在 **设置 → 远程控制** 可查看配对码与已订阅的 `sessionKey`。
+在桌面 App **用邮箱登录**，打开 **设置 → 远程控制**。确认已连接且 **Gateway 账号** 与 Web 一致。
 
-### 3. Web 配对 + 发消息
+### 3. Web
 
-1. 在桌面打开要远程控制的**那条对话**（记下侧边栏对应的会话，格式为 `desktop:{chatId}`，例如 `desktop:1730_abc`，不是固定的 `desktop:main`）。
-2. 复制设置里的 **配对码**，调用：
+1. 在 `apps/web`（或 gateway-web）**用同一邮箱登录**（OTP/JWT）。
+2. Bearer 自动为登录后的 JWT，**无需** `/api/pair` 或自选 token。
+3. 发消息：`POST /api/sessions/{sessionKey}/messages`，`Authorization: Bearer <JWT>`。
 
-```bash
-curl -X POST http://127.0.0.1:18765/api/pair \
-  -H "Content-Type: application/json" \
-  -d '{"pairingCode":"XXXXXX","token":"my-web-token"}'
-```
-
-3. 用 **Web token**（上一步的 `token`）发消息：
-
-```bash
-curl -X POST "http://127.0.0.1:18765/api/sessions/desktop%3A1730_abc/messages" \
-  -H "Authorization: Bearer my-web-token" \
-  -H "Content-Type: application/json" \
-  -d '{"content":"列出工作区里的文件"}'
-```
-
-若使用 `Authorization: Bearer` 与 `GATEWAY_SECRET` 相同，HTTP 会返回 `401`（开发测试请走配对流程）。
-
-桌面应开始跑 Agent；Web 用 WS 订阅同一 `sessionKey` 可收到 `ui_event`。
-
-### 4. WebSocket 订阅（浏览器 / 未来 apps/web）
+### 4. WebSocket
 
 ```js
-// 1) 先 pair，得到 web token
-const webToken = 'my-web-token'
-
 const ws = new WebSocket('ws://127.0.0.1:18765/ws')
 ws.onopen = () => ws.send(JSON.stringify({
   type: 'register',
   role: 'web',
   deviceId: 'web-tab-1',
-  token: webToken,
+  token: '<JWT from login>',
 }))
-ws.onmessage = (e) => {
-  const msg = JSON.parse(e.data)
-  if (msg.type === 'ui_event') {
-    // msg.event 即 InboundEvent
-  }
-}
-// 注册成功后 — sessionKey 与桌面当前对话一致
 ws.send(JSON.stringify({ type: 'subscribe', sessionKey: 'desktop:1730_abc' }))
 ```
 
-### 5. 浏览器对话页（开发用）
+桌面注册：
 
-Vite 开发时打开：
-
-```text
-http://localhost:5173/gateway-web.html
+```js
+ws.send(JSON.stringify({
+  type: 'register',
+  role: 'desktop',
+  deviceId: 'my-desktop-1',
+  token: process.env.GATEWAY_SECRET,
+  accountEmail: 'you@example.com', // 与 Web JWT sub 相同
+}))
 ```
 
-开发时 HTTP/WS 走 Vite 同源代理（`/gateway-api`、`/gateway-ws`），避免浏览器对 `localhost:5173` → `127.0.0.1:18765` 的跨域拦截（表现为 **Failed to fetch**）。中继地址可留空默认或填 `http://localhost:5173/gateway-api`。
+## 同账号与会话
 
-或：
-
-```bash
-pnpm run gateway:web
-```
-
-填写配对码、`sessionKey`（与桌面当前对话一致）、自选 Web token → **配对并连接** → 发消息。回复由桌面 Agent 经 `ui_event` 推送到该页。
-
-**桌面实时流式**：Web 发消息时，请在桌面**打开同一条对话**（`sessionKey` 对应的会话）。流式 delta 会按 `chatId` 投递到该会话，而不是误发到上次在桌面本地发送过的会话。
-
-**桌面 → Web 跟随**（`session_updated` + `scope: focus`）：
-
-| 桌面动作 | 经 Gateway 通知 Web |
-|----------|---------------------|
-| 侧栏切换 / `client.attach` | `gatewaySubscribeSession` → `focusSession` |
-| 新建对话（`session:new` 或首条 `agent:send`） | 同上 |
-| Agent 流式回复 | `ui_event`（仅当前 subscribe 的 `sessionKey`） |
-
-Web（`apps/web` / `gateway-web`）收到 `focus` 后自动切换 `sessionKey` 并 `subscribe`；Gateway 对 `focus` **广播给所有已连接 Web**（不依赖事先 subscribe），并 `sessions_sync` + `metadata` 刷新侧栏。桌面 `SessionManager.list()` 含内存中新建会话，避免「桌面已新建、Web 列表里没有」。
-
-**双向同步（实时）**：
-
-| 方向 | 机制 |
+| 条件 | 说明 |
 |------|------|
-| Web → 桌面 | HTTP `inbound_message` + `agent:gateway-inbound` |
-| 桌面 → Web | `agent:send` 时 `ui_event`（`user_inbound`）+ Agent 出站经 `GatewayChannel` |
+| `sessionKey` | 三端统一，如 `desktop:{chatId}` |
+| Web JWT `sub` | 须与桌面 `accountEmail` 一致 |
+| 远程控制 | 桌面 `gateway.remoteEnabled=true` |
+| 会话 owner | MySQL 按邮箱隔离；未认领会话仅同账号桌面可推送 |
 
-历史消息不会自动回填到 Web；仅连接后新产生的消息会同步。打开 Web 前在桌面已发的内容需刷新会话或后续再做 history API。
-
-前端可复用 `src/lib/gateway-api.ts` 的 `pairGatewayWeb` / `sendGatewayMessage` / `connectGatewayWeb`。环境变量示例：
-
-```env
-VITE_GATEWAY_HTTP_BASE=http://127.0.0.1:18765
-VITE_GATEWAY_WEB_TOKEN=my-web-token
-```
+`scope: focus`：桌面切换/新建会话时，Gateway 只通知 **同邮箱** 的 Web 连接。
 
 ## 协议摘要
 
 | 方向 | 类型 | 说明 |
 |------|------|------|
-| C→S | `register` | `desktop`（token=GATEWAY_SECRET）或 `web`（token=配对后的 Web token） |
-| C→S | `subscribe` | desktop / web 订阅 `sessionKey` |
-| S→C | `inbound_message` | 仅 desktop 收到，触发本地 Agent |
-| S→C | `ui_event` | 该 session 所有 web 客户端收到；`event.session_updated` + `scope: focus` 表示桌面切到该会话，Web 应跟随 |
-| HTTP | `POST .../messages` | Web 发用户消息（Bearer = Web token） |
-| HTTP | `POST /api/pair` | 用配对码绑定 Web token 到 desktop |
+| C→S | `register` | desktop：`token`+`accountEmail`；web：登录 JWT |
+| C→S | `subscribe` | 订阅 `sessionKey` |
+| S→C | `ui_event` | 流式事件；`session_updated`/`focus` 切换会话 |
+| HTTP | `POST .../messages` | Web 发消息 |
 
-完整类型见 `@learnbuddy/shared` → `gateway-protocol.ts`。
+## 安全（多用户）
+
+- Web：邮箱登录 + JWT
+- 桌面：`GATEWAY_SECRET` + **accountEmail**（与 Web 同邮箱才路由）
+- 无配对码；一邮箱对应一台在线 desktop（新连接顶替旧连接）
+
+开发可设 `GATEWAY_AUTH_DEV_BYPASS=true` 关闭邮箱校验（勿用于生产）。
 
 ## 代码位置
 
 | 路径 | 说明 |
 |------|------|
-| `gateway/` (`@learnbuddy/gateway`) | Fastify 中转 + Gateway 垫片；`packages/sdk-web` / `sdk-desktop` |
-| `electron/sync/gateway-ws-client.ts` | 桌面 WS 客户端 |
-| `electron/channels/gateway.ts` | 出站 fan-out → `ui_event` |
-| `electron/channels/manager.ts` | `desktop` 出站同时投递 `gateway` |
-| `packages/ui/src/lib/gateway-api.ts` | Web 侧 HTTP + WS 辅助 |
-
-## 安全（生产前必做）
-
-当前为 **开发级**：desktop 共享 `GATEWAY_SECRET`、配对码明文。Web 已禁止用 `GATEWAY_SECRET` 当 Bearer。上线前需要：HTTPS/WSS、短期 JWT、用户账号绑定、桌面「允许远程控制」开关、会话 ACL。
-
-## 与 Monorepo 的关系
-
-完成 `MONOREPO_MIGRATION.md` 后：
-
-- `apps/web` 使用 `gateway-api` + `WsTransport`（或专用 `GatewayTransport`）连同一中转；
-- `apps/desktop` 保持本方案，无需在服务器跑 Agent。
+| `gateway/.../gateway-state.ts` | `deviceIdByAccountEmail` 路由 |
+| `electron/sync/gateway-ws-client.ts` | 桌面 WS + `accountEmail` |
+| `packages/ui/.../AuthGate.tsx` | 登录后 `setGatewayAccountEmail` |
+| `packages/ui/src/lib/gateway-api.ts` | Web HTTP/WS（JWT） |

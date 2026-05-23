@@ -28,13 +28,16 @@ export interface GatewayClient {
   sessions: Set<string>
   clientKey: string
   webEmail?: string
+  /** Desktop WS: account email (must match Web JWT `sub`). */
+  accountEmail?: string
 }
 
 export class GatewayStateService {
   private readonly clients = new Map<string, GatewayClient>()
-  private readonly pairingByCode = new Map<string, string>()
   private readonly webTokens = new Set<string>()
   private readonly webEmailByToken = new Map<string, string>()
+  /** Logged-in account email → online desktop `deviceId`. */
+  private readonly deviceIdByAccountEmail = new Map<string, string>()
   private readonly sessionDesktop = new Map<string, string>()
   private readonly sessionWebSockets = new Map<string, Set<WebSocket>>()
   /** Latest session list from desktop client (deviceId → rows). */
@@ -69,6 +72,31 @@ export class GatewayStateService {
 
   isWebAuthorized(token: string): boolean {
     return !!token && this.webTokens.has(token)
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase()
+  }
+
+  private findWebClientByWs(ws: WebSocket): GatewayClient | null {
+    for (const client of this.clients.values()) {
+      if (client.role === 'web' && client.ws === ws) return client
+    }
+    return null
+  }
+
+  /** Route Web traffic to the desktop registered with the same account email. */
+  pickDesktopForWebToken(webToken: string): GatewayClient | null {
+    const email = this.getWebEmailForToken(webToken)
+    if (email?.includes('@')) {
+      const deviceId = this.deviceIdByAccountEmail.get(this.normalizeEmail(email))
+      if (!deviceId) return null
+      const client = this.getDesktopClient(deviceId)
+      if (client?.ws.readyState === 1) return client
+      return null
+    }
+    if (isWebLoginRequired()) return null
+    return this.pickOnlineDesktop()
   }
 
   getDesktopSecret(): string {
@@ -163,10 +191,12 @@ export class GatewayStateService {
         sent.add(ws)
       }
     }
-    if (isWebLoginRequired()) return
+    const deviceId = this.sessionDesktop.get(sessionKey)
+    if (!deviceId) return
     for (const client of this.clients.values()) {
       if (client.role !== 'web' || client.ws.readyState !== 1) continue
       if (sent.has(client.ws)) continue
+      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) continue
       client.ws.send(payload)
       client.sessions.add(sessionKey)
       let set = this.sessionWebSockets.get(sessionKey)
@@ -182,7 +212,7 @@ export class GatewayStateService {
     return event.event === 'session_updated' && event.scope === 'focus'
   }
 
-  /** Desktop 切换/新建会话：推送给所有已连接 Web，并刷新侧栏列表。 */
+  /** Desktop 切换/新建会话：仅推送给已与该 desktop 配对的 Web。 */
   private async broadcastSessionFocus(
     deviceId: string,
     sessionKey: string,
@@ -195,6 +225,7 @@ export class GatewayStateService {
     const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
     for (const client of this.clients.values()) {
       if (client.role !== 'web' || client.ws.readyState !== 1) continue
+      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) continue
       client.sessions.add(sessionKey)
       let set = this.sessionWebSockets.get(sessionKey)
       if (!set) {
@@ -204,22 +235,55 @@ export class GatewayStateService {
       set.add(client.ws)
       client.ws.send(payload)
     }
-    this.notifyWebClientsSessionListChanged()
+    this.notifyWebClientsSessionListChanged(deviceId)
+  }
+
+  /** Multi-tenant: same account email as desktop + session owner rules. */
+  private async webWsMayReceiveFromDesktop(
+    ws: WebSocket,
+    deviceId: string,
+    sessionKey: string,
+  ): Promise<boolean> {
+    const client = this.findWebClientByWs(ws)
+    if (!client) return false
+    const token = this.webTokenFromClientKey(client.clientKey)
+    const desktop = this.getDesktopClient(deviceId)
+    if (!desktop) return false
+
+    if (isWebLoginRequired()) {
+      const webEmail = this.normalizeEmail(
+        client.webEmail || this.getWebEmailForToken(token) || '',
+      )
+      const deskEmail = desktop.accountEmail
+        ? this.normalizeEmail(desktop.accountEmail)
+        : ''
+      if (!webEmail.includes('@') || !deskEmail.includes('@') || webEmail !== deskEmail) {
+        return false
+      }
+      const owner = await this.store.getSessionOwner(sessionKey)
+      if (!owner) {
+        const bound = this.sessionDesktop.get(sessionKey)
+        return !bound || bound === deviceId
+      }
+      return await this.store.isSessionOwnedBy(sessionKey, webEmail)
+    }
+
+    if (desktop.accountEmail) {
+      const webEmail = client.webEmail || this.getWebEmailForToken(token) || ''
+      if (webEmail.includes('@')) {
+        return this.normalizeEmail(webEmail) === this.normalizeEmail(desktop.accountEmail)
+      }
+    }
+    return this.countDesktops().online <= 1
   }
 
   private async webWsMayReceiveSession(ws: WebSocket, sessionKey: string): Promise<boolean> {
-    if (!isWebLoginRequired()) return true
-    const owner = await this.store.getSessionOwner(sessionKey)
-    // 桌面新建、尚未被 Web HTTP 认领的会话，仍允许配对 Web 收流式事件
-    if (!owner) return true
-    for (const client of this.clients.values()) {
-      if (client.role !== 'web' || client.ws !== ws) continue
-      const email =
-        client.webEmail
-        || this.getWebEmailForToken(this.webTokenFromClientKey(client.clientKey))
-      return !!email && (await this.store.isSessionOwnedBy(sessionKey, email))
+    const deviceId = this.sessionDesktop.get(sessionKey)
+    if (!deviceId) {
+      if (!isWebLoginRequired()) return true
+      return false
     }
-    return false
+    return this.webWsMayReceiveFromDesktop(ws, deviceId, sessionKey)
   }
 
   async applySessionsSync(
@@ -232,10 +296,10 @@ export class GatewayStateService {
     for (const row of sessions) {
       this.sessionDesktop.set(row.key, deviceId)
     }
-    if (options?.notifyWebClients) this.notifyWebClientsSessionListChanged()
+    if (options?.notifyWebClients) this.notifyWebClientsSessionListChanged(deviceId)
   }
 
-  private notifyWebClientsSessionListChanged(): void {
+  private notifyWebClientsSessionListChanged(deviceId?: string): void {
     const payload = JSON.stringify({
       type: 'ui_event',
       sessionKey: 'desktop:',
@@ -247,9 +311,19 @@ export class GatewayStateService {
       },
     })
     for (const client of this.clients.values()) {
-      if (client.role === 'web' && client.ws.readyState === 1) {
-        client.ws.send(payload)
+      if (client.role !== 'web' || client.ws.readyState !== 1) continue
+      if (deviceId) {
+        const desktop = this.getDesktopClient(deviceId)
+        const want = desktop?.accountEmail
+        if (want) {
+          const token = this.webTokenFromClientKey(client.clientKey)
+          const webEmail = this.normalizeEmail(
+            client.webEmail || this.getWebEmailForToken(token) || '',
+          )
+          if (webEmail !== this.normalizeEmail(want)) continue
+        }
       }
+      client.ws.send(payload)
     }
   }
 
@@ -291,9 +365,15 @@ export class GatewayStateService {
   }
 
   /** List sessions visible to a logged-in user (owner-tagged only when email auth is on). */
-  async fetchSessionsForWeb(ownerEmail: string): Promise<GatewaySessionRow[]> {
+  async fetchSessionsForWeb(
+    ownerEmail: string,
+    webToken?: string,
+  ): Promise<GatewaySessionRow[]> {
+    const exec = webToken?.trim()
+      ? this.pickDesktopForWebToken(webToken.trim())
+      : this.pickOnlineDesktop()
+
     if (!isWebLoginRequired()) {
-      const exec = this.pickOnlineDesktop()
       if (exec) {
         const cached = this.sessionCatalogByDevice.get(exec.deviceId)
         if (cached?.length) await this.store.mergeSessionRows(cached)
@@ -309,10 +389,7 @@ export class GatewayStateService {
 
     const owner = ownerEmail.trim().toLowerCase()
     if (!owner.includes('@')) return []
-
-    const owned = await this.store.listRowsForOwner(owner)
-    const exec = this.pickOnlineDesktop()
-    if (!exec) return owned
+    if (!exec) return this.store.listRowsForOwner(owner)
 
     const cached = this.sessionCatalogByDevice.get(exec.deviceId)
     if (cached?.length) {
@@ -423,12 +500,15 @@ export class GatewayStateService {
     sessionKey: string,
     chatId: string,
     ownerEmail?: string,
+    webToken?: string,
   ): Promise<{ ok: boolean; error?: string; offline?: boolean }> {
     await this.store.getOrCreate(sessionKey)
     if (ownerEmail?.trim()) {
       await this.store.setSessionOwner(sessionKey, ownerEmail)
     }
-    const exec = this.pickOnlineDesktop()
+    const exec = webToken?.trim()
+      ? this.pickDesktopForWebToken(webToken.trim())
+      : this.pickOnlineDesktop()
     if (!exec) return { ok: true, offline: true }
     exec.sessions.add(sessionKey)
     this.sessionDesktop.set(sessionKey, exec.deviceId)
@@ -438,6 +518,7 @@ export class GatewayStateService {
 
   async handleWebInboundForUser(
     ownerEmail: string,
+    webToken: string,
     sessionKey: string,
     chatId: string,
     content: string,
@@ -445,7 +526,7 @@ export class GatewayStateService {
     source: 'web' | 'gateway',
   ): Promise<{ ok: boolean; queued?: boolean; offline?: boolean; error?: string }> {
     await this.assertWebOwnsSession(ownerEmail, sessionKey)
-    return this.handleWebInbound(sessionKey, chatId, content, media, source)
+    return this.handleWebInbound(sessionKey, chatId, content, media, source, webToken)
   }
 
   /** Web 发消息：先写 Gateway 存储，再转发桌面；无 desktop 在线时返回离线系统提示。 */
@@ -455,11 +536,14 @@ export class GatewayStateService {
     content: string,
     media: unknown[] | undefined,
     source: 'web' | 'gateway',
+    webToken?: string,
   ): Promise<{ ok: boolean; queued?: boolean; offline?: boolean; error?: string }> {
     await this.store.getOrCreate(sessionKey)
     await this.store.addUserMessage(sessionKey, content)
 
-    const exec = this.pickOnlineDesktop()
+    const exec = webToken?.trim()
+      ? this.pickDesktopForWebToken(webToken.trim())
+      : this.pickOnlineDesktop()
     if (!exec) {
       await this.emitOfflineAssistantReply(sessionKey, chatId)
       return { ok: true, offline: true, queued: false }
@@ -493,7 +577,8 @@ export class GatewayStateService {
       chat_id: chatId,
       latency_ms: 0,
     })
-    this.notifyWebClientsSessionListChanged()
+    const deviceId = this.sessionDesktop.get(sessionKey)
+    this.notifyWebClientsSessionListChanged(deviceId)
   }
 
   async forwardInboundToDesktop(
@@ -523,24 +608,26 @@ export class GatewayStateService {
     await this.store.importWebuiPayload(sessionKey, payload)
   }
 
-  pairWeb(pairingCode: string, token: string): { ok: boolean; deviceId?: string; error?: string } {
-    const code = pairingCode.trim().toUpperCase()
-    const deviceId = this.pairingByCode.get(code)
-    if (!deviceId) return { ok: false, error: 'invalid_pairing_code' }
-    this.registerWebToken(token)
-    return { ok: true, deviceId }
-  }
-
-  registerDesktop(ws: WebSocket, deviceId: string, token: string): {
-    ok: boolean
-    pairingCode?: string
-    error?: string
-  } {
+  registerDesktop(
+    ws: WebSocket,
+    deviceId: string,
+    token: string,
+    accountEmail?: string,
+  ): { ok: boolean; error?: string } {
     if (token !== gatewayEnv.desktopSecret) {
       return { ok: false, error: 'unauthorized' }
     }
-    const pairingCode = randomBytes(3).toString('hex').toUpperCase()
-    this.pairingByCode.set(pairingCode, deviceId)
+    const email = accountEmail ? this.normalizeEmail(accountEmail) : ''
+    if (isWebLoginRequired() && !email.includes('@')) {
+      return { ok: false, error: 'account_email_required' }
+    }
+    if (email) {
+      const prev = this.deviceIdByAccountEmail.get(email)
+      if (prev && prev !== deviceId) {
+        this.disconnect(`desktop:${prev}`)
+      }
+      this.deviceIdByAccountEmail.set(email, deviceId)
+    }
     const clientKey = `desktop:${deviceId}`
     this.clients.set(clientKey, {
       ws,
@@ -548,9 +635,10 @@ export class GatewayStateService {
       deviceId,
       sessions: new Set(),
       clientKey,
+      accountEmail: email || undefined,
     })
     void this.pushSyncToDesktop(ws)
-    return { ok: true, pairingCode }
+    return { ok: true }
   }
 
   registerWeb(ws: WebSocket, deviceId: string, token: string, webEmail?: string): {
@@ -576,6 +664,19 @@ export class GatewayStateService {
   async subscribe(ws: WebSocket, sessionKey: string, clientKey: string): Promise<void> {
     const client = this.clients.get(clientKey)
     if (!client || !sessionKey) return
+    if (client.role === 'web' && isWebLoginRequired()) {
+      const token = this.webTokenFromClientKey(clientKey)
+      const exec = this.pickDesktopForWebToken(token)
+      if (!exec) {
+        ws.send(JSON.stringify({ type: 'error', message: 'desktop_offline' }))
+        return
+      }
+      const sessDevice = this.sessionDesktop.get(sessionKey)
+      if (sessDevice && sessDevice !== exec.deviceId) {
+        ws.send(JSON.stringify({ type: 'error', message: 'forbidden' }))
+        return
+      }
+    }
     if (client.role === 'web' && isWebLoginRequired()) {
       const email =
         client.webEmail
@@ -635,8 +736,11 @@ export class GatewayStateService {
       for (const [sk, did] of this.sessionDesktop) {
         if (did === client.deviceId) this.sessionDesktop.delete(sk)
       }
-      for (const [code, did] of this.pairingByCode) {
-        if (did === client.deviceId) this.pairingByCode.delete(code)
+      if (client.accountEmail) {
+        const email = this.normalizeEmail(client.accountEmail)
+        if (this.deviceIdByAccountEmail.get(email) === client.deviceId) {
+          this.deviceIdByAccountEmail.delete(email)
+        }
       }
       this.sessionCatalogByDevice.delete(client.deviceId)
     }

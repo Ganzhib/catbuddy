@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import {
   connectGatewayWeb,
-  pairGatewayWeb,
   gatewayWsUrlFromHttp,
   resolveGatewayHttpBase,
+  resolveGatewayWebToken,
   sendGatewayMessage,
   type GatewayWebConfig,
 } from "@/lib/gateway-api";
@@ -17,30 +17,23 @@ export type GatewayChatMessage = {
 };
 
 const LS_HTTP = "gateway-web.httpBase";
-const LS_TOKEN = "gateway-web.webToken";
 const LS_SESSION = "gateway-web.sessionKey";
 
 export function loadGatewayWebPrefs(): {
   httpBase: string;
-  webToken: string;
   sessionKey: string;
 } {
   return {
     httpBase: resolveGatewayHttpBase(localStorage.getItem(LS_HTTP) ?? undefined),
-    webToken:
-      localStorage.getItem(LS_TOKEN)?.trim()
-      || `web-${crypto.randomUUID().slice(0, 8)}`,
     sessionKey: localStorage.getItem(LS_SESSION)?.trim() || "desktop:main",
   };
 }
 
 export function saveGatewayWebPrefs(prefs: {
   httpBase: string;
-  webToken: string;
   sessionKey: string;
 }): void {
   localStorage.setItem(LS_HTTP, prefs.httpBase);
-  localStorage.setItem(LS_TOKEN, prefs.webToken);
   localStorage.setItem(LS_SESSION, prefs.sessionKey);
 }
 
@@ -159,37 +152,24 @@ export function useGatewayChat() {
   }, []);
 
   const connect = useCallback(
-    async (opts: {
-      httpBase: string;
-      pairingCode: string;
-      webToken: string;
-      sessionKey: string;
-    }) => {
+    async (opts: { httpBase: string; sessionKey: string }) => {
       setError(null);
       setConnecting(true);
       disconnect();
       try {
         const httpBase = resolveGatewayHttpBase(opts.httpBase).replace(/\/$/, "");
-        const pair = await pairGatewayWeb(
-          httpBase,
-          opts.pairingCode.trim().toUpperCase(),
-          opts.webToken.trim(),
-        );
-        if (!pair.ok) {
-          throw new Error(pair.error || "pair_failed");
+        const webToken = resolveGatewayWebToken();
+        if (!webToken) {
+          throw new Error("login_required");
         }
         const cfg: GatewayWebConfig = {
           httpBase,
           wsUrl: gatewayWsUrlFromHttp(httpBase),
-          webToken: opts.webToken.trim(),
+          webToken,
           deviceId: `web-${crypto.randomUUID().slice(0, 8)}`,
         };
         const sk = opts.sessionKey.trim();
-        saveGatewayWebPrefs({
-          httpBase,
-          webToken: cfg.webToken,
-          sessionKey: sk,
-        });
+        saveGatewayWebPrefs({ httpBase, sessionKey: sk });
         const stop = connectGatewayWeb(cfg, sk, {
           onOpen: () => {
             setConnected(true);
@@ -199,11 +179,7 @@ export function useGatewayChat() {
           onSessionFocus: (key) => {
             setSessionKey(key);
             setMessages([]);
-            saveGatewayWebPrefs({
-              httpBase,
-              webToken: cfg.webToken,
-              sessionKey: key,
-            });
+            saveGatewayWebPrefs({ httpBase, sessionKey: key });
           },
           onEvent: (ev) => {
             setMessages((prev) => applyGatewayInbound(prev, ev));

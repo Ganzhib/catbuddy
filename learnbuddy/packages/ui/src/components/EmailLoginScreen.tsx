@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Eye, EyeOff, Loader2, Mail, ShieldCheck, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Laptop, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { BrandMark } from '@/components/BrandMark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -16,19 +16,19 @@ type RegisterStep = 'form' | 'verify'
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: '安全省心',
-    desc: '注册需邮箱验证码；日常登录使用邮箱与密码。',
-  },
-  {
-    icon: Mail,
-    title: '登录 · 注册',
-    desc: '新用户注册后验证邮箱；下次登录输入邮箱与密码即可。',
-  },
-  {
     icon: Sparkles,
-    title: '多端同步',
-    desc: '网页与桌面应用共用账号，学习对话与进度无缝衔接。',
+    title: '会动手帮你的助手',
+    desc: '不只是聊天——它能查资料、读写文件、写代码、整理笔记，按步骤把学习任务做到底。',
+  },
+  {
+    icon: Laptop,
+    title: '网页遥控桌面',
+    desc: '在浏览器提问，桌面应用替你执行；开启远程控制后，对话与进度实时同步，换设备也能接着聊。',
+  },
+  {
+    icon: ShieldCheck,
+    title: '本地执行更安心',
+    desc: 'Agent 在你的电脑上运行，文件操作与学习资料留在本机，账号登录后即可跨端使用。',
   },
 ] as const
 
@@ -147,10 +147,10 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             </div>
           </div>
           <h1 className="max-w-md text-3xl font-semibold leading-tight tracking-tight xl:text-[2rem]">
-            开启你的智能学习之旅
+            你的 AI 学习助手，随时待命
           </h1>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            learnbuddy 是你的 AI 学习伙伴：答疑、讲解、练习与复盘，一站完成。
+            桌面端负责思考与执行，网页端随身接入——提问、跟进、远程遥控，一套账号打通。
           </p>
           <ul className="mt-10 space-y-4">
             {FEATURES.map(({ icon: Icon, title, desc }) => (
@@ -178,7 +178,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
           </span>
           <div>
             <p className="text-sm font-semibold">邮箱登录 · 注册</p>
-            <p className="text-xs text-muted-foreground">邮箱 + 密码</p>
+            <p className="text-xs text-muted-foreground">登录后网页与桌面互通</p>
           </div>
         </div>
 

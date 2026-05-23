@@ -14,7 +14,7 @@ export function EmailField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium text-[#1E3A8A] dark:text-foreground">
+      <label htmlFor={id} className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
         邮箱地址
       </label>
       <input
@@ -52,7 +52,7 @@ export function PasswordField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-sm font-medium text-[#1E3A8A] dark:text-foreground">
+      <label htmlFor={id} className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
         {label}
       </label>
       <div className="relative">
@@ -154,7 +154,7 @@ export function OtpInput({
   return (
     <fieldset disabled={disabled}>
       <legend className="sr-only">验证码</legend>
-      <div className="flex justify-center gap-2.5 sm:gap-3" onPaste={handlePaste}>
+      <div className="flex justify-center gap-1.5 sm:gap-2.5 md:gap-3" onPaste={handlePaste}>
         {digits.map((digit, index) => (
           <input
             key={index}

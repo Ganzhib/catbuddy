@@ -10,7 +10,7 @@ export function EmailLoginLayout({
   fitKey?: string
 }) {
   return (
-    <div className="relative h-dvh max-h-dvh w-full overflow-hidden overscroll-none">
+    <div className="relative h-dvh max-h-dvh w-full overflow-y-auto overscroll-none lg:overflow-hidden">
       <AmbientBackground />
       <ViewportFitShell fitKey={fitKey}>
         {children}

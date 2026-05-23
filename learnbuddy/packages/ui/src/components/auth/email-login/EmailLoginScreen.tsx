@@ -8,8 +8,10 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <EmailLoginLayout fitKey={`${auth.mode}-${auth.registerStep}-${auth.error ?? ''}-${auth.hint ?? ''}`}>
-      <LoginMarketingPanel />
-      <EmailAuthPanel auth={auth} />
+      <div className="flex h-full w-full flex-col lg:flex-row">
+        <LoginMarketingPanel />
+        <EmailAuthPanel auth={auth} />
+      </div>
     </EmailLoginLayout>
   )
 }

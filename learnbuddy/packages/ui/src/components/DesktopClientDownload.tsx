@@ -47,15 +47,15 @@ export function DesktopClientDownload({
           href={href}
           download
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium',
-            'bg-[hsl(220_38%_28%)] text-[hsl(210_40%_98%)] shadow-md',
-            'hover:bg-[hsl(220_38%_24%)]',
+            'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium',
+            'bg-blue-600 text-white shadow-md transition-all duration-200',
+            'hover:bg-blue-700 hover:shadow-lg',
           )}
         >
           <Download className="h-4 w-4 shrink-0" aria-hidden />
           {label}
         </a>
-        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground/80">{hint}</p>
+        <p className="mt-2 text-center text-xs leading-relaxed text-gray-400">{hint}</p>
       </div>
     )
   }

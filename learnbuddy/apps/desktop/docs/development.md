@@ -86,7 +86,14 @@ Verbose 会启用：
 | `dist-electron/index.js` | 主进程 bundle |
 | `dist-electron/preload/` | 预加载脚本 |
 | `dist-electron/assets/` | 图标等 |
-| `release/` | electron-builder 输出（安装包或 unpacked） |
+| `release/` | electron-builder 默认输出（安装包或 unpacked） |
+| `release-fresh/` | 当 `release/` 被锁时自动改用此目录（**安装包在这里**） |
+
+NSIS 安装包文件名：`learnbuddy Setup <version>.exe`（与 `package.json` 的 `version` 一致）。
+
+打包成功结束时，日志会打印 **完整绝对路径**。若在资源管理器里只看 `release/` 而构建走了 `release-fresh`，会误以为「没有安装包」。
+
+桌面生产包使用 `vite` 的 `base: "./"`，品牌图在 `public/brand/` → 打包进 `dist/brand/`；勿用绝对路径 `/brand/...`（`file://` 下会失效）。
 
 ## 配置与密钥
 

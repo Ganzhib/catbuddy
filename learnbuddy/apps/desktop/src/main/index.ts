@@ -12,6 +12,17 @@ import { initAgent } from "./services/init-agent.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envDir = path.join(__dirname, "..");
 
+// ── Global uncaught exception guard (WebSocket / async errors in main process) ──
+process.on("uncaughtException", (err) => {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error("[main] uncaughtException:", msg);
+});
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  console.warn("[main] unhandledRejection:", msg);
+});
+
 // Load .env before initAgent / Gateway (whenReady alone is too late for first apply).
 if (app.isPackaged) {
   loadEnvFile(path.join(envDir, ".env.production"));

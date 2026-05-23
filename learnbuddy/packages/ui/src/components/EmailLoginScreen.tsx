@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Eye, EyeOff, Loader2, Mail, ShieldCheck, Sparkles } from 'lucide-react'
 import { BrandMark } from '@/components/BrandMark'
 import { Button } from '@/components/ui/button'
@@ -54,7 +54,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
     && password.length >= 8
     && password === confirmPassword
 
-  const canSubmitVerify = email.includes('@') && code.trim().length >= 4
+  const canSubmitVerify = email.includes('@') && code.length === 6
 
   const resetRegister = () => {
     setRegisterStep('form')
@@ -206,11 +206,17 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
             />
           )}
 
-          <p className="mb-5 mt-5 text-sm text-muted-foreground">
+          <p className="mb-5 mt-5 text-sm leading-relaxed text-muted-foreground">
             {mode === 'login'
               ? '使用已注册邮箱与密码登录。登录过期后重新输入即可。'
               : registerStep === 'verify'
-                ? `请输入发送到 ${email.trim()} 的 6 位验证码，验证通过后将自动登录。`
+                ? (
+                  <>
+                    我们已向{' '}
+                    <span className="font-medium text-foreground">{email.trim()}</span>
+                    {' '}发送验证码，请输入邮件中的 6 位数字完成注册。
+                  </>
+                )
                 : '填写邮箱并设置密码（至少 8 位），我们将向邮箱发送验证码。'}
           </p>
 
@@ -308,28 +314,12 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
               />
             </form>
           ) : (
-            <form className="space-y-4" onSubmit={(e) => void onVerifySubmit(e)}>
-              <div className="space-y-2">
-                <label htmlFor="register-code" className="text-sm font-medium">
-                  验证码
-                </label>
-                <input
-                  id="register-code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="6 位数字"
-                  maxLength={8}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  className={cn(glassInput, 'text-center tracking-[0.35em]')}
-                  autoFocus
-                />
-              </div>
+            <form className="space-y-5" onSubmit={(e) => void onVerifySubmit(e)}>
+              <OtpInput value={code} onChange={setCode} disabled={busy} />
               <AuthAlerts error={error} hint={hint} />
               <Button
                 type="submit"
-                className="w-full shadow-md"
+                className="w-full rounded-xl shadow-md"
                 size="lg"
                 disabled={busy || !canSubmitVerify}
               >
@@ -342,18 +332,21 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   '验证并登录'
                 )}
               </Button>
-              <div className="flex flex-col gap-2 text-center text-xs text-muted-foreground">
-                <button
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
                   type="button"
-                  className="font-medium text-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                  variant="outline"
+                  className="w-full rounded-xl border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.45)] backdrop-blur-sm"
                   disabled={busy}
                   onClick={() => void resendCode()}
                 >
                   重新发送验证码
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="underline-offset-2 hover:underline"
+                  variant="outline"
+                  className="w-full rounded-xl border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.45)] backdrop-blur-sm"
+                  disabled={busy}
                   onClick={() => {
                     setError(null)
                     setHint(null)
@@ -362,7 +355,7 @@ export function EmailLoginScreen({ onSuccess }: { onSuccess: () => void }) {
                   }}
                 >
                   修改邮箱或密码
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -456,7 +449,7 @@ function AuthAlerts({ error, hint }: { error: string | null; hint: string | null
   return (
     <>
       {hint ? (
-        <p className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground backdrop-blur-sm">
+        <p className="rounded-xl border border-sky-400/25 bg-sky-500/[0.06] px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground backdrop-blur-sm">
           {hint}
         </p>
       ) : null}
@@ -559,11 +552,135 @@ const glassChip = cn(
 )
 
 function otpHint(expiresIn: number, delivery?: 'email' | 'console'): string {
+  const expiry = formatExpiry(expiresIn)
   if (delivery === 'console') {
-    return `验证码 ${expiresIn} 秒内有效。未配置邮件服务：请到运行 pnpm gateway:dev 的终端查找「验证码: xxxxxx」，不要查收件箱。`
+    return `验证码 ${expiry} 内有效。当前为开发环境，验证码不会发到邮箱，请向管理员获取或在服务端日志中查看。`
   }
-  return `验证码已发送到邮箱（${expiresIn} 秒内有效）。若未收到，请检查垃圾邮件，或点「重新发送」。`
+  return `验证码已发送，请查收邮件（${expiry} 内有效）。没收到？看看垃圾箱，或点击下方重新发送。`
 }
+
+function formatExpiry(seconds: number): string {
+  if (seconds >= 60 && seconds % 60 === 0) {
+    return `${seconds / 60} 分钟`
+  }
+  if (seconds >= 60) {
+    return `${Math.ceil(seconds / 60)} 分钟`
+  }
+  return `${seconds} 秒`
+}
+
+const OTP_LENGTH = 6
+
+function OtpInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+}) {
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([])
+
+  const digits = Array.from({ length: OTP_LENGTH }, (_, i) => value[i] ?? '')
+
+  const focusAt = useCallback((index: number) => {
+    const el = inputsRef.current[index]
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  }, [])
+
+  const applyDigits = useCallback(
+    (next: string[]) => {
+      onChange(next.join('').slice(0, OTP_LENGTH))
+    },
+    [onChange],
+  )
+
+  const handleChange = (index: number, raw: string) => {
+    const digit = raw.replace(/\D/g, '').slice(-1)
+    const next = [...digits]
+    next[index] = digit
+    applyDigits(next)
+    if (digit && index < OTP_LENGTH - 1) {
+      focusAt(index + 1)
+    }
+  }
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (digits[index]) {
+        const next = [...digits]
+        next[index] = ''
+        applyDigits(next)
+      } else if (index > 0) {
+        focusAt(index - 1)
+      }
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      focusAt(index - 1)
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
+      focusAt(index + 1)
+      e.preventDefault()
+    }
+  }
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH)
+    if (!pasted) return
+    e.preventDefault()
+    const next = Array.from({ length: OTP_LENGTH }, (_, i) => pasted[i] ?? '')
+    applyDigits(next)
+    focusAt(Math.min(pasted.length, OTP_LENGTH) - 1)
+  }
+
+  return (
+    <fieldset disabled={disabled}>
+      <legend className="sr-only">验证码</legend>
+      <div className="flex justify-center gap-2 sm:gap-2.5" onPaste={handlePaste}>
+        {digits.map((digit, index) => (
+          <input
+            key={index}
+            ref={(el) => {
+              inputsRef.current[index] = el
+            }}
+            type="text"
+            inputMode="numeric"
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+            aria-label={`验证码第 ${index + 1} 位`}
+            maxLength={1}
+            value={digit}
+            disabled={disabled}
+            autoFocus={index === 0}
+            onChange={(e) => handleChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onFocus={(e) => e.target.select()}
+            className={cn(
+              otpCell,
+              digit && 'border-sky-400/45 bg-sky-500/[0.04] text-foreground',
+            )}
+          />
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+const otpCell = cn(
+  'h-12 w-10 rounded-xl text-center text-lg font-semibold tabular-nums sm:h-14 sm:w-12 sm:text-xl',
+  'border border-[hsl(40_22%_84%/0.7)] bg-[hsl(44_42%_97.5%/0.65)] dark:border-white/15 dark:bg-white/5',
+  'backdrop-blur-md shadow-inner shadow-black/[0.03]',
+  'transition-colors duration-150',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+  'disabled:cursor-not-allowed disabled:opacity-50',
+)
 
 const glassInput = cn(
   'flex h-11 w-full rounded-xl px-3 py-2 text-sm transition-all',

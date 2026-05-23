@@ -115,8 +115,7 @@ export class GatewayDesktopClient {
       this.reconnectTimer = null
     }
     if (this.ws) {
-      this.ws.removeAllListeners()
-      this.ws.close()
+      disposeWebSocket(this.ws)
       this.ws = null
     }
     this._connected = false
@@ -402,4 +401,22 @@ export function loadGatewayConfigFromSources(
 
 export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
   return loadGatewayConfigFromSources()
+}
+
+/** Avoid `close()` on CONNECTING sockets — `ws` throws and crashes Electron main. */
+function disposeWebSocket(ws: WebSocket): void {
+  ws.removeAllListeners()
+  const state = ws.readyState
+  if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) {
+    return
+  }
+  if (state === WebSocket.CONNECTING) {
+    ws.terminate()
+    return
+  }
+  try {
+    ws.close()
+  } catch {
+    ws.terminate()
+  }
 }

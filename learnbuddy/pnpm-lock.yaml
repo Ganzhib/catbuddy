@@ -280,6 +280,9 @@ importers:
       '@learnbuddy/client':
         specifier: workspace:*
         version: link:../client
+      '@learnbuddy/gateway-sdk-web':
+        specifier: workspace:*
+        version: link:../../gateway/packages/sdk-web
       '@learnbuddy/platform':
         specifier: workspace:*
         version: link:../platform

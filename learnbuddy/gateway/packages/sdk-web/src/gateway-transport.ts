@@ -1,21 +1,13 @@
-import type {
-  AgentTransport,
-  InboundEvent,
-  GatewaySessionServerMessage,
-  TransportCallbacks,
-} from '@learnbuddy/shared'
+import type { AgentTransport, TransportCallbacks } from '@learnbuddy/shared'
 import { bareChatId, gatewayWsUrl, toSessionKey } from '@learnbuddy/shared'
-
-function resolveWebToken(configured: string): string {
-  const fromConfig = configured.trim()
-  if (fromConfig) return fromConfig
-  if (typeof window === 'undefined') return ''
-  try {
-    return window.localStorage.getItem('learnbuddy-webui.auth-token')?.trim() || ''
-  } catch {
-    return ''
-  }
-}
+import {
+  activeSessionKeyFromChatId,
+  ensureGatewaySessionOnHttp,
+  openGatewayWebSocket,
+  postGatewayUserMessage,
+  resolveGatewayWebToken,
+  type GatewayWebSocketHandle,
+} from './gateway-web-session.js'
 
 export interface GatewayTransportConfig {
   httpBase: string
@@ -23,85 +15,57 @@ export interface GatewayTransportConfig {
   deviceId?: string
 }
 
-function isInboundEvent(value: unknown): value is InboundEvent {
-  return (
-    !!value
-    && typeof value === 'object'
-    && 'event' in value
-    && typeof (value as InboundEvent).event === 'string'
-  )
-}
+const RECONNECT_MS = 2000
 
 /**
- * Browser transport: Gateway web WS + HTTP send (desktop agent host).
+ * Browser transport: Gateway session WS + HTTP send (desktop agent host).
  * Implements {@link AgentTransport} for {@link @learnbuddy/client}.
  */
 export class GatewayTransport implements AgentTransport {
   readonly kind = 'websocket' as const
 
-  private ws: WebSocket | null = null
   private readonly wsUrl: string
-  private readonly subscribed = new Set<string>()
-  private readonly registeredOnGateway = new Set<string>()
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private callbacks: TransportCallbacks | null = null
-
   private readonly webToken: string
+  private readonly subscribed = new Set<string>()
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private wsHandle: GatewayWebSocketHandle | null = null
+  private callbacks: TransportCallbacks | null = null
+  private stopped = false
 
   constructor(private readonly config: GatewayTransportConfig) {
     this.wsUrl = gatewayWsUrl(config.httpBase)
-    this.webToken = resolveWebToken(config.webToken)
+    this.webToken = resolveGatewayWebToken(config.webToken)
   }
 
   attach(callbacks: TransportCallbacks): () => void {
     this.callbacks = callbacks
+    this.stopped = false
     callbacks.onStatus('connecting')
     this.openSocket(callbacks)
-    return () => this.teardown()
+    return () => this.detach()
   }
 
   ensureSession(chatId: string): void {
     const id = bareChatId(chatId)
     if (!id) return
-    this.ensureSubscribed(toSessionKey(id))
+    this.trackSubscription(toSessionKey(id))
   }
 
   sendMessage(chatId: string, content: string, _mediaUrls?: string[]): void {
     const id = bareChatId(chatId)
     if (!id) return
     const sessionKey = toSessionKey(id)
-    this.ensureSubscribed(sessionKey)
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'subscribe', sessionKey }))
-    }
-    const base = this.config.httpBase.replace(/\/$/, '')
-    if (!this.registeredOnGateway.has(sessionKey)) {
-      this.registeredOnGateway.add(sessionKey)
-      void fetch(`${base}/api/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.webToken}`,
-        },
-        body: JSON.stringify({ chatId: id }),
-      }).catch(() => {})
-    }
-    const encoded = encodeURIComponent(sessionKey)
-    void fetch(`${base}/api/sessions/${encoded}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.webToken}`,
-      },
-      body: JSON.stringify({ content }),
-    })
-      .then(async (res) => {
+    this.trackSubscription(sessionKey)
+    ensureGatewaySessionOnHttp(this, this.config.httpBase, this.webToken, sessionKey)
+    void postGatewayUserMessage(
+      this.config.httpBase,
+      this.webToken,
+      sessionKey,
+      content,
+    )
+      .then((res) => {
         if (res.ok) return
-        let code = `http_${res.status}`
-        try {
-          const body = (await res.json()) as { error?: string }
-          if (body.error) code = body.error
-        } catch { /* ignore */ }
+        const code = res.error?.trim() || 'send_failed'
         this.callbacks?.onSendError?.(code)
       })
       .catch(() => {
@@ -109,129 +73,70 @@ export class GatewayTransport implements AgentTransport {
       })
   }
 
-  private ensureSubscribed(sessionKey: string): void {
+  private trackSubscription(sessionKey: string): void {
     if (!bareChatId(sessionKey)) return
-    if (this.subscribed.has(sessionKey)) return
     this.subscribed.add(sessionKey)
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'subscribe', sessionKey }))
-    }
+    this.wsHandle?.subscribe(sessionKey)
   }
 
   private openSocket(callbacks: TransportCallbacks): void {
-    this.teardown(false)
-    try {
-      this.ws = new WebSocket(this.wsUrl)
-    } catch {
-      callbacks.onStatus('error')
-      return
-    }
+    this.wsHandle?.close()
+    this.wsHandle = null
 
-    this.ws.onopen = () => {
-      this.ws?.send(
-        JSON.stringify({
-          type: 'register',
-          role: 'web',
-          deviceId: this.config.deviceId ?? `web-${crypto.randomUUID().slice(0, 8)}`,
-          token: this.webToken,
-        }),
-      )
-    }
+    const initialKey =
+      activeSessionKeyFromChatId(callbacks.getActiveChatId()) || toSessionKey('main')
 
-    this.ws.onmessage = (raw) => {
-      let msg: GatewaySessionServerMessage
-      try {
-        msg = JSON.parse(String(raw.data)) as GatewaySessionServerMessage
-      } catch {
-        return
-      }
-      if (msg.type === 'registered') {
+    this.wsHandle = openGatewayWebSocket({
+      wsUrl: this.wsUrl,
+      webToken: this.webToken,
+      deviceId: this.config.deviceId,
+      initialSessionKey: initialKey,
+      onOpen: () => {
         callbacks.onStatus('open')
-        const activeId = bareChatId(callbacks.getActiveChatId())
-        const activeKey = activeId ? toSessionKey(activeId) : ''
-        if (activeKey) this.ensureSubscribed(activeKey)
+        const activeKey = activeSessionKeyFromChatId(callbacks.getActiveChatId())
+        if (activeKey) this.trackSubscription(activeKey)
         for (const sk of this.subscribed) {
-          if (sk !== activeKey) {
-            this.ws?.send(JSON.stringify({ type: 'subscribe', sessionKey: sk }))
-          }
+          if (sk !== activeKey) this.trackSubscription(sk)
         }
-        return
-      }
-      if (msg.type === 'error') {
-        const code = msg.message === 'forbidden' ? 'forbidden' : 'ws_error'
+      },
+      onClose: () => {
+        callbacks.onStatus('closed')
+        this.scheduleReconnect(callbacks)
+      },
+      onError: (message) => {
+        const code = message === 'forbidden' ? 'forbidden' : 'ws_error'
         callbacks.onStatus('error')
         this.callbacks?.onSendError?.(code)
-        return
-      }
-      if (msg.type === 'ui_event') {
-        const raw = msg.event
-        if (!isInboundEvent(raw)) return
-        let ev: InboundEvent = raw
-        if ('chat_id' in ev && typeof ev.chat_id === 'string') {
-          const bare = bareChatId(ev.chat_id)
-          if (bare !== ev.chat_id) ev = { ...ev, chat_id: bare } as InboundEvent
-        }
-        const wireKey = msg.sessionKey.trim()
-        if (
-          ev.event === 'session_updated'
-          && ev.scope === 'focus'
-          && wireKey
-        ) {
-          this.ensureSubscribed(wireKey)
-          if (this.ws?.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ type: 'subscribe', sessionKey: wireKey }))
-          }
-          const focusId = bareChatId(ev.chat_id) || bareChatId(wireKey)
-          if (focusId) callbacks.onSessionUpdate?.(focusId, 'focus')
-          return
-        }
-        if (ev.event === 'session_updated' && 'chat_id' in ev) {
-          callbacks.onSessionUpdate?.(ev.chat_id, ev.scope)
-          return
-        }
-        const activeId = bareChatId(callbacks.getActiveChatId())
-        const activeKey = activeId ? toSessionKey(activeId) : ''
-        if (wireKey && activeKey && wireKey !== activeKey) return
-        callbacks.onEvent(ev)
-      }
-    }
-
-    this.ws.onerror = () => {
-      callbacks.onStatus('error')
-    }
-
-    this.ws.onclose = () => {
-      callbacks.onStatus('closed')
-      this.scheduleReconnect(callbacks)
-    }
+      },
+      dispatch: {
+        getActiveSessionKey: () =>
+          activeSessionKeyFromChatId(callbacks.getActiveChatId()),
+        subscribe: (key) => this.trackSubscription(key),
+        onEvent: (ev) => callbacks.onEvent(ev),
+        onSessionUpdate: (chatId, scope) =>
+          callbacks.onSessionUpdate?.(chatId, scope),
+      },
+    })
   }
 
   private scheduleReconnect(callbacks: TransportCallbacks): void {
-    if (this.reconnectTimer) return
+    if (this.stopped || this.reconnectTimer) return
     callbacks.onStatus('reconnecting')
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      this.openSocket(callbacks)
-    }, 2000)
+      if (!this.stopped) this.openSocket(callbacks)
+    }, RECONNECT_MS)
   }
 
-  private teardown(clearSubscribed = true): void {
+  private detach(): void {
+    this.stopped = true
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    if (this.ws) {
-      this.ws.onopen = null
-      this.ws.onmessage = null
-      this.ws.onclose = null
-      this.ws.onerror = null
-      this.ws.close()
-      this.ws = null
-    }
-    if (clearSubscribed) {
-      this.subscribed.clear()
-      this.registeredOnGateway.clear()
-    }
+    this.wsHandle?.close()
+    this.wsHandle = null
+    this.subscribed.clear()
     this.callbacks = null
   }
 }

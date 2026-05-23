@@ -7,12 +7,10 @@ Web ⇄ Gateway ⇄ Desktop 中转服务（Fastify + WebSocket），兼 Web 开�
 ```text
 gateway/
 ├── packages/
-│   ├── common/           @learnbuddy/gateway-common — 转发 @learnbuddy/shared 协议
 │   ├── gateway/          @learnbuddy/gateway — HTTP + session WebSocket（:18765）
-│   ├── sdk-web/          @learnbuddy/gateway-sdk-web — 浏览器 SDK
-│   └── sdk-desktop/      @learnbuddy/gateway-sdk-desktop — 桌面 SDK
-├── config/               推送网关 YAML（MessageFrame 实验配置）
-├── docs/技术文档.md       MessageFrame 推送设计
+│   ├── sdk-web/          @learnbuddy/gateway-sdk-web — Web 会话协议 + AgentTransport
+│   └── sdk-desktop/      占位（桌面实现见 apps/desktop/electron/sync/gateway-ws-client.ts）
+├── packages/gateway/src/push/   MessageFrame 实验（未接入生产入口）
 └── test-*.mjs            E2E / 验收脚本
 ```
 
@@ -31,36 +29,32 @@ pnpm gateway:build && pnpm gateway:start
 
 | 端 | 推荐依赖 | 协议 |
 |----|----------|------|
-| **Web UI**（`apps/web` + `@learnbuddy/client`） | `GatewayTransport` 或 `WebGatewayClient` | `register` role=`web` + HTTP |
-| **Desktop**（`apps/desktop`） | `DesktopGatewayClient` 或 `electron/sync/gateway-ws-client.ts` | `register` role=`desktop` |
-| **新推送实验** | `WebSocketClient` / `DesktopClient`（MessageFrame） | `auth` / `push` / `ack` / `ping` |
+| **Web UI**（Thread + `@learnbuddy/client`） | `GatewayTransport` from `@learnbuddy/gateway-sdk-web` | `register` role=`web` + HTTP POST 发消息 |
+| **Web 简易页**（`gateway-web`） | `connectGatewayWeb` via `@learnbuddy/ui` → sdk-web | 同上 |
+| **Desktop** | `electron/sync/gateway-ws-client.ts` | `register` role=`desktop` + `GATEWAY_SECRET` + `accountEmail` |
 
-### Web 示例（SDK）
+### Web 示例（完整 Thread UI）
 
 ```ts
-import { WebGatewayClient } from '@learnbuddy/gateway-sdk-web'
+import { createLearnbuddyClient } from '@learnbuddy/client'
 
-const client = new WebGatewayClient({
-  httpBase: '/gateway-api',
-  webToken: bootstrap.token,
+const client = createLearnbuddyClient({
+  token: jwt,
+  wsPath: '/ws',
+  transportMode: 'gateway',
+  gatewayHttpBase: '/gateway-api',
 })
-client.onEvent = (ev) => { /* InboundEvent */ }
 client.connect()
-await client.sendMessage('desktop:chat-id', 'hello')
+client.sendMessage('chat-id', 'hello')
 ```
 
-### Desktop 示例（SDK）
+### 共享会话协议（sdk-web）
 
 ```ts
-import { DesktopGatewayClient } from '@learnbuddy/gateway-sdk-desktop'
-
-const gw = new DesktopGatewayClient({
-  url: 'ws://127.0.0.1:18765/ws',
-  secret: process.env.GATEWAY_SECRET!,
-})
-gw.onInbound = (msg) => { /* 跑 Agent */ }
-gw.start()
+import { openGatewayWebSocket, postGatewayUserMessage } from '@learnbuddy/gateway-sdk-web'
 ```
+
+详见 monorepo 根目录 `docs/CROSS_DEVICE_GATEWAY.md`。
 
 ## 与 monorepo 的关系
 

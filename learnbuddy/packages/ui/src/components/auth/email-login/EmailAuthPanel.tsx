@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AuthFeedback, ModeTabs, SwitchModeButton } from './AuthFormControls'
 import { EmailField, OtpInput, PasswordField } from './AuthFormFields'
-import { MascotHero } from './MascotHero'
 import { authInput, authOutlineBtn, authPanel, authPrimaryBtn, loginGlassCard } from './styles'
 import type { EmailAuthState } from './useEmailAuth'
 
@@ -43,17 +42,16 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
   return (
     <main
       className={cn(
-        'relative z-10 flex h-full min-h-0 flex-1 flex-col items-center justify-center overflow-hidden',
+        'relative z-10 flex w-full flex-1 flex-col items-center justify-start lg:h-full lg:min-h-0 lg:justify-center lg:overflow-hidden',
         authPanel,
-        'px-4 py-4 sm:px-6',
+        'px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6',
       )}
     >
-      <MascotHero showBubble className="mb-3 shrink-0 lg:hidden" />
       <div className={loginGlassCard}>
         <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0EA5E9]">
           {formEyebrow}
         </p>
-        <h2 className="mt-2 text-center text-2xl font-bold tracking-tight text-[#1E3A8A] dark:text-foreground">
+        <h2 className="mt-2 text-center text-xl font-bold tracking-tight text-[#1E3A8A] sm:text-2xl dark:text-foreground">
           {formTitle}
         </h2>
 
@@ -124,10 +122,10 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
         <p className="mt-5 text-center text-[10px] leading-relaxed text-[#1E3A8A]/45">
           继续即表示您同意 learnbuddy 的服务条款与隐私政策。
         </p>
-        <p className="mt-1 text-center text-[10px] text-[#1E3A8A]/45 lg:hidden">
-          © learnbuddy · 作者：甘智斌
-        </p>
       </div>
+      <p className="mt-1 text-center text-[10px] text-[#1E3A8A]/45 lg:hidden">
+          © learnbuddy · 作者：甘智斌
+      </p>
     </main>
   )
 }
@@ -238,7 +236,7 @@ function RegisterForm({
         onToggleShow={() => setShowPassword((v) => !v)}
       />
       <div className="space-y-2">
-        <label htmlFor="register-password-confirm" className="text-sm font-medium text-[#1E3A8A] dark:text-foreground">
+        <label htmlFor="register-password-confirm" className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
           确认密码
         </label>
         <input

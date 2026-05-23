@@ -11,6 +11,12 @@ export function ViewportFitShell({ children, fitKey }: { children: ReactNode; fi
     if (!outer || !inner) return
 
     const fit = () => {
+      // Mobile: no scaling, allow native scroll
+      if (window.innerWidth < 1024) {
+        inner.style.transform = 'none'
+        setScale(1)
+        return
+      }
       inner.style.transform = 'none'
       const neededH = inner.scrollHeight
       const neededW = inner.scrollWidth
@@ -34,11 +40,11 @@ export function ViewportFitShell({ children, fitKey }: { children: ReactNode; fi
   return (
     <div
       ref={outerRef}
-      className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden"
+      className="relative z-10 flex h-full w-full items-start justify-center overflow-y-auto lg:items-center lg:overflow-hidden"
     >
       <div
         ref={innerRef}
-        className="flex h-full w-full max-w-[100vw] origin-center"
+        className="flex h-full w-full max-w-[100vw] origin-top lg:origin-center"
         style={{ transform: scale < 1 ? `scale(${scale})` : undefined }}
       >
         {children}

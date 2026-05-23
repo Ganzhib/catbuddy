@@ -71,8 +71,10 @@ pnpm install
 
 | `pnpm build:desktop` | 桌面 NSIS 安装包 |
 | `pnpm build:desktop:verbose` | 同上，分阶段 + electron-builder 详细日志 |
-| `pnpm build:web` | Web 静态资源 |
-| `pnpm build:all` | Gateway + Web + Desktop 依次构建 |
+| `pnpm build:web` | 拷贝桌面安装包 + Web 静态资源（需先 `build:desktop`） |
+| `pnpm build:web:only` | 仅 Vite 构建 Web（不拷贝安装包） |
+| `pnpm build:release` | 桌面安装包 + Web 一键发布构建 |
+| `pnpm build:all` | Gateway + Desktop + Web |
 
 | `pnpm lint` | 全 workspace TypeScript 检查 |
 | `pnpm clean:packages` | 删除 `packages/*/src`、`apps/*/src` 下误生成的 `.js` / `.map` / `.d.ts` |

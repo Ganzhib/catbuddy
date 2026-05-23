@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ChatList } from "@/components/ChatList";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
+import { DesktopClientDownload } from "@/components/DesktopClientDownload";
 import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -90,6 +91,7 @@ export function Sidebar(props: SidebarProps) {
           />
         </label>
         <GatewayRemoteSwitch />
+        <DesktopClientDownload variant="sidebar" />
         <Button
           onClick={props.onNewChat}
           className="h-9 w-full justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-medium text-sidebar-foreground/92 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"

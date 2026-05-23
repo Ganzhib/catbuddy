@@ -26,6 +26,10 @@
       "description": "learnbuddy Web UI —— 与你的 learnbuddy 工作区对话。"
     }
   },
+  "desktopDownload": {
+    "label": "下载 Windows 客户端",
+    "hint": "安装后使用与网页相同的邮箱登录，并在侧栏开启「远程控制」。"
+  },
   "sidebar": {
     "navigation": "侧边栏导航",
     "globalActions": "全局操作",

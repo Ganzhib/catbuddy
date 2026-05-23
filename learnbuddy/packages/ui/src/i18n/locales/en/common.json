@@ -38,6 +38,10 @@
       "description": "learnbuddy web UI — chat with your learnbuddy workspace."
     }
   },
+  "desktopDownload": {
+    "label": "Download Windows app",
+    "hint": "Install, sign in with the same email, then turn on Remote control in the sidebar."
+  },
   "sidebar": {
     "navigation": "Sidebar navigation",
     "globalActions": "Global actions",

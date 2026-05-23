@@ -3,3 +3,10 @@ packages:
   - 'apps/*'
   - 'gateway'
   - 'gateway/packages/*'
+
+# pnpm v11: allow dependency install scripts (replaces package.json pnpm.onlyBuiltDependencies)
+allowBuilds:
+  esbuild: true
+  electron: true
+  sharp: true
+  onnxruntime-node: true

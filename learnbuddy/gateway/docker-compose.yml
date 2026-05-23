@@ -1,7 +1,8 @@
 # learnbuddy Gateway + MySQL
 # Usage (from learnbuddy/ root):
-#   cp gateway/.env.example gateway/.env
-#   docker compose -f gateway/docker-compose.yml up -d --build
+#   开发: cp gateway/.env.example gateway/.env
+#   生产: cp gateway/.env.production.example gateway/.env.production
+#         docker compose -f gateway/docker-compose.yml --env-file gateway/.env.production up -d --build
 #   curl http://127.0.0.1:18765/health
 
 services:
@@ -28,13 +29,15 @@ services:
     build:
       context: ..
       dockerfile: gateway/Dockerfile
+    image: learnbuddy/gateway:latest
     container_name: learnbuddy-gateway
     restart: unless-stopped
     ports:
       - '18765:18765'
     env_file:
-      - .env
+      - ${GATEWAY_ENV_FILE:-.env}
     environment:
+      NODE_ENV: production
       MYSQL_HOST: mysql
     depends_on:
       mysql:

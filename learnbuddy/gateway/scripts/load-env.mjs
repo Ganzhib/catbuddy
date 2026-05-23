@@ -5,9 +5,12 @@ import dotenv from 'dotenv'
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url))
 const gatewayRoot = path.resolve(scriptsDir, '..')
 
-/** gateway/.env（与 packages/gateway `load-env.ts` 一致）。 */
+/** gateway/.env（+ `.env.production` when NODE_ENV=production）。 */
 export function loadGatewayEnvFiles() {
-  dotenv.config({ path: path.join(gatewayRoot, '.env'), override: true })
+  dotenv.config({ path: path.join(gatewayRoot, '.env') })
+  if (process.env.NODE_ENV === 'production') {
+    dotenv.config({ path: path.join(gatewayRoot, '.env.production'), override: true })
+  }
 }
 
 /** MySQL 连接配置（与 `config/env.ts` 默认一致；脚本侧保留 GATEWAY_* 别名）。 */

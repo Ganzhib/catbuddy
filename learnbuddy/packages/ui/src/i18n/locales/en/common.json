@@ -416,8 +416,8 @@
       "body": "The server rejected your last message because it exceeded the size limit. Remove some images or try smaller files, then send again."
     },
     "gatewayDesktopOffline": {
-      "title": "Desktop agent not connected",
-      "body": "Gateway could not forward your message (503). Start pnpm gateway:dev, then run the desktop app with GATEWAY_ENABLED=true and the same GATEWAY_SECRET in .env."
+      "title": "Desktop app not ready",
+      "body": "Your message needs to be handled on this computer's learnbuddy desktop app. Open the app and turn on Remote Control in the sidebar, then try again."
     },
     "generic": {
       "title": "Something went wrong",

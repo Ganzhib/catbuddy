@@ -34,7 +34,7 @@ export function LoginMarketingPanel() {
         <h1 className="max-w-md text-lg font-semibold leading-relaxed tracking-tight text-[#1E3A8A]/90 sm:text-xl lg:text-2xl xl:text-[26px]">
           你的 AI 学习助手，随时待命
         </h1>
-        <p className="auth-clamp-2 mt-2 max-w-sm text-[11px] leading-[1.7] text-[#1E3A8A]/55 sm:text-xs lg:mt-3 lg:text-[13px] lg:leading-[1.75]">
+        <p className="mt-2 max-w-sm text-[11px] leading-[1.7] text-[#1E3A8A]/55 sm:text-xs lg:mt-3 lg:text-[13px] lg:leading-[1.75]">
           桌面端负责思考与执行，网页端随身接入——提问、跟进、远程遥控，一套账号打通。
         </p>
         <ul className="mt-4 space-y-2 sm:mt-5 lg:mt-7 lg:space-y-3">
@@ -50,7 +50,7 @@ export function LoginMarketingPanel() {
             </li>
           ))}
         </ul>
-        <DesktopClientDownload variant="login" className="auth-hide-short mt-5 max-w-sm hidden lg:block lg:mt-8" />
+        <DesktopClientDownload variant="login" className="auth-hide-short mt-5 max-w-sm lg:mt-8" />
       </div>
      <div className="h-10"></div>
     </aside>

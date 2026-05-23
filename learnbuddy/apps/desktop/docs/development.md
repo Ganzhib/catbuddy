@@ -14,8 +14,10 @@
 |------|------|
 | `pnpm run dev` | Vite 开发：热更新 Renderer + 编译 Main |
 | `pnpm run lint` | `tsc --noEmit` 类型检查 |
-| `pnpm run build` | 类型检查 + Vite 构建 + electron-builder 安装包 |
+| `pnpm run build` / `build:nsis` | 类型检查 + Vite + electron-builder **NSIS 安装包** |
+| `pnpm run build:verbose` / `build:nsis:verbose` | 同上，**详细日志**（分阶段时间戳 + Vite verbose + `DEBUG=electron-builder,...`） |
 | `pnpm run build:unpack` | 构建但不打安装包（`release/win-unpacked` 等） |
+| `pnpm run build:unpack:verbose` | `build:unpack` + 详细日志 |
 | `pnpm run rebuild:unpack` | 结束运行中的 exe 后重新 `build:unpack` |
 | `pnpm run gateway:dev` | 启动本地 Gateway（`@learnbuddy/gateway`） |
 | `pnpm run gateway:test` | Gateway 集成测试脚本 |
@@ -37,6 +39,29 @@ Monorepo 根目录可先执行 `pnpm install`。
 |------|------|
 | `/gateway-api` | `http://127.0.0.1:18765` |
 | `/gateway-ws` | WebSocket → 同上 |
+
+## 打包日志（NSIS 阶段像卡住时）
+
+默认 `build` 会按阶段打印时间戳（`scripts/desktop-build.mjs`）。需要 **electron-builder / NSIS 内部步骤** 时：
+
+```bash
+pnpm run build:nsis:verbose
+# 或 monorepo 根目录
+pnpm build:desktop:verbose
+# 或环境变量（不必改命令）
+set LEARNBUDDY_BUILD_VERBOSE=1
+pnpm run build
+```
+
+Verbose 会启用：
+
+- 每步耗时（`tsc` → `vite build` → `electron-builder`）
+- Vite `--logLevel verbose`
+- `DEBUG=electron-builder,app-builder-lib,builder-util,...`（若未自行设置 `DEBUG`）
+
+**常见“假卡住”**：日志停在 `packaging` / NSIS 之后很久无输出，多半是在做 **LZMA 压缩安装包**（体积越大越久，5–15 分钟都正常）。`build:verbose` 会看到 `building block map`、`executing makensis` 等中间行。
+
+仅调试前端产物、不打包时：`pnpm run build:vite`。
 
 ## 构建产物
 

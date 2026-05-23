@@ -69,7 +69,8 @@ pnpm install
 
 | `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
 
-| `pnpm build:desktop` | 桌面安装包 |
+| `pnpm build:desktop` | 桌面 NSIS 安装包 |
+| `pnpm build:desktop:verbose` | 同上，分阶段 + electron-builder 详细日志 |
 | `pnpm build:web` | Web 静态资源 |
 | `pnpm build:all` | Gateway + Web + Desktop 依次构建 |
 

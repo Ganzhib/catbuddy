@@ -12,7 +12,7 @@ export interface GatewayServices {
 }
 
 export async function createGatewayServices(): Promise<GatewayServices> {
-  const pool = new MysqlPool()
+  const pool = new MysqlPool() 
   await pool.init()
   const sessionStore = new MysqlSessionStore(pool)
   const userStore = new MysqlUserStore(pool)

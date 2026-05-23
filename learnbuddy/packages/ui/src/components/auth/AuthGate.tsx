@@ -111,7 +111,9 @@ export function AuthGate({
 
   if (needsLogin) {
     return (
-      <EmailLoginScreen onSuccess={() => setBootAttempts((n) => n + 1)} />
+      <div className="h-dvh max-h-dvh overflow-hidden">
+        <EmailLoginScreen onSuccess={() => setBootAttempts((n) => n + 1)} />
+      </div>
     )
   }
 

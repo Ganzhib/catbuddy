@@ -148,6 +148,52 @@ export async function updateWebSearchSettingsIpc(
   return fetchSettingsIpc(_token, _base)
 }
 
+export async function fetchMcpSettingsIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsPayload> {
+  const api = requireIpcBridge()
+  if (!api.getMcpSettings) {
+    throw new ApiError(501, 'MCP settings are only available in the desktop app.')
+  }
+  return api.getMcpSettings()
+}
+
+export async function updateMcpServersIpc(
+  _token: string,
+  servers: Record<string, import('@catbuddy/shared').McpServerConfig>,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsUpdateResult> {
+  const api = requireIpcBridge()
+  if (!api.updateMcpServers) {
+    throw new ApiError(501, 'MCP settings are only available in the desktop app.')
+  }
+  return api.updateMcpServers(servers)
+}
+
+export async function fetchMcpMarketplaceIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]> {
+  const api = requireIpcBridge()
+  if (!api.listMcpMarketplace) {
+    throw new ApiError(501, 'MCP marketplace is only available in the desktop app.')
+  }
+  return api.listMcpMarketplace()
+}
+
+export async function addMcpFromMarketplaceIpc(
+  _token: string,
+  id: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsUpdateResult> {
+  const api = requireIpcBridge()
+  if (!api.addMcpFromMarketplace) {
+    throw new ApiError(501, 'MCP marketplace is only available in the desktop app.')
+  }
+  return api.addMcpFromMarketplace(id)
+}
+
 export async function listSlashCommandsIpc(
   _token: string,
   _base: string = '',

@@ -20,6 +20,10 @@ import {
   updateSettingsIpc,
   updateProviderSettingsIpc,
   updateWebSearchSettingsIpc,
+  fetchMcpSettingsIpc,
+  updateMcpServersIpc,
+  fetchMcpMarketplaceIpc,
+  addMcpFromMarketplaceIpc,
   listSlashCommandsIpc,
 } from './ipc-api'
 
@@ -41,6 +45,10 @@ export interface PlatformApi {
   updateSettings(token: string, update: SettingsUpdate, base?: string): Promise<SettingsPayload>
   updateProviderSettings(token: string, update: ProviderSettingsUpdate, base?: string): Promise<SettingsPayload>
   updateWebSearchSettings(token: string, update: WebSearchSettingsUpdate, base?: string): Promise<SettingsPayload>
+  fetchMcpSettings(token: string, base?: string): Promise<import('@catbuddy/shared').McpSettingsPayload>
+  updateMcpServers(token: string, servers: Record<string, import('@catbuddy/shared').McpServerConfig>, base?: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+  fetchMcpMarketplace(token: string, base?: string): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]>
+  addMcpFromMarketplace(token: string, id: string, base?: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
   listSlashCommands(token: string, base?: string): Promise<SlashCommand[]>
   readonly mode: 'desktop' | 'web'
 }
@@ -74,6 +82,10 @@ export function createPlatformApi(): PlatformApi {
       updateSettings: updateSettingsIpc,
       updateProviderSettings: updateProviderSettingsIpc,
       updateWebSearchSettings: updateWebSearchSettingsIpc,
+      fetchMcpSettings: fetchMcpSettingsIpc,
+      updateMcpServers: updateMcpServersIpc,
+      fetchMcpMarketplace: fetchMcpMarketplaceIpc,
+      addMcpFromMarketplace: addMcpFromMarketplaceIpc,
       listSlashCommands: listSlashCommandsIpc,
     }
   }
@@ -90,6 +102,18 @@ export function createPlatformApi(): PlatformApi {
     updateSettings: updateSettingsHttp,
     updateProviderSettings: updateProviderSettingsHttp,
     updateWebSearchSettings: updateWebSearchSettingsHttp,
+    fetchMcpSettings: async () => {
+      throw new Error('MCP settings are desktop-only')
+    },
+    updateMcpServers: async () => {
+      throw new Error('MCP settings are desktop-only')
+    },
+    fetchMcpMarketplace: async () => {
+      throw new Error('MCP settings are desktop-only')
+    },
+    addMcpFromMarketplace: async () => {
+      throw new Error('MCP settings are desktop-only')
+    },
     listSlashCommands: listSlashCommandsHttp,
   }
 }

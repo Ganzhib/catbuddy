@@ -45,6 +45,13 @@ export interface CatbuddyPreloadApi {
   listModels(): Promise<ModelPresetConfig[]>
   setModel(presetName: string): Promise<void>
 
+  getMcpSettings?(): Promise<import('@catbuddy/shared').McpSettingsPayload>
+  updateMcpServers?(
+    servers: Record<string, import('@catbuddy/shared').McpServerConfig>,
+  ): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+  listMcpMarketplace?(): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]>
+  addMcpFromMarketplace?(id: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+
   selectWorkspace(): Promise<string>
   getWorkspace(): Promise<string>
   openWorkspaceFile(

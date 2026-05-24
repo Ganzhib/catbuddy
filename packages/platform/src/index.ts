@@ -66,5 +66,13 @@ export const updateProviderSettings = (...args: Parameters<ReturnType<typeof cre
   platform().updateProviderSettings(...args)
 export const updateWebSearchSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateWebSearchSettings']>) =>
   platform().updateWebSearchSettings(...args)
+export const fetchMcpSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchMcpSettings']>) =>
+  platform().fetchMcpSettings(...args)
+export const updateMcpServers = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateMcpServers']>) =>
+  platform().updateMcpServers(...args)
+export const fetchMcpMarketplace = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchMcpMarketplace']>) =>
+  platform().fetchMcpMarketplace(...args)
+export const addMcpFromMarketplace = (...args: Parameters<ReturnType<typeof createPlatformApi>['addMcpFromMarketplace']>) =>
+  platform().addMcpFromMarketplace(...args)
 export const listSlashCommands = (...args: Parameters<ReturnType<typeof createPlatformApi>['listSlashCommands']>) =>
   platform().listSlashCommands(...args)

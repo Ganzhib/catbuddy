@@ -1,9 +1,3 @@
-
-/*
-!/.gitignore
-!/learnbuddy/
-!/learnbuddy/**
-
 # Project-specific
 .worktrees/
 .worktree/
@@ -12,10 +6,34 @@
 .env
 .web
 .orion
-
+deploy/
+dist-electron
+release-fresh/
+release/
+release-build-*/
 # Claude / AI assistant artifacts
 docs/superpowers/
 docs/plans/
+.env
+# learnbuddy packages — accidental `tsc` emit beside sources (use Vite aliases, not dist/)
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+!packages/shared/src/brand.mjs
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
+!packages/shared/src/brand.d.ts
+!packages/platform/src/preload-api.d.ts
+!packages/ui/vite-env.d.ts
+!packages/ui/src/types/react-syntax-highlighter-subpaths.d.ts
+# apps — same rule (e.g. apps/web/src/main.js from mistaken tsc)
+apps/*/src/**/*.js
+apps/*/src/**/*.js.map
+apps/*/src/**/*.d.ts
+apps/*/src/**/*.d.ts.map
+
+# relay-server — stray shell/node eval artifacts
+relay-server/console.log*
+relay-server/r.json*
 
 # webui (monorepo frontend)
 webui/node_modules/
@@ -54,6 +72,7 @@ pip-wheel-metadata/
 share/python-wheels/
 dist2/
 node_modules/
+relay-server/node_modules/
 dist-*/*
 /bridge/node_modules/
 /bridge/dist/
@@ -101,6 +120,7 @@ nano.*.save
 # Environment & secrets (keep examples tracked if needed)
 .env.*
 !.env.example
+!.env.*.example
 
 # Logs & temp
 *.log

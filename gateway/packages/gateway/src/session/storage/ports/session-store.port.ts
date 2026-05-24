@@ -31,4 +31,7 @@ export interface SessionStore {
   listRowsForOwner(ownerEmail: string): Promise<GatewaySessionRow[]>
   buildWebuiThread(sessionKey: string): Promise<Record<string, unknown> | null>
   collectSyncThreads(): Promise<Record<string, Record<string, unknown>>>
+  collectSyncThreadsForOwner(
+    ownerEmail: string,
+  ): Promise<Record<string, Record<string, unknown>>>
 }

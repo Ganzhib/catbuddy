@@ -279,6 +279,16 @@ export class GatewayStateService {
   ): Promise<void> {
     this.sessionCatalogByDevice.set(deviceId, sessions)
     await this.store.mergeSessionRows(sessions)
+    const ownerEmail = this.getDesktopClient(deviceId)?.accountEmail
+    if (ownerEmail?.includes('@')) {
+      const normalized = this.normalizeEmail(ownerEmail)
+      for (const row of sessions) {
+        if (!row.key) continue
+        const existing = await this.store.getSessionOwner(row.key)
+        if (existing && existing !== normalized) continue
+        if (!existing) await this.store.setSessionOwner(row.key, normalized)
+      }
+    }
     for (const row of sessions) {
       this.sessionDesktop.set(row.key, deviceId)
     }
@@ -593,23 +603,44 @@ export class GatewayStateService {
     return this.handleWebInbound(sessionKey, chatId, content, media, source)
   }
 
-  /** 桌面连接后：把 Gateway 会话推送给 desktop 合并。 */
-  async pushSyncToDesktop(ws: WebSocket): Promise<void> {
+  /** 桌面连接后：把 Gateway 会话推送给 desktop 合并（仅同账号 owner）。 */
+  async pushSyncToDesktop(ws: WebSocket, accountEmail?: string): Promise<void> {
     if (ws.readyState !== 1) return
-    const sessions = await this.store.listRows()
-    const threads = await this.store.collectSyncThreads()
+    const email = accountEmail ? this.normalizeEmail(accountEmail) : ''
+    let sessions: GatewaySessionRow[]
+    let threads: Record<string, Record<string, unknown>>
+    if (email.includes('@')) {
+      sessions = await this.store.listRowsForOwner(email)
+      threads = await this.store.collectSyncThreadsForOwner(email)
+    } else if (isWebLoginRequired()) {
+      sessions = []
+      threads = {}
+    } else {
+      sessions = await this.store.listRows()
+      threads = await this.store.collectSyncThreads()
+    }
     ws.send(JSON.stringify({ type: 'sync_push', sessions, threads }))
   }
 
   async persistThreadSnapshot(
     sessionKey: string,
     payload: Record<string, unknown> | null,
+    deviceId?: string,
   ): Promise<void> {
     if (!sessionKey || !payload) return
+    const ownerEmail = deviceId
+      ? this.getDesktopClient(deviceId)?.accountEmail
+      : undefined
+    if (ownerEmail?.includes('@')) {
+      const normalized = this.normalizeEmail(ownerEmail)
+      const existing = await this.store.getSessionOwner(sessionKey)
+      if (existing && existing !== normalized) return
+      if (!existing) await this.store.setSessionOwner(sessionKey, normalized)
+    }
     this.putThreadCache(sessionKey, payload)
     await this.store.importWebuiPayload(sessionKey, payload)
-    const deviceId = this.sessionDesktop.get(sessionKey)
-    this.notifyWebClientsSessionListChanged(deviceId)
+    const boundDevice = this.sessionDesktop.get(sessionKey) ?? deviceId
+    this.notifyWebClientsSessionListChanged(boundDevice)
   }
 
   registerDesktop(
@@ -641,7 +672,7 @@ export class GatewayStateService {
       clientKey,
       accountEmail: email || undefined,
     })
-    void this.pushSyncToDesktop(ws)
+    void this.pushSyncToDesktop(ws, email || undefined)
     return { ok: true }
   }
 

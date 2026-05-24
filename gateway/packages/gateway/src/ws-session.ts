@@ -122,7 +122,8 @@ export function attachGatewaySessionWebSocket(
       if (msg.type === 'thread_snapshot' && clientKey.startsWith('desktop:')) {
         const sessionKey = String(msg.sessionKey || '')
         const payload = (msg.payload as Record<string, unknown> | null) ?? null
-        void state.persistThreadSnapshot(sessionKey, payload)
+        const deviceId = clientKey.slice('desktop:'.length)
+        void state.persistThreadSnapshot(sessionKey, payload, deviceId)
       }
     })
 

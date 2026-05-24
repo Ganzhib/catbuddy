@@ -316,6 +316,19 @@ export class MysqlSessionStore implements SessionStore {
     return out
   }
 
+  async collectSyncThreadsForOwner(
+    ownerEmail: string,
+  ): Promise<Record<string, Record<string, unknown>>> {
+    const out: Record<string, Record<string, unknown>> = {}
+    for (const row of await this.listRowsForOwner(ownerEmail)) {
+      const thread = await this.buildWebuiThread(row.key)
+      if (thread && Array.isArray(thread.messages) && thread.messages.length > 0) {
+        out[row.key] = thread
+      }
+    }
+    return out
+  }
+
   private async loadOrInit(
     conn: PoolConnection,
     sessionKey: string,

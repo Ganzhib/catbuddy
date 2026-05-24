@@ -1,0 +1,511 @@
+#!/usr/bin/env node
+'use strict'
+
+/**
+ * catbuddy Gateway 一键部署
+ * 目录: deploy/
+ *
+ * 用法（catbuddy 根目录）:
+ *   cp deploy/deploy.config.example.json deploy/deploy.config.json
+ *   pnpm deploy:gateway
+ */
+
+const { execSync, spawnSync } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const DEPLOY_DIR = __dirname
+const IMAGE = 'catbuddy/gateway:latest'
+const TAR_NAME = 'catbuddy-gateway.tar'
+
+const DEFAULTS = {
+  host: '',
+  user: 'root',
+  port: 22,
+  identityFile: '',
+  remoteDir: '/opt/catbuddy/gateway',
+  domain: 'gateway.ganzhibin.icu',
+  envFile: '.env.production',
+  build: true,
+  setupNginx: false,
+  certEmail: '',
+}
+
+function log(step, msg) {
+  console.log(`\n[deploy ${step}] ${msg}`)
+}
+
+function fail(msg) {
+  console.error(`\n[deploy] ERROR: ${msg}`)
+  process.exit(1)
+}
+
+function findRoot() {
+  const root = path.resolve(DEPLOY_DIR, '..')
+  if (fs.existsSync(path.join(root, 'gateway', 'docker-compose.yml'))) return root
+  fail('找不到 catbuddy 根目录（需含 gateway/docker-compose.yml）')
+}
+
+function parseArgs(argv) {
+  const flags = {
+    config: '',
+    skipBuild: false,
+    skipUpload: false,
+    skipRemote: false,
+    local: false,
+    nginx: false,
+    nginxOnly: false,
+    bootstrapDocker: false,
+    help: false,
+  }
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === '-h' || a === '--help') flags.help = true
+    else if (a === '--skip-build') flags.skipBuild = true
+    else if (a === '--skip-upload') flags.skipUpload = true
+    else if (a === '--skip-remote') flags.skipRemote = true
+    else if (a === '--local') flags.local = true
+    else if (a === '--nginx') flags.nginx = true
+    else if (a === '--nginx-only') {
+      flags.nginx = true
+      flags.nginxOnly = true
+    } else if (a === '--bootstrap-docker') flags.bootstrapDocker = true
+    else if (a === '--config') flags.config = argv[++i]
+    else fail(`未知参数: ${a}`)
+  }
+  return flags
+}
+
+function printHelp() {
+  console.log(`catbuddy Gateway 一键部署
+
+  node deploy/deploy.cjs [选项]
+
+  首次: cp deploy/deploy.config.example.json deploy/deploy.config.json
+
+  选项:
+    --config <path>       配置文件路径
+    --skip-build          不 build，使用已有镜像
+    --skip-upload         只 build/打包，不上传
+    --skip-remote         上传但不 ssh 启动
+    --local               本机 docker compose 生产模式
+    --nginx               远程配置 Nginx + Let's Encrypt
+    --nginx-only          仅远程 Nginx + HTTPS（不部署 Docker）
+    --bootstrap-docker    远程安装 Docker
+    -h, --help            帮助
+`)
+}
+
+function loadConfig(configPath) {
+  const file = configPath ? path.resolve(configPath) : path.join(DEPLOY_DIR, 'deploy.config.json')
+  if (!fs.existsSync(file)) {
+    fail(
+      `缺少配置文件 ${file}\n`
+      + '  请执行: cp deploy/deploy.config.example.json deploy/deploy.config.json',
+    )
+  }
+  return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(file, 'utf8')), configFile: file }
+}
+
+function run(cmd, cwd) {
+  log('run', cmd)
+  execSync(cmd, { stdio: 'inherit', cwd, shell: true, env: process.env })
+}
+
+function runCapture(cmd, cwd) {
+  return execSync(cmd, { cwd, shell: true, encoding: 'utf8' }).trim()
+}
+
+function dockerOk() {
+  try {
+    runCapture('docker version --format "{{.Server.Version}}"')
+    return true
+  } catch {
+    return false
+  }
+}
+
+function imageExists(tag) {
+  try {
+    runCapture(`docker image inspect ${tag}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function mysqlEnvLoadShell() {
+  return `
+read_env() {
+  local key="$1" default="$2" line val
+  line=$(grep -E "^\${key}=" .env.production 2>/dev/null | tail -1 | tr -d '\\r') || true
+  if [ -z "$line" ]; then echo "$default"; return; fi
+  val="\${line#*=}"
+  val="\${val%\\"}"
+  val="\${val#\\"}"
+  val="\${val%\\'}"
+  val="\${val#\\'}"
+  echo "$val"
+}
+`
+}
+
+function mysqlBootstrapShell() {
+  return `${mysqlEnvLoadShell()}
+echo "==> ensure mysql app user (sync password / remote host grants)"
+APP_USER=$(read_env MYSQL_USER catbuddy)
+APP_PASS=$(read_env MYSQL_PASSWORD catbuddy)
+APP_DB=$(read_env MYSQL_DATABASE catbuddy_gateway)
+ROOT_PASS=$(read_env MYSQL_ROOT_PASSWORD root)
+
+echo "  waiting for mysql..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if docker exec catbuddy-gateway-mysql mysqladmin ping -h 127.0.0.1 -uroot -p"\$ROOT_PASS" --silent 2>/dev/null; then
+    break
+  fi
+  echo "  ... mysql ping \$i/10"
+  sleep 2
+done
+
+docker exec -i catbuddy-gateway-mysql mysql -uroot -p"\$ROOT_PASS" <<EOSQL
+CREATE DATABASE IF NOT EXISTS \\\`\${APP_DB}\\\`;
+CREATE USER IF NOT EXISTS '\${APP_USER}'@'%' IDENTIFIED BY '\${APP_PASS}';
+ALTER USER '\${APP_USER}'@'%' IDENTIFIED BY '\${APP_PASS}';
+CREATE USER IF NOT EXISTS '\${APP_USER}'@'localhost' IDENTIFIED BY '\${APP_PASS}';
+ALTER USER '\${APP_USER}'@'localhost' IDENTIFIED BY '\${APP_PASS}';
+GRANT ALL PRIVILEGES ON \\\`\${APP_DB}\\\`.* TO '\${APP_USER}'@'%';
+GRANT ALL PRIVILEGES ON \\\`\${APP_DB}\\\`.* TO '\${APP_USER}'@'localhost';
+FLUSH PRIVILEGES;
+EOSQL
+`
+}
+
+function writeServerCompose(outPath) {
+  const compose = `# Generated by deploy/deploy.cjs
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: catbuddy-gateway-mysql
+    restart: unless-stopped
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: \${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: \${MYSQL_DATABASE:-catbuddy_gateway}
+      MYSQL_USER: \${MYSQL_USER:-catbuddy}
+      MYSQL_PASSWORD: \${MYSQL_PASSWORD:-catbuddy}
+    volumes:
+      - gateway_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-p\${MYSQL_ROOT_PASSWORD:-root}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    image: ${IMAGE}
+    container_name: catbuddy-gateway
+    restart: unless-stopped
+    ports:
+      - '18765:18765'
+    env_file:
+      - \${GATEWAY_ENV_FILE:-.env.production}
+    environment:
+      NODE_ENV: production
+      MYSQL_HOST: mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  gateway_mysql_data:
+`
+  fs.writeFileSync(outPath, compose, 'utf8')
+}
+
+function shellQuote(s) {
+  return `'${String(s).replace(/'/g, `'\\''`)}'`
+}
+
+function writeRemoteScript(outPath, remoteDir) {
+  const sh = `#!/bin/bash
+set -euo pipefail
+cd ${shellQuote(remoteDir)}
+
+echo "==> stop legacy learnbuddy containers (free ports 18765/3306)"
+docker rm -f learnbuddy-gateway learnbuddy-gateway-mysql 2>/dev/null || true
+docker rm -f catbuddy-gateway catbuddy-gateway-mysql 2>/dev/null || true
+
+echo "==> docker load (${TAR_NAME})"
+docker load -i ${TAR_NAME}
+
+echo "==> pull mysql:8.4 (may take 1-3 min on slow network)"
+docker pull mysql:8.4 || true
+
+echo "==> compose up (mysql first)"
+export GATEWAY_ENV_FILE=.env.production
+docker compose --env-file .env.production -f docker-compose.yml up -d mysql
+${mysqlBootstrapShell()}
+echo "==> compose up (gateway)"
+docker compose --env-file .env.production -f docker-compose.yml up -d --no-build
+
+echo "==> wait health (up to ~20s)"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf http://127.0.0.1:18765/health >/dev/null; then
+    curl -s http://127.0.0.1:18765/health
+    echo ""
+    docker compose ps
+    exit 0
+  fi
+  echo "  ... retry $i/10"
+  sleep 2
+done
+
+echo "health check failed"
+docker logs catbuddy-gateway --tail 30
+exit 1
+`
+  fs.writeFileSync(outPath, sh, 'utf8')
+}
+
+function writeNginxRemoteScript(outPath, domain, certEmail) {
+  const email = certEmail || 'admin@example.com'
+  const sh = `#!/bin/bash
+set -euo pipefail
+
+if ! command -v nginx >/dev/null 2>&1; then
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get install -y nginx certbot python3-certbot-nginx
+fi
+
+cat > /etc/nginx/sites-available/${domain} << 'NGINX_EOF'
+server {
+    listen 80;
+    server_name ${domain};
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${domain};
+    client_max_body_size 32m;
+    location / {
+        proxy_pass http://127.0.0.1:18765;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+}
+NGINX_EOF
+
+ln -sf /etc/nginx/sites-available/${domain} /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+
+certbot --nginx -d ${domain} --non-interactive --agree-tos -m ${email} --redirect || true
+curl -sf "https://${domain}/health" && echo "" || echo "HTTPS health pending (DNS/cert may need minutes)"
+`
+  fs.writeFileSync(outPath, sh, 'utf8')
+}
+
+function sshArgs(cfg, { tty = false } = {}) {
+  const args = [
+    '-p', String(cfg.port),
+    '-o', 'StrictHostKeyChecking=accept-new',
+    '-o', 'ConnectTimeout=15',
+    '-o', 'ServerAliveInterval=15',
+    '-o', 'ServerAliveCountMax=4',
+  ]
+  if (tty) args.push('-tt')
+  if (cfg.identityFile) args.push('-i', cfg.identityFile)
+  args.push(`${cfg.user}@${cfg.host}`)
+  return args
+}
+
+function scpArgs(cfg) {
+  const args = [
+    '-P', String(cfg.port),
+    '-o', 'StrictHostKeyChecking=accept-new',
+    '-o', 'ConnectTimeout=15',
+  ]
+  if (cfg.identityFile) args.push('-i', cfg.identityFile)
+  return args
+}
+
+function sshRun(cfg, remoteCmd, { tty = false } = {}) {
+  const preview = remoteCmd.length > 120 ? `${remoteCmd.slice(0, 117)}...` : remoteCmd
+  log('ssh', `${cfg.user}@${cfg.host} → ${preview}`)
+  const r = spawnSync('ssh', [...sshArgs(cfg, { tty }), remoteCmd], {
+    stdio: 'inherit',
+    shell: false,
+  })
+  if (r.status !== 0) fail(`ssh 失败 (code ${r.status})`)
+}
+
+function scpFile(cfg, local, remote) {
+  const dest = `${cfg.user}@${cfg.host}:${remote}`
+  log('scp', `${path.basename(local)} -> ${dest}`)
+  const r = spawnSync('scp', [...scpArgs(cfg), local, dest], {
+    stdio: 'inherit',
+    shell: false,
+  })
+  if (r.status !== 0) fail(`scp 失败: ${local}`)
+}
+
+function ensureEnvFile(root, envRel) {
+  const envPath = path.join(root, envRel)
+  if (!fs.existsSync(envPath)) {
+    fail(`缺少 ${envRel}，请先: cp .env.production.example .env.production`)
+  }
+  return envPath
+}
+
+function ensureImage(root, cfg, flags) {
+  if (cfg.build && !flags.skipBuild) {
+    log('build', 'docker compose build')
+    try {
+      run('docker compose -f gateway/docker-compose.yml build', root)
+    } catch {
+      if (imageExists(IMAGE)) {
+        log('warn', 'build 失败，使用已有 catbuddy/gateway:latest 继续')
+      } else {
+        fail('docker build 失败，且无 catbuddy/gateway:latest 镜像。请先修复 build 错误后重试')
+      }
+    }
+  }
+  if (imageExists('gateway-gateway:latest') && !imageExists(IMAGE)) {
+    run(`docker tag gateway-gateway:latest ${IMAGE}`, root)
+  }
+  if (!imageExists(IMAGE)) fail(`找不到镜像 ${IMAGE}`)
+}
+
+function deployNginxOnly(cfg, outDir) {
+  if (!cfg.host) fail('deploy.config.json 缺少 host')
+  const nginxScript = path.join(outDir, 'remote-nginx.sh')
+  writeNginxRemoteScript(nginxScript, cfg.domain, cfg.certEmail)
+  if (!cfg.certEmail) log('warn', 'certEmail 为空，certbot 可能失败')
+  sshRun(cfg, `mkdir -p ${cfg.remoteDir}`)
+  scpFile(cfg, nginxScript, `${cfg.remoteDir}/remote-nginx.sh`)
+  sshRun(cfg, `chmod +x ${cfg.remoteDir}/remote-nginx.sh && ${cfg.remoteDir}/remote-nginx.sh`, { tty: true })
+  if (cfg.domain) log('done', `公网: https://${cfg.domain}/health`)
+}
+
+function buildAndPack(root, cfg, flags) {
+  const outDir = path.join(DEPLOY_DIR, 'dist-docker')
+  fs.mkdirSync(outDir, { recursive: true })
+  const envProduction = ensureEnvFile(root, cfg.envFile)
+
+  if (flags.local) {
+    ensureImage(root, cfg, flags)
+    log('run', 'docker compose up (local production)')
+    execSync('docker compose -f gateway/docker-compose.yml up -d --no-build', {
+      cwd: root,
+      stdio: 'inherit',
+      shell: true,
+      env: { ...process.env, GATEWAY_ENV_FILE: '.env.production' },
+    })
+    run('curl -s http://127.0.0.1:18765/health', root)
+    log('done', '本机 Gateway: http://127.0.0.1:18765/health')
+    return { outDir }
+  }
+
+  ensureImage(root, cfg, flags)
+  const tarPath = path.join(outDir, TAR_NAME)
+  const composePath = path.join(outDir, 'docker-compose.yml')
+
+  writeServerCompose(composePath)
+  log('pack', `docker save -> ${tarPath}`)
+  run(`docker save -o "${tarPath}" ${IMAGE}`, root)
+
+  fs.copyFileSync(envProduction, path.join(outDir, '.env.production'))
+  writeRemoteScript(path.join(outDir, 'remote-deploy.sh'), cfg.remoteDir)
+  if (flags.nginx || cfg.setupNginx) {
+    writeNginxRemoteScript(path.join(outDir, 'remote-nginx.sh'), cfg.domain, cfg.certEmail)
+  }
+
+  log('pack', `产出: ${outDir}`)
+  return { outDir, tarPath, composePath, envProduction }
+}
+
+function deployRemote(cfg, flags, artifacts) {
+  if (!cfg.host) fail('deploy.config.json 缺少 host')
+  if (flags.skipUpload) {
+    log('skip', '--skip-upload')
+    return
+  }
+
+  if (flags.bootstrapDocker) {
+    sshRun(
+      cfg,
+      'command -v docker >/dev/null || (curl -fsSL https://get.docker.com | sh && systemctl enable docker && systemctl start docker)',
+    )
+  }
+
+  sshRun(cfg, `mkdir -p ${cfg.remoteDir}`)
+  const { outDir } = artifacts
+
+  scpFile(cfg, path.join(outDir, TAR_NAME), `${cfg.remoteDir}/${TAR_NAME}`)
+  scpFile(cfg, path.join(outDir, 'docker-compose.yml'), `${cfg.remoteDir}/docker-compose.yml`)
+  scpFile(cfg, path.join(outDir, '.env.production'), `${cfg.remoteDir}/.env.production`)
+  scpFile(cfg, path.join(outDir, 'remote-deploy.sh'), `${cfg.remoteDir}/remote-deploy.sh`)
+
+  if (flags.skipRemote) {
+    log('skip', '--skip-remote')
+    return
+  }
+
+  sshRun(cfg, `chmod +x ${cfg.remoteDir}/remote-deploy.sh && ${cfg.remoteDir}/remote-deploy.sh`, { tty: true })
+
+  if (flags.nginx || cfg.setupNginx) {
+    const nginxScript = path.join(outDir, 'remote-nginx.sh')
+    if (!cfg.certEmail) log('warn', 'certEmail 为空，certbot 可能失败')
+    scpFile(cfg, nginxScript, `${cfg.remoteDir}/remote-nginx.sh`)
+    sshRun(cfg, `chmod +x ${cfg.remoteDir}/remote-nginx.sh && ${cfg.remoteDir}/remote-nginx.sh`, { tty: true })
+  }
+
+  log('done', `内网: http://${cfg.host}:18765/health`)
+  if (cfg.domain) log('done', `公网: https://${cfg.domain}/health`)
+}
+
+function main() {
+  const flags = parseArgs(process.argv.slice(2))
+  if (flags.help) {
+    printHelp()
+    return
+  }
+
+  const root = findRoot()
+  process.chdir(root)
+  log('root', root)
+
+  const cfg = loadConfig(flags.config)
+  if (flags.nginx) cfg.setupNginx = true
+
+  log('config', cfg.configFile)
+  log('target', flags.local ? 'local' : `${cfg.user}@${cfg.host}:${cfg.remoteDir}`)
+
+  if (flags.nginxOnly) {
+    const outDir = path.join(DEPLOY_DIR, 'dist-docker')
+    fs.mkdirSync(outDir, { recursive: true })
+    deployNginxOnly(cfg, outDir)
+    console.log('\n[deploy] 完成')
+    return
+  }
+
+  if (!dockerOk()) fail('未检测到 Docker')
+
+  const artifacts = buildAndPack(root, cfg, flags)
+  if (!flags.local) deployRemote(cfg, flags, artifacts)
+
+  console.log('\n[deploy] 完成')
+}
+
+main()

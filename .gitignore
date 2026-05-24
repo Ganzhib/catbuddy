@@ -6,7 +6,10 @@
 .env
 .web
 .orion
-deploy/
+/deploy/deploy.config.json
+/deploy/dist-docker/
+/deploy/dist-web/
+/deploy/*.tar
 dist-electron
 release-fresh/
 release/

@@ -3,14 +3,24 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "@types/uuid": "^9.0.0"
+    "@types/node": "^22.10.5",
+    "@types/uuid": "^9.0.0",
+    "typescript": "^5.7.2"
   },
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./src/index.ts",
+      "node": "./dist/index.js",
+      "default": "./src/index.ts"
+    },
     "./brand": {
       "types": "./src/brand.d.ts",
       "default": "./src/brand.mjs"

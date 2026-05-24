@@ -4,6 +4,9 @@ packages:
   - 'gateway'
   - 'gateway/packages/*'
 
+overrides:
+  sharp: ^0.33.5
+
 # pnpm v11: allow dependency install scripts (replaces package.json pnpm.onlyBuiltDependencies)
 allowBuilds:
   esbuild: true

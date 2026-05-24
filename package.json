@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "catbuddy monorepo — desktop + web",
+  "packageManager": "pnpm@10.18.3",
   "scripts": {
     "dev": "pnpm --filter @catbuddy/desktop dev",
     "dev:desktop": "pnpm --filter @catbuddy/desktop dev",
@@ -20,10 +21,10 @@
     "lint": "pnpm -r lint",
     "clean:packages": "node scripts/clean-package-emit.mjs",
     "update:logo": "pnpm --filter @catbuddy/desktop brand:generate -- --compose-logo --logo-text catbuddy --logo-split 3",
-    "build:database":"docker compose -f gateway/docker-compose.yml up -d mysql",
+    "build:database": "docker compose -f gateway/docker-compose.yml up -d mysql",
     "gateway:dev": "pnpm --filter @catbuddy/gateway dev",
     "dev:gateway": "pnpm gateway:dev",
-    "gateway:build": "pnpm --filter @catbuddy/gateway build",
+    "gateway:build": "pnpm --filter @catbuddy/shared build && pnpm --filter @catbuddy/gateway build",
     "gateway:start": "pnpm --filter @catbuddy/gateway start",
     "gateway:test": "pnpm --dir gateway test:e2e",
     "gateway:test:acceptance": "pnpm --dir gateway test:acceptance",
@@ -39,16 +40,5 @@
     "concurrently": "^9.1.2",
     "dotenv": "^16.4.7",
     "typescript": "^5.7.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "sharp": "^0.33.5"
-    },
-    "onlyBuiltDependencies": [
-      "electron",
-      "esbuild",
-      "sharp",
-      "onnxruntime-node"
-    ]
   }
 }

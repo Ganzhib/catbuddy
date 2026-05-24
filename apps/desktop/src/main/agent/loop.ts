@@ -5,7 +5,7 @@
 import { nanoid } from "nanoid";
 import { ContextBuilder } from "./context";
 import { AgentRunner } from "./runner";
-import { ToolRegistry } from "./tool-registry";
+import { ToolRegistry } from "./tools";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./memory";
 import { LLMProvider } from "../providers";

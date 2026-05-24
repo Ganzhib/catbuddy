@@ -1,0 +1,108 @@
+/**
+ * Tool Registry — register, lookup, and execute agent tools.
+ *
+ * To add a tool: create `tools/my-tool.ts`, export `createMyTool`, append to `builtinToolFactories`.
+ */
+import * as path from 'path'
+import type { FileEditEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
+import { builtinToolFactories } from './builtin'
+import type { Tool, ToolContext } from './types'
+
+export class ToolRegistry {
+  private readonly _tools = new Map<string, Tool>()
+  private _workspace: string = ''
+  private _restrictWorkspace: boolean = false
+  private _fileEditCallback?: (edit: FileEditEvent) => Promise<void>
+
+  setWorkspace(dir: string, restrict: boolean = false): void {
+    this._workspace = path.resolve(dir)
+    this._restrictWorkspace = restrict
+  }
+
+  setFileEditCallback(cb?: (edit: FileEditEvent) => Promise<void>): void {
+    this._fileEditCallback = cb
+  }
+
+  /** Shared runtime passed into each tool factory. */
+  createToolContext(): ToolContext {
+    return {
+      workspace: this._workspace,
+      resolvePath: (input) => this.resolvePath(input),
+      displayPath: (resolved) => this.displayPath(resolved),
+      notifyFileEdit: (edit) => this.notifyFileEdit(edit),
+      lineDelta: (before, after) => this.lineDelta(before, after),
+    }
+  }
+
+  register(tool: Tool): void {
+    this._tools.set(tool.name, tool)
+  }
+
+  get(name: string): Tool | undefined {
+    return this._tools.get(name)
+  }
+
+  getDefinitions(): ToolDefinition[] {
+    return [...this._tools.values()].map((t) => t.definition)
+  }
+
+  get toolNames(): string[] {
+    return [...this._tools.keys()]
+  }
+
+  async execute(call: ToolCallRequest): Promise<string> {
+    const tool = this._tools.get(call.name)
+    if (!tool) return `Error: unknown tool "${call.name}"`
+    try {
+      return await tool.execute(call)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      return `Error executing ${call.name}: ${message}`
+    }
+  }
+
+  registerBuiltinTools(): void {
+    const ctx = this.createToolContext()
+    for (const factory of builtinToolFactories) {
+      this.register(factory(ctx))
+    }
+    console.log(
+      '[tools] Registered %d tools: %s',
+      this.toolNames.length,
+      this.toolNames.join(', '),
+    )
+  }
+
+  resolvePath(inputPath: string): string {
+    const p = path.isAbsolute(inputPath)
+      ? path.resolve(inputPath)
+      : path.resolve(this._workspace, inputPath)
+    if (
+      this._restrictWorkspace
+      && !p.startsWith(this._workspace + path.sep)
+      && p !== this._workspace
+    ) {
+      throw new Error(`Access denied: "${inputPath}" is outside workspace`)
+    }
+    return p
+  }
+
+  private displayPath(resolved: string): string {
+    const rel = path.relative(this._workspace, resolved)
+    if (!rel || rel.startsWith('..')) return resolved.replace(/\\/g, '/')
+    return rel.replace(/\\/g, '/')
+  }
+
+  private lineDelta(before: string, after: string): { added: number; deleted: number } {
+    const beforeLines = before === '' ? 0 : before.split('\n').length
+    const afterLines = after === '' ? 0 : after.split('\n').length
+    return {
+      added: Math.max(0, afterLines - beforeLines),
+      deleted: Math.max(0, beforeLines - afterLines),
+    }
+  }
+
+  private async notifyFileEdit(edit: FileEditEvent): Promise<void> {
+    await this._fileEditCallback?.(edit)
+  }
+}

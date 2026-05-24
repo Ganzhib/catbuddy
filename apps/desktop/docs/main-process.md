@@ -21,7 +21,7 @@
 | `runner.ts` | LLM 多轮对话 + 工具调用 |
 | `context.ts` | Handlebars 模板组装 system prompt、skills |
 | `memory.ts` | 记忆压缩（Dream 两阶段） |
-| `tool-registry.ts` | 工具注册与执行 |
+| `tools/` | 工具注册与执行（`registry.ts` + 各工具模块） |
 | `skill.ts` | 内置 skills 目录扫描 |
 
 深度说明见 [reference/agent-loop.md](./reference/agent-loop.md)。

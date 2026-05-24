@@ -3,7 +3,7 @@
  * 对应原版 catbuddy/agent/runner.py
  */
 import { LLMProvider } from '../providers'
-import { ToolRegistry } from './tool-registry'
+import { ToolRegistry } from './tools'
 import type {
   LLMMessage, ToolCallRequest, ToolEvent,
   AgentRunResult, TokenUsage,

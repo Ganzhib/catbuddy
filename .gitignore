@@ -90,7 +90,7 @@ deploy/deploy.config.json
 # Lock files (project policy)
 poetry.lock
 uv.lock
-
+apps/desktop/example
 # Jupyter
 .ipynb_checkpoints/
 

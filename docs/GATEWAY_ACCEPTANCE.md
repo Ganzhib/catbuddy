@@ -1,6 +1,6 @@
 # Gateway §6 协议验收
 
-对照 [MONOREPO_MIGRATION.md](./MONOREPO_MIGRATION.md) §6，在 **learnbuddy gateway** 上验收 Web 所需 `InboundEvent`。
+对照 [MONOREPO_MIGRATION.md](./MONOREPO_MIGRATION.md) §6，在 **catbuddy gateway** 上验收 Web 所需 `InboundEvent`。
 
 ## 自动化（无需桌面）
 
@@ -25,7 +25,7 @@ pnpm gateway:test:all          # e2e + ui_event + acceptance
 | `file_edit` | 视产品 | ✓ |
 | `reasoning_delta` / `reasoning_end` | 可选 | ✓ |
 | `session_updated` | 可选 | ✓ |
-| `ready` / `attached` | 客户端本地 | —（`learnbuddyClient` 在 WS open 时发出） |
+| `ready` / `attached` | 客户端本地 | —（`catbuddyClient` 在 WS open 时发出） |
 
 另含：`GET /webui/bootstrap`、`POST .../messages` HTTP 冒烟。
 

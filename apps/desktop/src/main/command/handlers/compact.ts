@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 export async function cmdCompact(ctx: CommandContext): Promise<OutboundMessage> {
   const msgs = ctx.loop.sessions.getHistory(ctx.sessionKey, { maxMessages: 9999 });

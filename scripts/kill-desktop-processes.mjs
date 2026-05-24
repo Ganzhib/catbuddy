@@ -29,16 +29,16 @@ function taskkill(image) {
 }
 
 function killWindows() {
-  taskkill('learnbuddy.exe');
+  taskkill('catbuddy.exe');
   taskkill('app-builder.exe');
 
   const root = desktopRoot.replace(/\\/g, '\\\\');
   const ps = [
     'Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |',
     'Where-Object {',
-    "  ($_.Name -eq 'learnbuddy.exe') -or",
+    "  ($_.Name -eq 'catbuddy.exe') -or",
     "  ($_.Name -eq 'electron.exe' -and (",
-    `    ($_.CommandLine -match 'learnbuddy') -or`,
+    `    ($_.CommandLine -match 'catbuddy') -or`,
     `    ($_.ExecutablePath -match '${root}\\\\release') -or`,
     `    ($_.CommandLine -match 'win-unpacked')`,
     '  ))',
@@ -55,7 +55,7 @@ function killWindows() {
 }
 
 function killUnix() {
-  for (const pattern of ['learnbuddy', `${desktopRoot}/release`, `${desktopRoot}/dist-electron`]) {
+  for (const pattern of ['catbuddy', `${desktopRoot}/release`, `${desktopRoot}/dist-electron`]) {
     spawnSync('pkill', ['-f', pattern], { stdio: 'ignore' });
   }
   spawnSync('sleep', ['0.8'], { stdio: 'ignore' });

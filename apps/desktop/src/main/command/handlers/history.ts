@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 const DEFAULT_COUNT = 10;
 const MAX_COUNT = 50;

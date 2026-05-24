@@ -1,7 +1,7 @@
 /**
  * 内置命令注册 + 命令元数据
  *
- * 参考 learnbuddy/command/builtin.py
+ * 参考 catbuddy/command/builtin.py
  */
 import type { CommandSpec } from "./types";
 import { CommandRouter } from "./router";

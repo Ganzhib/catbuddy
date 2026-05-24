@@ -7,7 +7,7 @@ import type {
   WebuiThreadPersistedPayload,
   ProviderSettingsUpdate,
   WebSearchSettingsUpdate,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 import { requireIpcBridge } from './ipc-bridge'
 
 export class ApiError extends Error {

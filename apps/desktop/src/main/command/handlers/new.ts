@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 export function cmdNew(ctx: CommandContext): OutboundMessage {
   ctx.loop.sessions.clear(ctx.sessionKey);

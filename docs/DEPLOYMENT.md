@@ -1,4 +1,4 @@
-# learnbuddy 三端部署
+# catbuddy 三端部署
 
 Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。开发联调见 [README.md](../README.md)。
 
@@ -6,13 +6,13 @@ Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。�
 
 | 端 | 生产域名 | 开发 |
 |----|----------|------|
-| **Web**（浏览器打开） | `https://learnbuddy.ganzhibin.icu` | `http://127.0.0.1:5173` |
+| **Web**（浏览器打开） | `https://catbuddy.ganzhibin.icu` | `http://127.0.0.1:5173` |
 | **Gateway**（API + WS） | `https://gateway.ganzhibin.icu` | `127.0.0.1:18765` |
 | **Desktop**（安装包） | 连 `wss://gateway.ganzhibin.icu/ws` | `ws://127.0.0.1:18765/ws` |
 
 用户只需 **邮箱登录** + Desktop **侧栏远程控制**；路由靠同一邮箱。
 
-服务端 `GATEWAY_SECRET` 须与客户端内置 `learnbuddy-desktop-pair-v1` 一致。常量见 `packages/shared/src/gateway-endpoints.ts`。
+服务端 `GATEWAY_SECRET` 须与客户端内置 `catbuddy-desktop-pair-v1` 一致。常量见 `packages/shared/src/gateway-endpoints.ts`。
 
 ## 架构
 
@@ -26,7 +26,7 @@ Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。�
 
 | 端 | 模板 | 复制为 |
 |----|------|--------|
-| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.learnbuddy.env` |
+| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.catbuddy.env` |
 | Web 开发 | `apps/web/.env.development.example` | `apps/web/.env.development` |
 | Web 生产 build | `apps/web/.env.production.example` | `apps/web/.env.production` |
 | Gateway | `gateway/.env.example` | `gateway/.env` |
@@ -44,7 +44,7 @@ pnpm gateway:dev
 ### Docker Compose（Gateway + MySQL）
 
 ```bash
-cd learnbuddy
+cd catbuddy
 cp gateway/.env.example gateway/.env   # 填写 SMTP、JWT、GATEWAY_SECRET
 docker compose -f gateway/docker-compose.yml up -d --build
 curl http://127.0.0.1:18765/health
@@ -55,9 +55,9 @@ Compose 会将容器内 `MYSQL_HOST` 设为 `mysql`（覆盖 `.env` 里的 `127.
 ### 生产 checklist
 
 - [ ] `GATEWAY_JWT_SECRET` 改为强随机值
-- [ ] `GATEWAY_SECRET=learnbuddy-desktop-pair-v1`（与客户端内置一致）
+- [ ] `GATEWAY_SECRET=catbuddy-desktop-pair-v1`（与客户端内置一致）
 - [ ] DNS：`gateway.ganzhibin.icu` → Gateway 服务器（TLS + WSS）
-- [ ] DNS：`learnbuddy.ganzhibin.icu` → Web 静态站（TLS）
+- [ ] DNS：`catbuddy.ganzhibin.icu` → Web 静态站（TLS）
 - [ ] `GATEWAY_AUTH_REQUIRE_EMAIL=true`、`GATEWAY_AUTH_DEV_BYPASS=false`
 - [ ] SMTP 可用（邮箱 OTP）
 - [ ] MySQL 持久化卷
@@ -67,7 +67,7 @@ Compose 会将容器内 `MYSQL_HOST` 设为 `mysql`（覆盖 `.env` 里的 `127.
 
 ```bash
 pnpm build:web
-# 产出: apps/web/dist/ — 部署到 learnbuddy.ganzhibin.icu；API 默认 gateway.ganzhibin.icu
+# 产出: apps/web/dist/ — 部署到 catbuddy.ganzhibin.icu；API 默认 gateway.ganzhibin.icu
 ```
 
 ### Web 提供桌面安装包下载
@@ -103,7 +103,7 @@ server {
     listen 443 ssl;
     server_name app.example.com;
 
-    root /var/www/learnbuddy-web/dist;
+    root /var/www/catbuddy-web/dist;
     index index.html;
     location / {
         try_files $uri $uri/ /index.html;
@@ -164,7 +164,7 @@ pnpm build:desktop
 ## 上线前自检
 
 - [ ] `curl https://gateway.ganzhibin.icu/health` → `ok: true`
-- [ ] 打开 `https://learnbuddy.ganzhibin.icu` 能登录
+- [ ] 打开 `https://catbuddy.ganzhibin.icu` 能登录
 - [ ] Desktop 远程控制已连接（health 中 `desktops ≥ 1`）
 - [ ] Web 发消息有流式回复（非 503）
 - [ ] 新建对话同步到 Desktop 侧栏

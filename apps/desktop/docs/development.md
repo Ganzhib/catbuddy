@@ -8,7 +8,7 @@
 
 ## 常用命令
 
-在 `learnbuddy/apps/desktop` 下执行：
+在 `catbuddy/apps/desktop` 下执行：
 
 | 命令 | 说明 |
 |------|------|
@@ -19,7 +19,7 @@
 | `pnpm run build:unpack` | 构建但不打安装包（`release/win-unpacked` 等） |
 | `pnpm run build:unpack:verbose` | `build:unpack` + 详细日志 |
 | `pnpm run rebuild:unpack` | 结束运行中的 exe 后重新 `build:unpack` |
-| `pnpm run gateway:dev` | 启动本地 Gateway（`@learnbuddy/gateway`） |
+| `pnpm run gateway:dev` | 启动本地 Gateway（`@catbuddy/gateway`） |
 | `pnpm run gateway:test` | Gateway 集成测试脚本 |
 | `pnpm run brand:generate` | 从 `public/brand/source/` 生成品牌资源 |
 | `pnpm run brand:cutout` | 图标抠图辅助脚本 |
@@ -49,7 +49,7 @@ pnpm run build:nsis:verbose
 # 或 monorepo 根目录
 pnpm build:desktop:verbose
 # 或环境变量（不必改命令）
-set LEARNBUDDY_BUILD_VERBOSE=1
+set CATBUDDY_BUILD_VERBOSE=1
 pnpm run build
 ```
 
@@ -67,16 +67,16 @@ Verbose 会启用：
 
 打包前会自动执行 `kill-desktop-processes.mjs`（PowerShell 脚本结束相关进程，并尝试删除 `release/win-unpacked`）。若仍失败：
 
-1. 手动关掉正在运行的 learnbuddy（含从 `release/win-unpacked` 启动的实例）
+1. 手动关掉正在运行的 catbuddy（含从 `release/win-unpacked` 启动的实例）
 2. `pnpm run kill-app` 后再 `pnpm run build`
-3. 任务管理器结束残留的 `learnbuddy.exe` / 从本目录启动的 `electron.exe`
+3. 任务管理器结束残留的 `catbuddy.exe` / 从本目录启动的 `electron.exe`
 4. 仍锁文件时：构建会自动改用 `release-fresh/` 或 `release-build-<时间戳>/`（安装包在该目录下）
 5. 或手动删除整个 `apps/desktop/release` 后再打包
 6. Windows 可对 `apps/desktop/release` 加 Defender 排除，避免扫描占用 `app.asar`
 
-跳过自动结束进程（不推荐）：`LEARNBUDDY_BUILD_NO_KILL=1 pnpm run build`
+跳过自动结束进程（不推荐）：`CATBUDDY_BUILD_NO_KILL=1 pnpm run build`
 
-强制使用 `release-fresh`：`LEARNBUDDY_BUILD_OUTPUT=release-fresh pnpm run build`
+强制使用 `release-fresh`：`CATBUDDY_BUILD_OUTPUT=release-fresh pnpm run build`
 
 ## 构建产物
 
@@ -89,7 +89,7 @@ Verbose 会启用：
 | `release/` | electron-builder 默认输出（安装包或 unpacked） |
 | `release-fresh/` | 当 `release/` 被锁时自动改用此目录（**安装包在这里**） |
 
-NSIS 安装包文件名：`learnbuddy Setup <version>.exe`（与 `package.json` 的 `version` 一致）。
+NSIS 安装包文件名：`catbuddy Setup <version>.exe`（与 `package.json` 的 `version` 一致）。
 
 打包成功结束时，日志会打印 **完整绝对路径**。若在资源管理器里只看 `release/` 而构建走了 `release-fresh`，会误以为「没有安装包」。
 
@@ -97,11 +97,11 @@ NSIS 安装包文件名：`learnbuddy Setup <version>.exe`（与 `package.json` 
 
 ## 配置与密钥
 
-- 复制 `learnbuddy/.env.example` 或 `apps/desktop/.env.example`（若存在）为 `.env`。
+- 复制 `catbuddy/.env.example` 或 `apps/desktop/.env.example`（若存在）为 `.env`。
 - **不要**将 `.env`、API Key 提交到 Git。
-- 用户级覆盖：`~/.learnbuddy.env`。
+- 用户级覆盖：`~/.catbuddy.env`。
 
-Gateway 远程控制相关变量见 `@learnbuddy/gateway-sdk-desktop` 与 `services/gateway-remote.ts`（如 URL、账号邮箱等）。
+Gateway 远程控制相关变量见 `@catbuddy/gateway-sdk-desktop` 与 `services/gateway-remote.ts`（如 URL、账号邮箱等）。
 
 ## 添加 IPC 时的检查清单
 

@@ -1,8 +1,8 @@
-# learnbuddy Gateway
+# catbuddy Gateway
 
-`learnbuddy/gateway`（`@learnbuddy/gateway`）是 **Web ↔ 桌面** 的中转服务（Fastify + WebSocket），兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。包结构见 [gateway/README.md](../gateway/README.md)。
+`catbuddy/gateway`（`@catbuddy/gateway`）是 **Web ↔ 桌面** 的中转服务（Fastify + WebSocket），兼作 Web 开发期的 **Gateway 垫片**（`/webui/bootstrap`、`/api/*`）。包结构见 [gateway/README.md](../gateway/README.md)。
 
-与 nanobot 自带的 `nanobot gateway`（:8765）不同；learnbuddy Web 默认连 **本服务**（:18765）。
+与 nanobot 自带的 `nanobot gateway`（:8765）不同；catbuddy Web 默认连 **本服务**（:18765）。
 
 ## 架构
 
@@ -11,7 +11,7 @@ apps/web  ──HTTP/WS──►  gateway (Fastify)  ──WS──►  apps/des
                          │
                          ├─ POST /api/sessions/:key/messages  (Web 发消息)
                          ├─ WS ui_event                         (桌面 Agent 回流)
-                         └─ GET /webui/bootstrap                (learnbuddy UI)
+                         └─ GET /webui/bootstrap                (catbuddy UI)
 ```
 
 ## 快速开始
@@ -61,7 +61,7 @@ POST /auth/email/verify        { "email": "...", "code": "123456" }
 
 | 命令 | 说明 |
 |------|------|
-| `pnpm gateway:dev` | tsx watch（`@learnbuddy/gateway`） |
+| `pnpm gateway:dev` | tsx watch（`@catbuddy/gateway`） |
 | `pnpm gateway:build` | 编译并运行 |
 | `pnpm gateway:test` | HTTP + desktop WS 冒烟 |
 | `pnpm gateway:test:acceptance` | §6 `InboundEvent` 清单 |
@@ -140,7 +140,7 @@ Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面端�
 | 位置 | 说明 |
 |------|------|
 | Gateway | **MySQL**（会话元数据、消息、用户/OTP） |
-| 桌面 | `~/.learnbuddy-desktop/workspace/sessions/*.jsonl`（Agent 本地会话） |
+| 桌面 | `~/.catbuddy-desktop/workspace/sessions/*.jsonl`（Agent 本地会话） |
 
 - Web 的 `GET /api/sessions`、`GET /api/webui-thread` 经 Gateway 向在线 Desktop RPC；离线时读 Gateway MySQL 缓存。
 - 用户发消息写入 Gateway，再转发 Desktop；**Desktop 离线**时 Gateway 经 WS 返回系统提示（不 503）。

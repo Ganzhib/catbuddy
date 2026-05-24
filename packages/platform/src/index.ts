@@ -1,16 +1,16 @@
-export type { LearnbuddyPreloadApi } from './preload-api.d.ts'
+export type { CatbuddyPreloadApi } from './preload-api.d.ts'
 
 export {
   createPlatformApi,
   fetchBootstrap,
-  hasLearnbuddyIpc,
+  hasCatbuddyIpc,
   loadSavedSecret,
   saveSecret,
   clearSavedSecret,
   ApiError,
   type PlatformApi,
 } from './create-platform'
-export { resolveGatewayHttpBase, useLearnbuddyGateway } from './gateway-http'
+export { resolveGatewayHttpBase, useCatbuddyGateway } from './gateway-http'
 export {
   resolveDesktopDownloadUrl,
   shouldOfferDesktopDownload,

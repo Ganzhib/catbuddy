@@ -3,7 +3,7 @@
  */
 import OpenAI from 'openai'
 import { LLMProvider, type ChatStreamOpts } from './base-provider'
-import type { LLMResponse, ToolCallRequest } from "@learnbuddy/shared"
+import type { LLMResponse, ToolCallRequest } from "@catbuddy/shared"
 
 export class OpenAICompatProvider extends LLMProvider {
   readonly name = 'openai_compat'
@@ -101,7 +101,7 @@ export class OpenAICompatProvider extends LLMProvider {
     }
   }
 
-  private toOpenAIMessages(messages: import('@learnbuddy/shared').LLMMessage[]) {
+  private toOpenAIMessages(messages: import('@catbuddy/shared').LLMMessage[]) {
     return this.enforceRoleAlternation(messages).map((m) => {
       const row: Record<string, unknown> = {
         role: m.role,

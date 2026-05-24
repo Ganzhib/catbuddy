@@ -1,9 +1,9 @@
-import type { BootstrapResponse } from '@learnbuddy/shared'
+import type { BootstrapResponse } from '@catbuddy/shared'
 import { requireIpcBridge } from './ipc-bridge'
 
 async function waitForIpc(timeoutMs = 5000): Promise<void> {
   const start = Date.now()
-  while (!window.learnbuddy) {
+  while (!window.catbuddy) {
     if (Date.now() - start > timeoutMs) {
       throw new Error(
         'IPC bridge not available after 5s. '

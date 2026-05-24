@@ -1,12 +1,12 @@
 /**
  * Context Builder — 组装 LLM 输入上下文
- * learnbuddy/agent/context.py，用 Handlebars 替代 Jinja2
+ * catbuddy/agent/context.py，用 Handlebars 替代 Jinja2
  */
 import * as fs from 'fs'
 import * as path from 'path'
 import Handlebars from 'handlebars'
 import { fileURLToPath } from 'url'
-import type { LLMMessage, MessageRecord } from "@learnbuddy/shared"
+import type { LLMMessage, MessageRecord } from "@catbuddy/shared"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -130,7 +130,7 @@ export class ContextBuilder {
     if (skillsSummary) parts.push(skillsSummary)
 
     if (parts.length === 0) {
-      parts.push(`You are learnbuddy 🐈, a helpful AI assistant. Reply concisely.`)
+      parts.push(`You are catbuddy 🐈, a helpful AI assistant. Reply concisely.`)
     }
 
     return parts.join('\n\n---\n\n')

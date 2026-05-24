@@ -1,4 +1,4 @@
-import type { ToolEvent } from "@learnbuddy/shared";
+import type { ToolEvent } from "@catbuddy/shared";
 
 /** Map ToolEvent → UI tool_hint payload (mirrors src/lib/tool-traces). */
 export function toolEventToUiHint(event: ToolEvent): Record<string, unknown> {

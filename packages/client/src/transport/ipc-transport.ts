@@ -1,43 +1,43 @@
-import type { TurnCompleteData, UIFileEdit } from "@learnbuddy/shared";
-import type { LearnbuddyPreloadApi } from "@learnbuddy/platform";
+import type { TurnCompleteData, UIFileEdit } from "@catbuddy/shared";
+import type { CatbuddyPreloadApi } from "@catbuddy/platform";
 import type { AgentTransport, TransportCallbacks } from "./types";
 import { inboundFromFileEdit, inboundFromToolEvent } from "./event-mappers";
 
 type StreamDeltaPayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onStreamDelta"]>[0]
+  Parameters<CatbuddyPreloadApi["onStreamDelta"]>[0]
 >[0];
 type StreamEndPayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onStreamEnd"]>[0]
+  Parameters<CatbuddyPreloadApi["onStreamEnd"]>[0]
 >[0];
 type TurnCompletePayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onTurnComplete"]>[0]
+  Parameters<CatbuddyPreloadApi["onTurnComplete"]>[0]
 >[0];
 type ReasoningDeltaPayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onReasoningDelta"]>[0]
+  Parameters<CatbuddyPreloadApi["onReasoningDelta"]>[0]
 >[0];
 type ReasoningEndPayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onReasoningEnd"]>[0]
+  Parameters<CatbuddyPreloadApi["onReasoningEnd"]>[0]
 >[0];
 type ToolProgressPayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onToolProgress"]>[0]
+  Parameters<CatbuddyPreloadApi["onToolProgress"]>[0]
 >[0];
 type FileEditPayload = Parameters<
-  Parameters<NonNullable<LearnbuddyPreloadApi["onFileEdit"]>>[0]
+  Parameters<NonNullable<CatbuddyPreloadApi["onFileEdit"]>>[0]
 >[0];
 type RetryWaitPayload = Parameters<
-  Parameters<NonNullable<LearnbuddyPreloadApi["onRetryWait"]>>[0]
+  Parameters<NonNullable<CatbuddyPreloadApi["onRetryWait"]>>[0]
 >[0];
 type AssistantMessagePayload = Parameters<
-  Parameters<NonNullable<LearnbuddyPreloadApi["onAssistantMessage"]>>[0]
+  Parameters<NonNullable<CatbuddyPreloadApi["onAssistantMessage"]>>[0]
 >[0];
 type SystemMessagePayload = Parameters<
-  Parameters<LearnbuddyPreloadApi["onSystemMessage"]>[0]
+  Parameters<CatbuddyPreloadApi["onSystemMessage"]>[0]
 >[0];
 type GatewayInboundPayload = Parameters<
-  Parameters<NonNullable<LearnbuddyPreloadApi["onGatewayInbound"]>>[0]
+  Parameters<NonNullable<CatbuddyPreloadApi["onGatewayInbound"]>>[0]
 >[0];
 type SessionCreatedPayload = Parameters<
-  Parameters<NonNullable<LearnbuddyPreloadApi["onSessionCreated"]>>[0]
+  Parameters<NonNullable<CatbuddyPreloadApi["onSessionCreated"]>>[0]
 >[0];
 
 function chatIdFromPayload(
@@ -52,7 +52,7 @@ export class IpcTransport implements AgentTransport {
   readonly kind = "ipc" as const;
 
   attach(callbacks: TransportCallbacks): () => void {
-    const api = window.learnbuddy;
+    const api = window.catbuddy;
     if (!api) {
       callbacks.onStatus("error");
       return () => {};
@@ -181,12 +181,12 @@ export class IpcTransport implements AgentTransport {
   }
 
   sendMessage(chatId: string, content: string, mediaUrls?: string[]): void {
-    window.learnbuddy?.sendMessage(chatId, content, mediaUrls);
+    window.catbuddy?.sendMessage(chatId, content, mediaUrls);
   }
 
   ensureSession(chatId: string): void {
     const id = chatId.trim();
     if (!id) return;
-    void window.learnbuddy?.gatewaySubscribeSession({ chatId: id });
+    void window.catbuddy?.gatewaySubscribeSession({ chatId: id });
   }
 }

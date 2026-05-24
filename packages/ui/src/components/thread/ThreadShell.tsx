@@ -18,10 +18,10 @@ import { ThreadComposer } from "@/components/thread/ThreadComposer";
 import { ThreadHeader } from "@/components/thread/ThreadHeader";
 import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
-import { uselearnbuddyStream, type SendImage, type SendOptions } from "@/hooks/uselearnbuddyStream";
+import { useCatbuddyStream, type SendImage, type SendOptions } from "@/hooks/useCatbuddyStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { hasLearnbuddyIpc, listSlashCommands, useLearnbuddyGateway } from "@learnbuddy/platform";
-import type { ChatSummary, SlashCommand, UIMessage } from "@learnbuddy/shared";
+import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway } from "@catbuddy/platform";
+import type { ChatSummary, SlashCommand, UIMessage } from "@catbuddy/shared";
 import { normalizeLegacyLongTaskMessages } from "@/lib/thread-display-compat";
 import { scrubSubagentUiMessages } from "@/lib/subagent-channel-display";
 import { useClient } from "@/providers/ClientProvider";
@@ -96,7 +96,7 @@ export function ThreadShell({
     version: historyVersion,
   } = useSessionHistory(historyKey);
   const { client, modelName, token } = useClient();
-  const gatewayWebOnly = useLearnbuddyGateway() && !hasLearnbuddyIpc();
+  const gatewayWebOnly = useCatbuddyGateway() && !hasCatbuddyIpc();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
   const [heroImageMode, setHeroImageMode] = useState(false);
@@ -128,7 +128,7 @@ export function ThreadShell({
     setMessages,
     streamError,
     dismissStreamError,
-  } = uselearnbuddyStream(chatId, initial, hasPendingToolCalls, handleTurnEnd);
+  } = useCatbuddyStream(chatId, initial, hasPendingToolCalls, handleTurnEnd);
 
   useEffect(() => {
     if (chatId && historyKey) sessionKeyByChatIdRef.current.set(chatId, historyKey);
@@ -140,8 +140,8 @@ export function ThreadShell({
   }, [chatId, client]);
 
   useEffect(() => {
-    if (!historyKey || !window.learnbuddy?.gatewaySubscribeSession) return;
-    void window.learnbuddy.gatewaySubscribeSession({ sessionKey: historyKey });
+    if (!historyKey || !window.catbuddy?.gatewaySubscribeSession) return;
+    void window.catbuddy.gatewaySubscribeSession({ sessionKey: historyKey });
   }, [historyKey]);
 
   const displayMessages = useMemo(() => projectWebuiThreadMessages(messages), [messages]);
@@ -230,7 +230,7 @@ export function ThreadShell({
     }
   }, [chatId, messages]);
 
-  // Persist thread to in-memory cache after paint so ``uselearnbuddyStream``'s chat switch
+  // Persist thread to in-memory cache after paint so ``useCatbuddyStream``'s chat switch
   // ``useEffect`` reset has flushed; ``skipLayoutCacheRef`` drops the first run that still
   // sees the *previous* chat's ``messages`` (avoids stale rows leaking across sessions).
   useEffect(() => {

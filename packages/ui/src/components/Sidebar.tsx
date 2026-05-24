@@ -15,7 +15,7 @@ import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { ChatSummary } from "@learnbuddy/shared";
+import type { ChatSummary } from "@catbuddy/shared";
 
 interface SidebarProps {
   sessions: ChatSummary[];

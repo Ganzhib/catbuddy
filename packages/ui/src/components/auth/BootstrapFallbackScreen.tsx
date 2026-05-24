@@ -15,7 +15,7 @@ export function BootstrapLoadingScreen() {
         <BrandMark className="h-12 w-12 object-contain opacity-90" />
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
-          正在连接 learnbuddy…
+          正在连接 catbuddy…
         </div>
       </div>
     </div>
@@ -35,7 +35,7 @@ function connectionTips(error: string): string[] {
     tips.push('开发模式下请先启动 Gateway：pnpm gateway:dev')
   }
   if (tips.length === 0) {
-    tips.push('请确认 learnbuddy 桌面端或 Gateway 服务正在运行。')
+    tips.push('请确认 catbuddy 桌面端或 Gateway 服务正在运行。')
   }
   return tips
 }
@@ -63,7 +63,7 @@ export function BootstrapErrorScreen({
           无法连接到服务
         </h1>
         <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground">
-          应用暂时无法与 learnbuddy 后端建立连接，请检查服务状态后重试。
+          应用暂时无法与 catbuddy 后端建立连接，请检查服务状态后重试。
         </p>
 
         <ul className="mt-6 space-y-2">
@@ -105,7 +105,7 @@ export function BootstrapErrorScreen({
         <div className="mt-6 flex items-center justify-center gap-2 border-t border-border pt-5">
           <BrandMark className="h-5 w-5 object-contain opacity-80" />
           <span className="text-xs font-medium text-muted-foreground">
-            learnbuddy
+            catbuddy
           </span>
         </div>
       </div>

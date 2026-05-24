@@ -21,7 +21,7 @@ export function createMainWindow(): BrowserWindow {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: "Learnbuddy",
+    title: "Catbuddy",
     autoHideMenuBar: true,
     icon: getIconPath(),
     webPreferences: {

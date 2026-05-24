@@ -1,12 +1,12 @@
 /**
  * Consolidator — 对话压缩 + 记忆持久化
- * 对应原版 learnbuddy/agent/memory.py 中的 Consolidator + MemoryStore
+ * 对应原版 catbuddy/agent/memory.py 中的 Consolidator + MemoryStore
  */
 import * as fs from 'fs'
 import * as path from 'path'
 import { LLMProvider } from '../providers'
 import { SessionManager } from '../session/session-manager'
-import type { MessageRecord, LLMMessage } from "@learnbuddy/shared"
+import type { MessageRecord, LLMMessage } from "@catbuddy/shared"
 
 export interface ConsolidatorOpts {
   provider: LLMProvider

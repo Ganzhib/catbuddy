@@ -1,5 +1,5 @@
 /**
- * Warn when learnbuddy gateway is not reachable (apps/web dev).
+ * Warn when catbuddy gateway is not reachable (apps/web dev).
  */
 export async function checkGateway(url = 'http://127.0.0.1:18765/health') {
   try {
@@ -17,13 +17,13 @@ export async function checkGateway(url = 'http://127.0.0.1:18765/health') {
 
 export function gatewayPreflightPlugin(enabled) {
   return {
-    name: 'learnbuddy-gateway-preflight',
+    name: 'catbuddy-gateway-preflight',
     async configureServer() {
       if (!enabled) return
       const result = await checkGateway()
       if (result.ok) return
       console.error(
-        '\n[learnbuddy/web] gateway 未就绪（' + result.reason + '）。\n'
+        '\n[catbuddy/web] gateway 未就绪（' + result.reason + '）。\n'
         + '  请先另开终端运行: pnpm gateway:dev\n'
         + '  或一键启动:       pnpm dev:web:full\n',
       )

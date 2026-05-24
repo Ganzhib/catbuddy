@@ -1,9 +1,9 @@
 /**
  * CommandContext — 命令处理器的输入
  *
- * 参考 learnbuddy/command/router.py CommandContext
+ * 参考 catbuddy/command/router.py CommandContext
  */
-import type { InboundMessage } from "@learnbuddy/shared";
+import type { InboundMessage } from "@catbuddy/shared";
 
 export interface CommandContext {
   msg: InboundMessage;

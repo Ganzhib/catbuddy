@@ -1,12 +1,12 @@
 /**
  * 默认配置 — 内嵌在 Electron 中，无需外部 config.json
  */
-import type { learnbuddyConfig } from "@learnbuddy/shared"
+import type { catbuddyConfig } from "@catbuddy/shared"
 
-export function getDefaultConfig(): learnbuddyConfig {
+export function getDefaultConfig(): catbuddyConfig {
   const home = process.env.HOME || process.env.USERPROFILE || '.'
   return {
-    workspace: `${home}/.learnbuddy-desktop/workspace`,
+    workspace: `${home}/.catbuddy-desktop/workspace`,
     agents: {
       defaults: {
         model: 'deepseek-v4-flash',
@@ -57,7 +57,7 @@ export function getDefaultConfig(): learnbuddyConfig {
   }
 }
 
-export function getProviderConfig(config: learnbuddyConfig, model: string) {
+export function getProviderConfig(config: catbuddyConfig, model: string) {
   const defaults = config.agents.defaults
   const providerName = defaults.provider
   const provider = config.providers[providerName]

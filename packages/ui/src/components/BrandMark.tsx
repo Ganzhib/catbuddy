@@ -6,6 +6,6 @@ type BrandMarkProps = {
 }
 
 /** Square cat mark (favicon-sized) from public/brand */
-export function BrandMark({ className = 'h-10 w-10 object-contain', alt = 'learnbuddy' }: BrandMarkProps) {
+export function BrandMark({ className = 'h-10 w-10 object-contain', alt = 'catbuddy' }: BrandMarkProps) {
   return <img src={brandAssets.icon} alt={alt} className={className} draggable={false} />
 }

@@ -25,7 +25,7 @@ export const gatewayEnv = {
   authDevBypass: envBool('GATEWAY_AUTH_DEV_BYPASS', false),
   /** When true (default), Web must log in via email before bootstrap/API. */
   authRequireEmail: envBool('GATEWAY_AUTH_REQUIRE_EMAIL', true),
-  jwtSecret: env('GATEWAY_JWT_SECRET', 'learnbuddy-gateway-dev-jwt-secret'),
+  jwtSecret: env('GATEWAY_JWT_SECRET', 'catbuddy-gateway-dev-jwt-secret'),
   jwtExpiresIn: env('GATEWAY_JWT_EXPIRES', '7d'),
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: envInt('SMTP_PORT', 587),
@@ -33,14 +33,14 @@ export const gatewayEnv = {
   smtpSecure: env('SMTP_SECURE', ''),
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
-  smtpFrom: process.env.SMTP_FROM || 'learnbuddy <noreply@learnbuddy.local>',
+  smtpFrom: process.env.SMTP_FROM || 'catbuddy <noreply@catbuddy.local>',
   otpTtlMs: envInt('GATEWAY_OTP_TTL_MS', 10 * 60 * 1000),
   databaseUrl: env('DATABASE_URL', ''),
   mysql: {
     host: env('MYSQL_HOST', '127.0.0.1'),
     port: envInt('MYSQL_PORT', 3306),
-    user: env('MYSQL_USER', 'learnbuddy'),
-    password: env('MYSQL_PASSWORD', 'learnbuddy'),
-    database: env('MYSQL_DATABASE', 'learnbuddy_gateway'),
+    user: env('MYSQL_USER', 'catbuddy'),
+    password: env('MYSQL_PASSWORD', 'catbuddy'),
+    database: env('MYSQL_DATABASE', 'catbuddy_gateway'),
   },
 }

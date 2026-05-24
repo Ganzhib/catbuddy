@@ -1,8 +1,8 @@
 {
-  "name": "@learnbuddy/desktop",
+  "name": "@catbuddy/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "learnbuddy desktop — Electron + local agent",
+  "description": "catbuddy desktop — Electron + local agent",
   "main": "dist-electron/index.js",
   "type": "module",
   "scripts": {
@@ -21,18 +21,18 @@
     "rebuild:unpack": "pnpm run kill-app && pnpm run build:unpack",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "gateway:dev": "pnpm --filter @learnbuddy/gateway dev",
+    "gateway:dev": "pnpm --filter @catbuddy/gateway dev",
     "gateway:test": "node ../../gateway/test-all.mjs",
     "brand:generate": "node ../../scripts/generate-brand.mjs",
     "brand:cutout": "node ../../scripts/remove-icon-background.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
-    "@learnbuddy/client": "workspace:*",
-    "@learnbuddy/gateway-sdk-desktop": "workspace:*",
-    "@learnbuddy/platform": "workspace:*",
-    "@learnbuddy/shared": "workspace:*",
-    "@learnbuddy/ui": "workspace:*",
+    "@catbuddy/client": "workspace:*",
+    "@catbuddy/gateway-sdk-desktop": "workspace:*",
+    "@catbuddy/platform": "workspace:*",
+    "@catbuddy/shared": "workspace:*",
+    "@catbuddy/ui": "workspace:*",
     "handlebars": "^4.7.8",
     "js-tiktoken": "^1.0.19",
     "nanoid": "^5.0.0",
@@ -64,8 +64,8 @@
     "react-dom": "^18.3.1"
   },
   "build": {
-    "appId": "com.learnbuddy.desktop",
-    "productName": "learnbuddy",
+    "appId": "com.catbuddy.desktop",
+    "productName": "catbuddy",
     "directories": {
       "output": "release"
     },

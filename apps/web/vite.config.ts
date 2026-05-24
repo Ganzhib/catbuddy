@@ -11,22 +11,22 @@ const uiRoot = path.resolve(repoRoot, "packages/ui/src");
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
-  const useLearnbuddyGateway =
+  const useCatbuddyGateway =
     env.VITE_USE_GATEWAY === "true"
     || (mode === "development" && env.VITE_USE_GATEWAY !== "false");
-  const learnbuddyGatewayTarget =
+  const catbuddyGatewayTarget =
     env.VITE_GATEWAY_HTTP_URL ?? env.VITE_GATEWAY_URL ?? "http://127.0.0.1:18765";
   const nanobotTarget = env.VITE_GATEWAY_URL ?? "http://127.0.0.1:8765";
-  const gatewayTarget = useLearnbuddyGateway ? learnbuddyGatewayTarget : nanobotTarget;
+  const gatewayTarget = useCatbuddyGateway ? catbuddyGatewayTarget : nanobotTarget;
   const wsTarget = gatewayTarget.replace(/^http/, "ws");
 
   if (mode === "development") {
     console.log(
-      `[learnbuddy/web] gateway proxy → ${gatewayTarget} (learnbuddy=${useLearnbuddyGateway})`,
+      `[catbuddy/web] gateway proxy → ${gatewayTarget} (catbuddy=${useCatbuddyGateway})`,
     );
-    if (useLearnbuddyGateway) {
+    if (useCatbuddyGateway) {
       console.log(
-        "[learnbuddy/web] 需先启动 Gateway: pnpm gateway:dev  或一键 pnpm dev:web:full",
+        "[catbuddy/web] 需先启动 Gateway: pnpm gateway:dev  或一键 pnpm dev:web:full",
       );
     }
   }
@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
     if (err.code !== "ECONNREFUSED" && err.code !== "ECONNRESET") return;
     gatewayWsProxyWarned = true;
     console.error(
-      "\n[learnbuddy/web] Gateway WebSocket 不可用（" + err.code + "）。\n"
+      "\n[catbuddy/web] Gateway WebSocket 不可用（" + err.code + "）。\n"
         + "  请先另开终端: pnpm gateway:dev\n"
         + "  或一键:       pnpm dev:web:full\n"
         + "  自检:         curl http://127.0.0.1:18765/health\n",
@@ -46,12 +46,12 @@ export default defineConfig(({ mode }) => {
 
   const proxy: Record<string, object> = {
     "/gateway-api": {
-      target: learnbuddyGatewayTarget,
+      target: catbuddyGatewayTarget,
       changeOrigin: true,
       rewrite: (p: string) => p.replace(/^\/gateway-api/, ""),
     },
     "/gateway-ws": {
-      target: learnbuddyGatewayTarget,
+      target: catbuddyGatewayTarget,
       ws: true,
       changeOrigin: true,
       rewrite: (p: string) => p.replace(/^\/gateway-ws/, ""),
@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
     "/auth": { target: gatewayTarget, changeOrigin: true },
   };
 
-  if (!useLearnbuddyGateway) {
+  if (!useCatbuddyGateway) {
     proxy["/"] = {
       target: wsTarget,
       ws: true,
@@ -78,16 +78,16 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: __dirname,
-    plugins: [react(), gatewayPreflightPlugin(useLearnbuddyGateway)],
+    plugins: [react(), gatewayPreflightPlugin(useCatbuddyGateway)],
     resolve: {
       alias: [
         { find: "@", replacement: uiRoot },
-        { find: /^@learnbuddy\/ui$/, replacement: path.resolve(repoRoot, "packages/ui/src/index.ts") },
-        { find: /^@learnbuddy\/ui\//, replacement: `${path.resolve(repoRoot, "packages/ui/src")}/` },
-        { find: "@learnbuddy/shared/brand", replacement: path.resolve(repoRoot, "packages/shared/src/brand.mjs") },
-        { find: /^@learnbuddy\/shared$/, replacement: path.resolve(repoRoot, "packages/shared/src/index.ts") },
-        { find: "@learnbuddy/client", replacement: path.resolve(repoRoot, "packages/client/src/index.ts") },
-        { find: "@learnbuddy/platform", replacement: path.resolve(repoRoot, "packages/platform/src/index.ts") },
+        { find: /^@catbuddy\/ui$/, replacement: path.resolve(repoRoot, "packages/ui/src/index.ts") },
+        { find: /^@catbuddy\/ui\//, replacement: `${path.resolve(repoRoot, "packages/ui/src")}/` },
+        { find: "@catbuddy/shared/brand", replacement: path.resolve(repoRoot, "packages/shared/src/brand.mjs") },
+        { find: /^@catbuddy\/shared$/, replacement: path.resolve(repoRoot, "packages/shared/src/index.ts") },
+        { find: "@catbuddy/client", replacement: path.resolve(repoRoot, "packages/client/src/index.ts") },
+        { find: "@catbuddy/platform", replacement: path.resolve(repoRoot, "packages/platform/src/index.ts") },
       ],
     },
     server: {

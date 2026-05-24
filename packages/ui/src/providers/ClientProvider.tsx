@@ -1,9 +1,9 @@
 import { createContext, useContext, type ReactNode } from "react";
 
-import type { learnbuddyClient } from "@learnbuddy/client";
+import type { catbuddyClient } from "@catbuddy/client";
 
 interface ClientContextValue {
-  client: learnbuddyClient;
+  client: catbuddyClient;
   token: string;
   modelName: string | null;
 }
@@ -16,7 +16,7 @@ export function ClientProvider({
   modelName = null,
   children,
 }: {
-  client: learnbuddyClient;
+  client: catbuddyClient;
   token: string;
   modelName?: string | null;
   children: ReactNode;

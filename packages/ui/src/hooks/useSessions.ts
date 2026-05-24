@@ -7,7 +7,7 @@ import {
   deleteSession as apiDeleteSession,
   fetchWebuiThread,
   listSessions,
-} from "@learnbuddy/platform";
+} from "@catbuddy/platform";
 import { deriveTitle } from "@/lib/format";
 import {
   mergeChatSummaries,
@@ -15,7 +15,7 @@ import {
   toSessionKey,
   type ChatSummary,
   type UIMessage,
-} from "@learnbuddy/shared";
+} from "@catbuddy/shared";
 
 const EMPTY_MESSAGES: UIMessage[] = [];
 

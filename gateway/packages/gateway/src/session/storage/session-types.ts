@@ -1,4 +1,4 @@
-/** Minimal session types for gateway storage (aligned with desktop ``@learnbuddy/shared``). */
+/** Minimal session types for gateway storage (aligned with desktop ``@catbuddy/shared``). */
 
 export interface SessionInfo {
   key: string

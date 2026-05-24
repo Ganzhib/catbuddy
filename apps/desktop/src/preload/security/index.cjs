@@ -14,7 +14,7 @@ function assertSafeInvokeChannel(channel) {
   }
 }
 
-/** Only allow known learnbuddy API keys on the exposed bridge object. */
+/** Only allow known catbuddy API keys on the exposed bridge object. */
 function assertSafeBridgeApi(api) {
   if (!api || typeof api !== 'object') {
     throw new Error('Preload API must be a plain object')

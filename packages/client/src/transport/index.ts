@@ -8,8 +8,8 @@ export type {
 export {
   createAgentTransport,
   detectTransportMode,
-  hasLearnbuddyIpc,
+  hasCatbuddyIpc,
 } from "./create-transport";
 export { IpcTransport } from "./ipc-transport";
 export { WsTransport } from "./ws-transport";
-export { GatewayTransport, type GatewayTransportConfig } from "@learnbuddy/gateway-sdk-web";
+export { GatewayTransport, type GatewayTransportConfig } from "@catbuddy/gateway-sdk-web";

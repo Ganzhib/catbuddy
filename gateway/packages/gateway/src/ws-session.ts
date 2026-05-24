@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import type { WebSocket } from 'ws'
-import type { GatewaySessionRole } from '@learnbuddy/shared'
+import type { GatewaySessionRole } from '@catbuddy/shared'
 import type { AuthService } from './session/auth/auth.service.js'
 import { isWebLoginRequired } from './session/auth/auth-policy.js'
 import type { GatewayStateService } from './session/gateway-state.js'

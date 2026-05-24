@@ -4,7 +4,7 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { SkillInfo } from "@learnbuddy/shared"
+import type { SkillInfo } from "@catbuddy/shared"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

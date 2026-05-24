@@ -79,7 +79,7 @@ export function unlockAllReleaseDirs() {
  * Directory name for electron-builder `directories.output` (under apps/desktop).
  */
 export function pickElectronBuilderOutputDir() {
-  const forced = process.env.LEARNBUDDY_BUILD_OUTPUT?.trim();
+  const forced = process.env.CATBUDDY_BUILD_OUTPUT?.trim();
   if (forced) {
     log(`output dir (env): ${forced}`);
     return forced;

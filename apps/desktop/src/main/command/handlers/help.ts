@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 import { COMMAND_SPECS } from "../builtin";
 
 export function cmdHelp(_ctx: CommandContext): OutboundMessage {

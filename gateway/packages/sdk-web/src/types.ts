@@ -1,1 +1,1 @@
-export type { GatewayConnectionType as ConnectionType } from '@learnbuddy/shared'
+export type { GatewayConnectionType as ConnectionType } from '@catbuddy/shared'

@@ -17,8 +17,8 @@ export function loadEnvFile(filePath: string) {
       process.env.DEEPSEEK_KEY ? 'SET' : 'NOT SET',
       'GATEWAY_ENABLED=',
       process.env.GATEWAY_ENABLED ?? '(unset)',
-      'LEARNBUDDY_GATEWAY_USE_LOCAL=',
-      process.env.LEARNBUDDY_GATEWAY_USE_LOCAL ?? '(unset)',
+      'CATBUDDY_GATEWAY_USE_LOCAL=',
+      process.env.CATBUDDY_GATEWAY_USE_LOCAL ?? '(unset)',
     )
   } catch (err: any) { console.log('[main] No .env:', err.message) }
 }

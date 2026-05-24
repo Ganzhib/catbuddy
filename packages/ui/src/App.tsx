@@ -18,10 +18,10 @@ import {
   parseSessionKey,
   toSessionKey,
   type ChatSummary,
-} from "@learnbuddy/shared"
+} from "@catbuddy/shared"
 
-const SIDEBAR_STORAGE_KEY = 'learnbuddy-webui.sidebar'
-const RESTART_STARTED_KEY = 'learnbuddy-webui.restartStartedAt'
+const SIDEBAR_STORAGE_KEY = 'catbuddy-webui.sidebar'
+const RESTART_STARTED_KEY = 'catbuddy-webui.restartStartedAt'
 const SIDEBAR_WIDTH = 296
 type ShellView = 'chat' | 'settings'
 
@@ -244,7 +244,7 @@ function Shell({
                 onRestart={async () => {
                   setIsRestarting(true)
                   try { window.localStorage.setItem(RESTART_STARTED_KEY, String(Date.now())) } catch {}
-                  await window.learnbuddy?.restartApp()
+                  await window.catbuddy?.restartApp()
                 }}
                 isRestarting={isRestarting}
               />

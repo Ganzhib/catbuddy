@@ -124,7 +124,7 @@ export interface BootstrapResponse {
   ws_path: string;
   expires_in: number;
   model_name?: string | null;
-  /** When ``gateway``, the browser uses learnbuddy Gateway (desktop runs Agent). */
+  /** When ``gateway``, the browser uses catbuddy Gateway (desktop runs Agent). */
   gateway_mode?: GatewayMode
   /** Desktop client connected (Web can run agent via gateway). */
   desktop_online?: boolean

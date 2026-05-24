@@ -1,15 +1,15 @@
 import type { AgentTransport, CreateTransportOptions } from "./types";
 export type { CreateTransportOptions } from "./types";
 import { IpcTransport } from "./ipc-transport";
-import { GatewayTransport } from "@learnbuddy/gateway-sdk-web";
+import { GatewayTransport } from "@catbuddy/gateway-sdk-web";
 import { WsTransport } from "./ws-transport";
 
-export function hasLearnbuddyIpc(): boolean {
-  return typeof window !== "undefined" && !!window.learnbuddy;
+export function hasCatbuddyIpc(): boolean {
+  return typeof window !== "undefined" && !!window.catbuddy;
 }
 
 export function detectTransportMode(): "desktop" | "web" {
-  return hasLearnbuddyIpc() ? "desktop" : "web";
+  return hasCatbuddyIpc() ? "desktop" : "web";
 }
 
 export function createAgentTransport(

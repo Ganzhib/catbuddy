@@ -1,13 +1,13 @@
 /**
  * AgentRunner — LLM + Tool 执行循环 + 上下文治理
- * 对应原版 learnbuddy/agent/runner.py
+ * 对应原版 catbuddy/agent/runner.py
  */
 import { LLMProvider } from '../providers'
 import { ToolRegistry } from './tool-registry'
 import type {
   LLMMessage, ToolCallRequest, ToolEvent,
   AgentRunResult, TokenUsage,
-} from "@learnbuddy/shared"
+} from "@catbuddy/shared"
 
 export interface RunSpec {
   initialMessages: LLMMessage[]

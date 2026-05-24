@@ -42,7 +42,7 @@ if (isPrimaryInstance) {
 
 app.whenReady().then(async () => {
   if (!isPrimaryInstance) return;
-  loadEnvFile(path.join(app.getPath("home"), ".learnbuddy.env"));
+  loadEnvFile(path.join(app.getPath("home"), ".catbuddy.env"));
 
   await initAgent();
 

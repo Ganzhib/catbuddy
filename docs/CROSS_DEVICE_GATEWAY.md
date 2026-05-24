@@ -5,7 +5,7 @@ Web 只做输入与展示；**Agent + 本地 workspace 工具只在桌面 Electr
 ## 架构
 
 ```text
-apps/web                 gateway (@learnbuddy)      apps/desktop
+apps/web                 gateway (@catbuddy)      apps/desktop
      │                        │                         │
      │  JWT (email)           │  register(accountEmail)│
      │  POST .../messages     │  inbound_message (WS)   │
@@ -19,7 +19,7 @@ apps/web                 gateway (@learnbuddy)      apps/desktop
 ### 1. 启动 Gateway
 
 ```bash
-# 在 learnbuddy/ 根目录
+# 在 catbuddy/ 根目录
 docker compose -f gateway/docker-compose.yml up -d mysql   # 可选
 cp gateway/.env.example gateway/.env
 pnpm gateway:dev    # 或 pnpm gateway:build && pnpm gateway:start
@@ -105,4 +105,4 @@ ws.send(JSON.stringify({
 | `gateway/.../gateway-state.ts` | `deviceIdByAccountEmail` 路由 |
 | `gateway/packages/sdk-desktop` | 桌面 `GatewayDesktopClient` |
 | `gateway/packages/sdk-web` | Web `GatewayTransport` |
-| `packages/ui/.../AuthGate.tsx` | 登录后 `setGatewayAccountEmail` + `createLearnbuddyClient` |
+| `packages/ui/.../AuthGate.tsx` | 登录后 `setGatewayAccountEmail` + `createCatbuddyClient` |

@@ -6,7 +6,7 @@ import {
   AgentActivityCluster,
   isAgentActivityMember,
 } from "@/components/thread/AgentActivityCluster";
-import type { UIMessage } from "@learnbuddy/shared";
+import type { UIMessage } from "@catbuddy/shared";
 
 interface ThreadMessagesProps {
   messages: UIMessage[];

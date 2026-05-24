@@ -1,5 +1,5 @@
-import type { AgentTransport, TransportCallbacks } from '@learnbuddy/shared'
-import { bareChatId, gatewayWsUrl, toSessionKey } from '@learnbuddy/shared'
+import type { AgentTransport, TransportCallbacks } from '@catbuddy/shared'
+import { bareChatId, gatewayWsUrl, toSessionKey } from '@catbuddy/shared'
 import {
   activeSessionKeyFromChatId,
   ensureGatewaySessionOnHttp,
@@ -19,7 +19,7 @@ const RECONNECT_MS = 2000
 
 /**
  * Browser transport: Gateway session WS + HTTP send (desktop agent host).
- * Implements {@link AgentTransport} for {@link @learnbuddy/client}.
+ * Implements {@link AgentTransport} for {@link @catbuddy/client}.
  */
 export class GatewayTransport implements AgentTransport {
   readonly kind = 'websocket' as const

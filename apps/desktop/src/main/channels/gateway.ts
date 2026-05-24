@@ -1,8 +1,8 @@
 /**
  * Fan-out Agent outbound events to Gateway as ui_event (for Web clients).
  */
-import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "@learnbuddy/shared";
-import type { GatewayDesktopClient } from "@learnbuddy/gateway-sdk-desktop";
+import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "@catbuddy/shared";
+import type { GatewayDesktopClient } from "@catbuddy/gateway-sdk-desktop";
 import { toolEventToUiHint } from "../sync/tool-event-map.js";
 import type { BaseChannel } from "./base";
 

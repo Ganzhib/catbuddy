@@ -1,6 +1,6 @@
-import { brandFilename as coreBrandFilename } from "@learnbuddy/shared/brand";
+import { brandFilename as coreBrandFilename } from "@catbuddy/shared/brand";
 
-export { BRAND_PREFIX, brandFilename } from "@learnbuddy/shared/brand";
+export { BRAND_PREFIX, brandFilename } from "@catbuddy/shared/brand";
 
 /** Vite `base`: `./` for Electron file://, `/` for web. */
 function viteBase(): string {

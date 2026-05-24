@@ -14,7 +14,7 @@ import { ThreadMessages } from "@/components/thread/ThreadMessages";
 import { isAgentActivityMember } from "@/components/thread/AgentActivityCluster";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { UIMessage } from "@learnbuddy/shared";
+import type { UIMessage } from "@catbuddy/shared";
 
 interface ThreadViewportProps {
   messages: UIMessage[];

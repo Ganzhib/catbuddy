@@ -1,9 +1,9 @@
 /**
  * BaseChannel 鈥?閫氶亾鎶借薄鎺ュ彛
  *
- * 姣忎釜閫氶亾锛圵ebUI銆乄hatsApp銆丏esktop Notification锛夊疄鐜版鎺ュ彛銆? * 鍙傝€?learnbuddy/channels/base.py
+ * 姣忎釜閫氶亾锛圵ebUI銆乄hatsApp銆丏esktop Notification锛夊疄鐜版鎺ュ彛銆? * 鍙傝€?catbuddy/channels/base.py
  */
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 export interface BaseChannel {
   readonly name: string;
@@ -34,11 +34,11 @@ export interface BaseChannel {
   sendReasoningEnd?(chatId: string): Promise<void>;
 
   /** 宸ュ叿璋冪敤杩涘害 */
-  sendToolProgress?(chatId: string, event: import("@learnbuddy/shared").ToolEvent): Promise<void>;
+  sendToolProgress?(chatId: string, event: import("@catbuddy/shared").ToolEvent): Promise<void>;
 
   /** 鏂囦欢缂栬緫杩涘害锛坵rite_file / edit_file锛?*/
-  sendFileEdit?(chatId: string, edit: import("@learnbuddy/shared").FileEditEvent): Promise<void>;
+  sendFileEdit?(chatId: string, edit: import("@catbuddy/shared").FileEditEvent): Promise<void>;
 
   /** 鏁磋疆瀵硅瘽缁撴潫锛堝墠绔嵁姝ゅ仠姝?loading锛?*/
-  sendTurnComplete?(chatId: string, data: import("@learnbuddy/shared").TurnCompleteData): Promise<void>;
+  sendTurnComplete?(chatId: string, data: import("@catbuddy/shared").TurnCompleteData): Promise<void>;
 }

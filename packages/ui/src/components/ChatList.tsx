@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { deriveTitle } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { ChatSummary } from "@learnbuddy/shared";
+import type { ChatSummary } from "@catbuddy/shared";
 
 interface ChatListProps {
   sessions: ChatSummary[];

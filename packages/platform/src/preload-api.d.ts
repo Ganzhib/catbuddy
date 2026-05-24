@@ -2,16 +2,16 @@ import type {
   AgentStatus,
   ChannelStatus,
   FileEditEvent,
-  learnbuddyConfig,
+  catbuddyConfig,
   ModelPresetConfig,
   SessionDetail,
   SessionInfo,
   SkillInfo,
   ToolEvent,
   TurnCompleteData,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 
-export interface LearnbuddyPreloadApi {
+export interface CatbuddyPreloadApi {
   sendMessage(chatId: string, content: string, media?: string[]): Promise<void>
   stopAgent(sessionKey: string): Promise<void>
   getStatus(): Promise<AgentStatus>
@@ -38,7 +38,7 @@ export interface LearnbuddyPreloadApi {
   clearSession(key: string): Promise<void>
   newSession(): Promise<{ key: string }>
 
-  getConfig(): Promise<learnbuddyConfig>
+  getConfig(): Promise<catbuddyConfig>
   updateConfig(path: string, value: unknown): Promise<void>
   listModels(): Promise<ModelPresetConfig[]>
   setModel(presetName: string): Promise<void>
@@ -102,7 +102,7 @@ export interface LearnbuddyPreloadApi {
 
 declare global {
   interface Window {
-    learnbuddy?: LearnbuddyPreloadApi
+    catbuddy?: CatbuddyPreloadApi
   }
 }
 

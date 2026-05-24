@@ -14,7 +14,7 @@ function subscribeVoid(channel, cb) {
 }
 
 /** Renderer-facing API exposed via contextBridge. */
-function createLearnbuddyApi() {
+function createCatbuddyApi() {
   return {
     sendMessage: (chatId, content, media) =>
       ipcRenderer.invoke(IPC.AGENT_SEND, { chatId, content, media }),
@@ -72,4 +72,4 @@ function createLearnbuddyApi() {
   }
 }
 
-module.exports = { createLearnbuddyApi }
+module.exports = { createCatbuddyApi }

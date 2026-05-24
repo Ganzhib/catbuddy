@@ -1,6 +1,6 @@
 /**
  * Desktop Gateway session WebSocket client (Node `ws`).
- * Mirrors {@link @learnbuddy/gateway-sdk-web} session protocol for role=`desktop`.
+ * Mirrors {@link @catbuddy/gateway-sdk-web} session protocol for role=`desktop`.
  */
 import { randomUUID } from 'node:crypto'
 import WebSocket from 'ws'
@@ -12,8 +12,8 @@ import type {
   SessionDetail,
   SessionInfo,
   WebuiThreadPersistedPayload,
-} from '@learnbuddy/shared'
-import { bareChatId } from '@learnbuddy/shared'
+} from '@catbuddy/shared'
+import { bareChatId } from '@catbuddy/shared'
 import {
   buildFocusSessionEvent,
   buildUiEventMessage,
@@ -392,7 +392,7 @@ export class GatewayDesktopClient {
 import {
   resolveBuiltinGatewaySecret,
   resolveBuiltinGatewayWsUrl,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 
 export function loadGatewayConfigFromSources(
   stored?: { url?: string; secret?: string },

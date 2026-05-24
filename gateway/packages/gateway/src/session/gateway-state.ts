@@ -7,7 +7,7 @@ import type { GatewaySessionRow } from './storage/session-types.js'
 import { forbidden } from '../http-errors.js'
 
 export const GATEWAY_OFFLINE_REPLY =
-  '桌面端未连接或未开启「远程控制」，无法执行 Agent。请启动 learnbuddy 桌面应用，在侧栏打开远程控制开关后重试。'
+  '桌面端未连接或未开启「远程控制」，无法执行 Agent。请启动 catbuddy 桌面应用，在侧栏打开远程控制开关后重试。'
 
 export type { GatewaySessionRow }
 

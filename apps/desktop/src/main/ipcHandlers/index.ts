@@ -5,13 +5,13 @@ import { ipcMain, app } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
-import type { learnbuddyConfig } from "@learnbuddy/shared"
-import type { GatewayDesktopClient } from '@learnbuddy/gateway-sdk-desktop'
+import type { catbuddyConfig } from "@catbuddy/shared"
+import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
 
 export function registerIpcHandlers(
   agentLoop: AgentLoop,
   sessions: SessionManager,
-  config: learnbuddyConfig,
+  config: catbuddyConfig,
   configFile: string,
   getGatewayClient: () => GatewayDesktopClient | null = () => null,
 ) {

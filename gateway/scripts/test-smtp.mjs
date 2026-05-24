@@ -18,7 +18,7 @@ const host = process.env.SMTP_HOST || ''
 const port = Number(process.env.SMTP_PORT || 587)
 const user = process.env.SMTP_USER || ''
 const pass = process.env.SMTP_PASS || ''
-const from = process.env.SMTP_FROM || `learnbuddy <${user}>`
+const from = process.env.SMTP_FROM || `catbuddy <${user}>`
 const secureRaw = (process.env.SMTP_SECURE || '').trim().toLowerCase()
 const secure =
   secureRaw === 'true' || secureRaw === '1'
@@ -48,7 +48,7 @@ try {
   const info = await transport.sendMail({
     from,
     to,
-    subject: 'learnbuddy SMTP 测试',
+    subject: 'catbuddy SMTP 测试',
     text: `测试验证码：${code}\n若收到此邮件，注册验证码邮件配置正确。`,
   })
   console.log(`[smtp-test] 已发送至 ${to} messageId=${info.messageId}`)

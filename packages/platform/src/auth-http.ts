@@ -1,4 +1,4 @@
-/** @deprecated Import from `./auth` or `@learnbuddy/platform` auth exports. */
+/** @deprecated Import from `./auth` or `@catbuddy/platform` auth exports. */
 export {
   BootstrapAuthRequired,
   clearAuthToken,

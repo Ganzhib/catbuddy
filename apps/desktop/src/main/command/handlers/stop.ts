@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 export async function cmdStop(ctx: CommandContext): Promise<OutboundMessage> {
   const total = await ctx.loop.cancelSession(ctx.sessionKey);

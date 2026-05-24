@@ -9,7 +9,7 @@ import {
 } from "react";
 
 type Theme = "light" | "dark";
-const STORAGE_KEY = "learnbuddy-webui.theme";
+const STORAGE_KEY = "catbuddy-webui.theme";
 const ThemeContext = createContext<Theme>("light");
 
 function readStored(): Theme | null {

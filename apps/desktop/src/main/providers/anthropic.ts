@@ -3,7 +3,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk'
 import { LLMProvider, type ChatStreamOpts } from './base-provider'
-import type { LLMResponse, ToolCallRequest } from "@learnbuddy/shared"
+import type { LLMResponse, ToolCallRequest } from "@catbuddy/shared"
 
 export class AnthropicProvider extends LLMProvider {
   readonly name = 'anthropic'
@@ -66,14 +66,14 @@ export class AnthropicProvider extends LLMProvider {
     }
   }
 
-  private extractSystem(messages: import('@learnbuddy/shared').LLMMessage[]): string {
+  private extractSystem(messages: import('@catbuddy/shared').LLMMessage[]): string {
     return messages
       .filter(m => m.role === 'system')
       .map(m => (typeof m.content === 'string' ? m.content : ''))
       .join('\n\n')
   }
 
-  private toAnthropicMessages(messages: import('@learnbuddy/shared').LLMMessage[]): any[] {
+  private toAnthropicMessages(messages: import('@catbuddy/shared').LLMMessage[]): any[] {
     return messages
       .filter(m => m.role !== 'system')
       .map(m => {

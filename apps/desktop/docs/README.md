@@ -1,6 +1,6 @@
-# Learnbuddy Desktop 技术文档
+# Catbuddy Desktop 技术文档
 
-Electron 桌面客户端：本地 Agent 运行时 + React UI，与 monorepo 内 `@learnbuddy/ui`、`@learnbuddy/gateway-sdk-desktop` 等包协作。
+Electron 桌面客户端：本地 Agent 运行时 + React UI，与 monorepo 内 `@catbuddy/ui`、`@catbuddy/gateway-sdk-desktop` 等包协作。
 
 ## 文档索引
 
@@ -31,7 +31,7 @@ apps/desktop/
 
 ## 相关仓库路径
 
-- UI 组件：`learnbuddy/packages/ui`
-- 类型与配置：`learnbuddy/packages/shared`
-- 平台抽象（preload 类型）：`learnbuddy/packages/platform`
-- Gateway SDK：`learnbuddy/gateway/packages/sdk-desktop`
+- UI 组件：`catbuddy/packages/ui`
+- 类型与配置：`catbuddy/packages/shared`
+- 平台抽象（preload 类型）：`catbuddy/packages/platform`
+- Gateway SDK：`catbuddy/gateway/packages/sdk-desktop`

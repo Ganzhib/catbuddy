@@ -1,5 +1,5 @@
 /** Build Web UI thread replay payload from desktop session JSONL. */
-import type { SessionDetail, WebuiThreadPersistedPayload } from "@learnbuddy/shared";
+import type { SessionDetail, WebuiThreadPersistedPayload } from "@catbuddy/shared";
 
 export function buildWebuiThreadFromSession(
   session: SessionDetail | null,

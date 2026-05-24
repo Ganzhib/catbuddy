@@ -1,12 +1,12 @@
 # 主进程模块
 
-主进程在 `src/main/` 内实现本地 Agent 运行时，设计对齐 nanobot/learnbuddy Python 版的核心概念，并适配 Electron IPC。
+主进程在 `src/main/` 内实现本地 Agent 运行时，设计对齐 nanobot/catbuddy Python 版的核心概念，并适配 Electron IPC。
 
 ## 启动顺序
 
 `index.ts` → `createMainWindow()` → `initAgent()`（`services/init-agent.ts`）：
 
-1. 读取/创建 `~/.learnbuddy-desktop/config/config.json`
+1. 读取/创建 `~/.catbuddy-desktop/config/config.json`
 2. `SessionManager(workspace)`
 3. `MessageBus` + `ChannelManager` + 注册 `DesktopChannel`
 4. `applyGatewayRemote()`（若配置与环境允许）
@@ -84,5 +84,5 @@
 ## 与 Renderer 的边界
 
 - Renderer **不**直接访问文件系统、LLM、会话存储。
-- 所有能力经 [ipc.md](./ipc.md) 中的 `window.learnbuddy`。
-- UI 实现集中在 `@learnbuddy/ui`，桌面 `renderer/main.tsx` 仅挂载 `<App />`。
+- 所有能力经 [ipc.md](./ipc.md) 中的 `window.catbuddy`。
+- UI 实现集中在 `@catbuddy/ui`，桌面 `renderer/main.tsx` 仅挂载 `<App />`。

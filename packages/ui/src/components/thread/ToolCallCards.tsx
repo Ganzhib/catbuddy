@@ -10,8 +10,8 @@ import {
   toolCallTitle,
   toolCallUiStatus,
   toolLabel,
-} from "@learnbuddy/client";
-import type { ToolProgressEvent } from "@learnbuddy/shared";
+} from "@catbuddy/client";
+import type { ToolProgressEvent } from "@catbuddy/shared";
 
 interface ToolCallCardsProps {
   toolProgress: Record<string, ToolProgressEvent>;

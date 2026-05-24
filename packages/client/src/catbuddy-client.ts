@@ -1,5 +1,5 @@
 /**
- * learnbuddyClient — UI-facing agent client (WebSocket-era API, unchanged contract).
+ * catbuddyClient — UI-facing agent client (WebSocket-era API, unchanged contract).
  * Transport is injected: Electron IPC today, WebSocket when running in a browser.
  */
 import type {
@@ -7,8 +7,8 @@ import type {
   InboundEvent,
   OutboundMedia,
   OutboundImageGeneration,
-} from "@learnbuddy/shared";
-import { bareChatId } from "@learnbuddy/shared";
+} from "@catbuddy/shared";
+import { bareChatId } from "@catbuddy/shared";
 import { createAgentTransport } from "./transport/create-transport";
 import type {
   AgentTransport,
@@ -32,7 +32,7 @@ type ErrorHandler = (error: StreamError) => void;
 /** Placeholder until ``attach`` / ``sendMessage`` picks a real chat. */
 const DEFAULT_CHAT_ID = "";
 
-export class learnbuddyClient {
+export class catbuddyClient {
   status_: ConnectionStatus = "idle";
   /** @deprecated WebSocket socket; always null under IPC. Kept for UI compat. */
   socket = null;
@@ -260,21 +260,21 @@ export class learnbuddyClient {
   }
 }
 
-export interface CreateLearnbuddyClientOptions {
+export interface CreateCatbuddyClientOptions {
   token: string;
   wsPath: string;
   /** Override auto-detected transport (desktop IPC vs web WebSocket). */
   transport?: AgentTransport;
   transportMode?: CreateTransportOptions["mode"];
-  /** learnbuddy gateway HTTP base (``/gateway-api`` in Vite dev). */
+  /** catbuddy gateway HTTP base (``/gateway-api`` in Vite dev). */
   gatewayHttpBase?: string;
   /** @deprecated Use gatewayHttpBase */
 }
 
-/** Bootstrap entry: pluggable transport, same learnbuddyClient API for UI. */
-export function createLearnbuddyClient(
-  options: CreateLearnbuddyClientOptions,
-): learnbuddyClient {
+/** Bootstrap entry: pluggable transport, same catbuddyClient API for UI. */
+export function createCatbuddyClient(
+  options: CreateCatbuddyClientOptions,
+): catbuddyClient {
   const transport =
     options.transport
     ?? createAgentTransport({
@@ -283,5 +283,5 @@ export function createLearnbuddyClient(
       wsPath: options.wsPath,
       gatewayHttpBase: options.gatewayHttpBase,
     });
-  return new learnbuddyClient(transport);
+  return new catbuddyClient(transport);
 }

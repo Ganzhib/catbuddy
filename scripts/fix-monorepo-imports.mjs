@@ -5,16 +5,16 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const rules = [
-  [/from ['"]@\/lib\/types['"]/g, 'from "@learnbuddy/shared"'],
-  [/from ['"]@\/lib\/learnbuddy-client['"]/g, 'from "@learnbuddy/client"'],
-  [/from ['"]@\/lib\/bootstrap['"]/g, 'from "@learnbuddy/platform"'],
-  [/from ['"]@\/lib\/api['"]/g, 'from "@learnbuddy/platform"'],
-  [/from ['"]\.\.\/\.\.\/shared\/types(\.js)?['"]/g, 'from "@learnbuddy/shared"'],
-  [/from ['"]\.\.\/\.\.\/shared\/relay(\.js)?['"]/g, 'from "@learnbuddy/shared"'],
-  [/from ['"]@shared\/brand\.mjs['"]/g, 'from "@learnbuddy/shared/brand"'],
-  [/from ['"]\.\.\/\.\.\/\.\.\/shared\/types(\.js)?['"]/g, 'from "@learnbuddy/shared"'],
-  [/from ['"]@\/lib\/tool-traces['"]/g, 'from "@learnbuddy/client"'],
-  [/from ['"]\.\.\/tool-traces['"]/g, 'from "@learnbuddy/client"'],
+  [/from ['"]@\/lib\/types['"]/g, 'from "@catbuddy/shared"'],
+  [/from ['"]@\/lib\/catbuddy-client['"]/g, 'from "@catbuddy/client"'],
+  [/from ['"]@\/lib\/bootstrap['"]/g, 'from "@catbuddy/platform"'],
+  [/from ['"]@\/lib\/api['"]/g, 'from "@catbuddy/platform"'],
+  [/from ['"]\.\.\/\.\.\/shared\/types(\.js)?['"]/g, 'from "@catbuddy/shared"'],
+  [/from ['"]\.\.\/\.\.\/shared\/relay(\.js)?['"]/g, 'from "@catbuddy/shared"'],
+  [/from ['"]@shared\/brand\.mjs['"]/g, 'from "@catbuddy/shared/brand"'],
+  [/from ['"]\.\.\/\.\.\/\.\.\/shared\/types(\.js)?['"]/g, 'from "@catbuddy/shared"'],
+  [/from ['"]@\/lib\/tool-traces['"]/g, 'from "@catbuddy/client"'],
+  [/from ['"]\.\.\/tool-traces['"]/g, 'from "@catbuddy/client"'],
 ]
 
 function walk(dir, out = []) {

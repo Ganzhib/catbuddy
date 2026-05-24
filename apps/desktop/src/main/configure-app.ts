@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export function configureElectronApp(): boolean {
-  const userData = path.join(app.getPath("home"), ".learnbuddy-desktop", "electron");
+  const userData = path.join(app.getPath("home"), ".catbuddy-desktop", "electron");
   fs.mkdirSync(userData, { recursive: true });
   app.setPath("userData", userData);
 

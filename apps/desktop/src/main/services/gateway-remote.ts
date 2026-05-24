@@ -3,12 +3,12 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import {
   GatewayDesktopClient,
   loadGatewayConfigFromSources,
-} from "@learnbuddy/gateway-sdk-desktop";
+} from "@catbuddy/gateway-sdk-desktop";
 import {
-  LEARNBUDDY_GATEWAY_HOST,
+  CATBUDDY_GATEWAY_HOST,
   resolveBuiltinGatewayWsUrl,
-  type learnbuddyConfig,
-} from "@learnbuddy/shared";
+  type catbuddyConfig,
+} from "@catbuddy/shared";
 import type { MessageBus } from "../bus/index.js";
 import type { ChannelManager } from "../channels/index.js";
 import { GatewayChannel } from "../channels/index.js";
@@ -18,7 +18,7 @@ import { buildWebuiThreadFromSession } from "../sync/session-thread.js";
 export interface GatewayRemoteState {
   gatewayWsClient: GatewayDesktopClient | null;
   gatewayAccountEmail: string | undefined;
-  appConfig: learnbuddyConfig;
+  appConfig: catbuddyConfig;
   appConfigFile: string;
   appSessions: SessionManager | null;
   appBus: MessageBus | null;
@@ -26,7 +26,7 @@ export interface GatewayRemoteState {
 }
 
 function useLocalGateway(): boolean {
-  const flag = process.env.LEARNBUDDY_GATEWAY_USE_LOCAL?.trim()
+  const flag = process.env.CATBUDDY_GATEWAY_USE_LOCAL?.trim()
   if (flag === 'true' || flag === '1') return true
   if (flag === 'false' || flag === '0') return false
   // Default: production builtin (avoid dev silently targeting 127.0.0.1:18765).
@@ -213,7 +213,7 @@ export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
     const merged = resolveGatewayConfig(state);
     const local = useLocalGateway()
     return {
-      host: LEARNBUDDY_GATEWAY_HOST,
+      host: CATBUDDY_GATEWAY_HOST,
       mode: connectionMode(state),
       useLocal: local,
       url: merged?.url ?? resolveBuiltinGatewayWsUrl(local),

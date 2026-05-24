@@ -4,7 +4,7 @@ export type TransportKind = 'ipc' | 'websocket'
 
 export type SessionUpdateScope = 'metadata' | 'thread' | 'focus' | string
 
-/** Callbacks from a transport into learnbuddyClient. */
+/** Callbacks from a transport into catbuddyClient. */
 export interface TransportCallbacks {
   getActiveChatId: () => string
   onEvent: (ev: InboundEvent) => void

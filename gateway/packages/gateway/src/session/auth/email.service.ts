@@ -36,8 +36,8 @@ export class EmailService {
 
   /** @returns `email` if sent via SMTP; `console` if OTP only logged (dev). */
   async sendOtp(email: string, code: string): Promise<'email' | 'console'> {
-    const subject = 'learnbuddy 注册验证码'
-    const text = `您的 learnbuddy 注册验证码是：${code}\n10 分钟内有效。如非本人操作请忽略此邮件。`
+    const subject = 'catbuddy 注册验证码'
+    const text = `您的 catbuddy 注册验证码是：${code}\n10 分钟内有效。如非本人操作请忽略此邮件。`
     const transport = this.getTransporter()
     if (!transport) {
       this.log.warn(

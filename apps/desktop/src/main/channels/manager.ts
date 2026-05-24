@@ -1,7 +1,7 @@
 /**
  * ChannelManager 鈥?閫氶亾绠＄悊涓庡嚭绔欐秷鎭矾鐢? *
  * 浠?bus.outbound 娑堣垂娑堟伅锛屾寜 channel 瀛楁璺敱鍒板搴旈€氶亾銆? * desktop 鍑虹珯鍙悓鏃?fan-out 鍒?relay锛圵eb 璁㈤槄 ui_event锛夈€? */
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 import type { BaseChannel } from "./base";
 import type { MessageBus } from "../bus";
 
@@ -96,21 +96,21 @@ export class ChannelManager {
     if (meta._tool_progress && meta._tool_event) {
       await channel.sendToolProgress?.(
         msg.chatId,
-        meta._tool_event as import("@learnbuddy/shared").ToolEvent,
+        meta._tool_event as import("@catbuddy/shared").ToolEvent,
       );
       return;
     }
     if (meta._file_edit && meta._file_edit_event) {
       await channel.sendFileEdit?.(
         msg.chatId,
-        meta._file_edit_event as import("@learnbuddy/shared").FileEditEvent,
+        meta._file_edit_event as import("@catbuddy/shared").FileEditEvent,
       );
       return;
     }
     if (meta._turn_complete && meta._turn_data) {
       await channel.sendTurnComplete?.(
         msg.chatId,
-        meta._turn_data as import("@learnbuddy/shared").TurnCompleteData,
+        meta._turn_data as import("@catbuddy/shared").TurnCompleteData,
       );
       return;
     }

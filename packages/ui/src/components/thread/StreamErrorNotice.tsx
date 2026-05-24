@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { DesktopClientDownload } from "@/components/DesktopClientDownload";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { StreamError } from "@learnbuddy/client";
+import type { StreamError } from "@catbuddy/client";
 
 interface StreamErrorNoticeProps {
   error: StreamError;

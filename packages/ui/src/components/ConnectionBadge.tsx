@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
-import type { ConnectionStatus } from "@learnbuddy/shared";
+import type { ConnectionStatus } from "@catbuddy/shared";
 
 const COPY: Record<ConnectionStatus, { color: string }> = {
   idle: { color: "text-muted-foreground" },

@@ -6,7 +6,7 @@ import type {
   WebuiThreadPersistedPayload,
   ProviderSettingsUpdate,
   WebSearchSettingsUpdate,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 import { ApiError } from './ipc-api'
 import { resolveGatewayHttpBase } from './gateway-http'
 

@@ -1,4 +1,4 @@
-# Build context: learnbuddy/ (monorepo root)
+# Build context: catbuddy/ (monorepo root)
 FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable pnpm
@@ -21,7 +21,7 @@ COPY packages/shared ./packages/shared
 COPY gateway ./gateway
 COPY --from=build /app/gateway/packages/gateway/dist ./gateway/packages/gateway/dist
 
-RUN pnpm install --frozen-lockfile --prod --filter @learnbuddy/gateway...
+RUN pnpm install --frozen-lockfile --prod --filter @catbuddy/gateway...
 
 EXPOSE 18765
 

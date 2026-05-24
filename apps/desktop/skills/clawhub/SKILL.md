@@ -2,7 +2,7 @@
 name: clawhub
 description: Search and install agent skills from ClawHub, the public skill registry.
 homepage: https://clawhub.ai
-metadata: {"learnbuddy":{"emoji":"🦞"}}
+metadata: {"catbuddy":{"emoji":"🦞"}}
 ---
 
 # ClawHub
@@ -27,21 +27,21 @@ npx --yes clawhub@latest search "web scraping" --limit 5
 ## Install
 
 ```bash
-npx --yes clawhub@latest install <slug> --workdir ~/.learnbuddy/workspace
+npx --yes clawhub@latest install <slug> --workdir ~/.catbuddy/workspace
 ```
 
-Replace `<slug>` with the skill name from search results. This places the skill into `~/.learnbuddy/workspace/skills/`, where learnbuddy loads workspace skills from. Always include `--workdir`.
+Replace `<slug>` with the skill name from search results. This places the skill into `~/.catbuddy/workspace/skills/`, where catbuddy loads workspace skills from. Always include `--workdir`.
 
 ## Update
 
 ```bash
-npx --yes clawhub@latest update --all --workdir ~/.learnbuddy/workspace
+npx --yes clawhub@latest update --all --workdir ~/.catbuddy/workspace
 ```
 
 ## List installed
 
 ```bash
-npx --yes clawhub@latest list --workdir ~/.learnbuddy/workspace
+npx --yes clawhub@latest list --workdir ~/.catbuddy/workspace
 ```
 
 ## Notes
@@ -49,5 +49,5 @@ npx --yes clawhub@latest list --workdir ~/.learnbuddy/workspace
 - Requires Node.js (`npx` comes with it).
 - No API key needed for search and install.
 - Login (`npx --yes clawhub@latest login`) is only required for publishing.
-- `--workdir ~/.learnbuddy/workspace` is critical — without it, skills install to the current directory instead of the learnbuddy workspace.
+- `--workdir ~/.catbuddy/workspace` is critical — without it, skills install to the current directory instead of the catbuddy workspace.
 - After install, remind the user to start a new session to load the skill.

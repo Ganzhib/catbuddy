@@ -1,6 +1,6 @@
 # IPC 与 Preload API
 
-渲染进程通过 `window.learnbuddy` 访问主进程能力；禁止 `nodeIntegration`，所有能力经 Preload 白名单暴露。
+渲染进程通过 `window.catbuddy` 访问主进程能力；禁止 `nodeIntegration`，所有能力经 Preload 白名单暴露。
 
 ## 安全模型
 
@@ -19,7 +19,7 @@ src/preload/
 ├── index.cjs              # 入口：组装 API 并 expose
 ├── api/
 │   ├── ipc-channels.cjs   # 通道名常量（与主进程一致）
-│   └── index.cjs          # createLearnbuddyApi()
+│   └── index.cjs          # createCatbuddyApi()
 └── security/
     └── index.cjs
 ```
@@ -105,10 +105,10 @@ TypeScript 侧另有 `src/main/constant/ipc.ts`（部分通道，可与 preload 
 
 ```typescript
 // 发送消息
-await window.learnbuddy.sendMessage(chatId, '你好')
+await window.catbuddy.sendMessage(chatId, '你好')
 
 // 订阅流式输出
-const off = window.learnbuddy.onStreamDelta(({ chatId, content }) => {
+const off = window.catbuddy.onStreamDelta(({ chatId, content }) => {
   // 更新 UI
 })
 // 组件卸载时

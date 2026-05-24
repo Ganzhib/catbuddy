@@ -19,7 +19,7 @@ export function LoginMarketingPanel() {
           <BrandMark className="h-7 w-7 object-contain opacity-80 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />
           <div>
             <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#0EA5E9]/80 sm:text-[10px]">
-              learnbuddy
+              catbuddy
             </p>
             <span className="text-[15px] font-semibold tracking-tight text-[#1E3A8A]/90 sm:text-base lg:text-lg">
               智能学习助手

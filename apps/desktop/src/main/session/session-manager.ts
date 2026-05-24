@@ -1,7 +1,7 @@
 /** Session Manager - JSONL 实现 Local First 原则 */
 import * as fs from 'fs'
 import * as path from 'path'
-import type { SessionInfo, SessionDetail, MessageRecord } from "@learnbuddy/shared"
+import type { SessionInfo, SessionDetail, MessageRecord } from "@catbuddy/shared"
 
 
 const MAX_MESSAGES = 2000

@@ -45,7 +45,7 @@ try {
   const info = await transport.sendMail({
     from,
     to,
-    subject: 'learnbuddy SMTP 测试',
+    subject: 'catbuddy SMTP 测试',
     text: '若收到此邮件，SMTP 配置正确。',
   })
   console.log(`[smtp-test] 已发送至 ${to} messageId=${info.messageId}`)

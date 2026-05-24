@@ -1,4 +1,4 @@
-import type { ConnectionStatus, InboundEvent, Outbound } from "@learnbuddy/shared";
+import type { ConnectionStatus, InboundEvent, Outbound } from "@catbuddy/shared";
 import type { AgentTransport, TransportCallbacks } from "./types";
 
 function isInboundEvent(value: unknown): value is InboundEvent {

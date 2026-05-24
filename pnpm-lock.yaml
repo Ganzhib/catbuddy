@@ -4,7 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-
 importers:
 
   .:
@@ -21,19 +20,19 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.37.0
         version: 0.37.0(encoding@0.1.13)
-      '@learnbuddy/client':
+      '@catbuddy/client':
         specifier: workspace:*
         version: link:../../packages/client
-      '@learnbuddy/gateway-sdk-desktop':
+      '@catbuddy/gateway-sdk-desktop':
         specifier: workspace:*
         version: link:../../gateway/packages/sdk-desktop
-      '@learnbuddy/platform':
+      '@catbuddy/platform':
         specifier: workspace:*
         version: link:../../packages/platform
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@learnbuddy/ui':
+      '@catbuddy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       handlebars:
@@ -121,16 +120,16 @@ importers:
 
   apps/web:
     dependencies:
-      '@learnbuddy/client':
+      '@catbuddy/client':
         specifier: workspace:*
         version: link:../../packages/client
-      '@learnbuddy/platform':
+      '@catbuddy/platform':
         specifier: workspace:*
         version: link:../../packages/platform
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@learnbuddy/ui':
+      '@catbuddy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -188,18 +187,18 @@ importers:
 
   gateway/packages/common:
     dependencies:
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
 
   gateway/packages/gateway:
     dependencies:
+      '@catbuddy/shared':
+        specifier: workspace:*
+        version: link:../../../packages/shared
       '@fastify/cors':
         specifier: ^9.0.0
         version: 9.0.1
-      '@learnbuddy/shared':
-        specifier: workspace:*
-        version: link:../../../packages/shared
       dotenv:
         specifier: 16.6.1
         version: 16.6.1
@@ -240,7 +239,7 @@ importers:
 
   gateway/packages/sdk-desktop:
     dependencies:
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
       ws:
@@ -253,25 +252,25 @@ importers:
 
   gateway/packages/sdk-web:
     dependencies:
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../../../packages/shared
 
   packages/client:
     dependencies:
-      '@learnbuddy/gateway-sdk-web':
+      '@catbuddy/gateway-sdk-web':
         specifier: workspace:*
         version: link:../../gateway/packages/sdk-web
-      '@learnbuddy/platform':
+      '@catbuddy/platform':
         specifier: workspace:*
         version: link:../platform
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../shared
 
   packages/platform:
     dependencies:
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../shared
 
@@ -287,13 +286,13 @@ importers:
 
   packages/ui:
     dependencies:
-      '@learnbuddy/client':
+      '@catbuddy/client':
         specifier: workspace:*
         version: link:../client
-      '@learnbuddy/platform':
+      '@catbuddy/platform':
         specifier: workspace:*
         version: link:../platform
-      '@learnbuddy/shared':
+      '@catbuddy/shared':
         specifier: workspace:*
         version: link:../shared
       class-variance-authority:

@@ -1,4 +1,4 @@
-import type { UIMessage } from "@learnbuddy/shared";
+import type { UIMessage } from "@catbuddy/shared";
 
 /**
  * Older WebUI disk snapshots and historical sessions may still contain

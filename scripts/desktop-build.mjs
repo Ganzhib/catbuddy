@@ -6,8 +6,8 @@
  *   node scripts/desktop-build.mjs [--verbose] [--dir] [electron-builder args...]
  *
  * Env:
- *   LEARNBUDDY_BUILD_VERBOSE=1  — same as --verbose
- *   LEARNBUDDY_BUILD_NO_KILL=1  — skip stopping learnbuddy/electron before pack
+ *   CATBUDDY_BUILD_VERBOSE=1  — same as --verbose
+ *   CATBUDDY_BUILD_NO_KILL=1  — skip stopping catbuddy/electron before pack
  *   DEBUG                       — if set, not overwritten unless --verbose
  */
 import { spawnSync } from 'node:child_process';
@@ -23,13 +23,13 @@ const desktopRoot = path.join(repoRoot, 'apps', 'desktop');
 const rawArgs = process.argv.slice(2);
 const verbose =
   rawArgs.includes('--verbose') ||
-  process.env.LEARNBUDDY_BUILD_VERBOSE === '1' ||
-  process.env.LEARNBUDDY_BUILD_VERBOSE === 'true';
+  process.env.CATBUDDY_BUILD_VERBOSE === '1' ||
+  process.env.CATBUDDY_BUILD_VERBOSE === 'true';
 const dirOnly = rawArgs.includes('--dir');
 const noKill =
   rawArgs.includes('--no-kill') ||
-  process.env.LEARNBUDDY_BUILD_NO_KILL === '1' ||
-  process.env.LEARNBUDDY_BUILD_NO_KILL === 'true';
+  process.env.CATBUDDY_BUILD_NO_KILL === '1' ||
+  process.env.CATBUDDY_BUILD_NO_KILL === 'true';
 const ebExtraArgs = rawArgs.filter((a) => a !== '--verbose' && a !== '--dir' && a !== '--no-kill');
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -74,17 +74,17 @@ function runStep(label, command, args, extraEnv = {}) {
 
 const targetLabel = dirOnly ? 'win-unpacked (--dir)' : 'NSIS installer';
 
-// Inject build timestamp for artifact name (e.g. "learnbuddy-Setup-0.1.0-20260524-120530.exe")
+// Inject build timestamp for artifact name (e.g. "catbuddy-Setup-0.1.0-20260524-120530.exe")
 process.env.BUILD_TIMESTAMP = buildTimestamp();
 
-log(`learnbuddy desktop build → ${targetLabel}`);
+log(`catbuddy desktop build → ${targetLabel}`);
 if (verbose) {
   log('Verbose mode ON (Vite logLevel=verbose, electron-builder DEBUG)');
   log(
     'Note: after "packaging" starts, NSIS LZMA compression often runs 2–10+ min with few lines — usually not frozen.',
   );
 } else {
-  log('Tip: use `pnpm run build:verbose` or LEARNBUDDY_BUILD_VERBOSE=1 for detailed logs');
+  log('Tip: use `pnpm run build:verbose` or CATBUDDY_BUILD_VERBOSE=1 for detailed logs');
 }
 
 runStep('Typecheck (tsc --noEmit)', 'pnpm', ['exec', 'tsc', '--noEmit']);
@@ -115,7 +115,7 @@ if (!noKill) {
     process.exit(killResult.status ?? 1);
   }
 } else {
-  log('Skipping process kill (LEARNBUDDY_BUILD_NO_KILL / --no-kill)');
+  log('Skipping process kill (CATBUDDY_BUILD_NO_KILL / --no-kill)');
 }
 
 const outputDirName = pickElectronBuilderOutputDir();
@@ -129,7 +129,7 @@ const outDir = path.join(desktopRoot, outputDirName);
 log(`Done. Output folder: ${outDir}`);
 
 const pkg = JSON.parse(fs.readFileSync(path.join(desktopRoot, 'package.json'), 'utf8'));
-const productName = pkg.build?.productName ?? 'learnbuddy';
+const productName = pkg.build?.productName ?? 'catbuddy';
 // New naming: productName-Setup-version-TIMESTAMP.exe (see artifactName in package.json)
 const ts = process.env.BUILD_TIMESTAMP ?? 'YYYYMMDD-HHmmss';
 const setupName = `${productName}-Setup-${pkg.version}-${ts}.exe`;

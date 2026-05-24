@@ -1,5 +1,5 @@
-const AUTH_TOKEN_KEY = 'learnbuddy-webui.auth-token'
-const AUTH_EMAIL_KEY = 'learnbuddy-webui.auth-email'
+const AUTH_TOKEN_KEY = 'catbuddy-webui.auth-token'
+const AUTH_EMAIL_KEY = 'catbuddy-webui.auth-email'
 
 export function loadAuthToken(): string {
   if (typeof window === 'undefined') return ''

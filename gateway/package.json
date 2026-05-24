@@ -1,12 +1,12 @@
 {
-  "name": "@learnbuddy/gateway-workspace",
+  "name": "@catbuddy/gateway-workspace",
   "private": true,
   "version": "1.0.0",
   "description": "Web ⇄ Gateway ⇄ Desktop — session WS (monorepo)",
   "scripts": {
-    "dev": "pnpm --filter @learnbuddy/gateway dev",
-    "build": "pnpm --filter @learnbuddy/gateway build",
-    "start": "pnpm --filter @learnbuddy/gateway start",
+    "dev": "pnpm --filter @catbuddy/gateway dev",
+    "build": "pnpm --filter @catbuddy/gateway build",
+    "start": "pnpm --filter @catbuddy/gateway start",
     "lint": "pnpm -r lint",
     "test": "vitest run",
     "test:watch": "vitest",

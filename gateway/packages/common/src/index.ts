@@ -1,4 +1,4 @@
 /**
- * @deprecated Prefer `@learnbuddy/shared` (gateway-protocol, gateway-message).
+ * @deprecated Prefer `@catbuddy/shared` (gateway-protocol, gateway-message).
  */
-export * from '@learnbuddy/shared'
+export * from '@catbuddy/shared'

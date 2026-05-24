@@ -1,9 +1,9 @@
 /**
  * FallbackProvider — 主模型故障时自动切换到备用模型
- * 对应原版 learnbuddy/providers/fallback_provider.py
+ * 对应原版 catbuddy/providers/fallback_provider.py
  */
 import { LLMProvider, type ChatStreamOpts, type ChatStreamWithRetryOpts } from './base-provider'
-import type { LLMResponse } from "@learnbuddy/shared"
+import type { LLMResponse } from "@catbuddy/shared"
 
 export class FallbackProvider extends LLMProvider {
   readonly name = 'fallback'

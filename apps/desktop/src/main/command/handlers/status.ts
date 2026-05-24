@@ -1,5 +1,5 @@
 import type { CommandContext } from "../context";
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 
 export function cmdStatus(ctx: CommandContext): OutboundMessage {
   const loop = ctx.loop;
@@ -10,7 +10,7 @@ export function cmdStatus(ctx: CommandContext): OutboundMessage {
     channel: ctx.msg.channel,
     chatId: ctx.msg.chatId,
     content: [
-      "**learnbuddy Desktop**",
+      "**catbuddy Desktop**",
       `Model: \`${loop.model}\``,
       `Uptime: ${min}m ${s}s`,
       `Active sessions: ${loop.activeSessionCount}`,

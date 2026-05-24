@@ -1,5 +1,5 @@
 {
-  "name": "@learnbuddy/gateway-sdk-desktop",
+  "name": "@catbuddy/gateway-sdk-desktop",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@learnbuddy/shared": "workspace:*",
+    "@catbuddy/shared": "workspace:*",
     "ws": "^8.16.0"
   },
   "devDependencies": {

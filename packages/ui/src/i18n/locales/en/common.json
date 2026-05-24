@@ -1,12 +1,12 @@
 {
   "app": {
-    "brand": "learnbuddy",
+    "brand": "catbuddy",
     "loading": {
-      "connecting": "Connecting to learnbuddy…",
-      "boot": "Loading learnbuddy…"
+      "connecting": "Connecting to catbuddy…",
+      "boot": "Loading catbuddy…"
     },
     "error": {
-      "title": "Couldn't reach learnbuddy",
+      "title": "Couldn't reach catbuddy",
       "gatewayHint": "For dev, run `pnpm gateway:dev` plus desktop (GATEWAY_ENABLED=true), or start nanobot gateway; open this page on the same machine as the backend."
     },
     "auth": {
@@ -23,19 +23,19 @@
     },
     "system": {
       "section": "System",
-      "restartHint": "Restart learnbuddy to apply runtime changes.",
-      "restart": "Restart learnbuddy",
+      "restartHint": "Restart catbuddy to apply runtime changes.",
+      "restart": "Restart catbuddy",
       "restarting": "Restarting..."
     },
     "restart": {
       "completed": "Restart completed in {{seconds}}s."
     },
     "documentTitle": {
-      "base": "learnbuddy",
-      "chat": "{{title}} · learnbuddy"
+      "base": "catbuddy",
+      "chat": "{{title}} · catbuddy"
     },
     "meta": {
-      "description": "learnbuddy web UI — chat with your learnbuddy workspace."
+      "description": "catbuddy web UI — chat with your catbuddy workspace."
     }
   },
   "desktopDownload": {
@@ -57,7 +57,7 @@
       "loginRequired": "Sign in before turning this on",
       "unauthorized": "Gateway secret mismatch — check settings",
       "error": "Connection failed — see Gateway status in Settings",
-      "localGatewayDown": "Cannot reach local Gateway — set LEARNBUDDY_GATEWAY_USE_LOCAL=false in .env"
+      "localGatewayDown": "Cannot reach local Gateway — set CATBUDDY_GATEWAY_USE_LOCAL=false in .env"
     },
     "searchAria": "Search chats",
     "searchPlaceholder": "Search chats",
@@ -119,7 +119,7 @@
       "language": "Language",
       "provider": "Provider",
       "model": "Model",
-      "restart": "Restart learnbuddy",
+      "restart": "Restart catbuddy",
       "configPath": "Config path",
       "compaction": "Auto Compaction",
       "compactionEnable": "Enable",
@@ -129,7 +129,7 @@
       "theme": "Switch between light and dark appearance.",
       "language": "Choose the language used by the WebUI.",
       "provider": "Select the provider that should serve new model requests.",
-      "model": "Set the default model name used by learnbuddy.",
+      "model": "Set the default model name used by catbuddy.",
       "configPath": "The gateway configuration file currently in use.",
       "compactionEnable": "Automatically compress old conversations to save tokens.",
       "compactionThreshold": "Compress when the number of messages exceeds this count."
@@ -143,7 +143,7 @@
       "loading": "Loading settings...",
       "loadError": "Could not load settings",
       "unsaved": "Unsaved changes.",
-      "savedRestart": "Saved. Restart learnbuddy to apply."
+      "savedRestart": "Saved. Restart catbuddy to apply."
     },
     "actions": {
       "save": "Save",
@@ -152,7 +152,7 @@
       "cancel": "Cancel"
     },
     "byok": {
-      "description": "Bring your own provider keys. learnbuddy reads these values from the current config and only configured providers can be selected in General.",
+      "description": "Bring your own provider keys. catbuddy reads these values from the current config and only configured providers can be selected in General.",
       "configured": "Configured",
       "notConfigured": "Not configured",
       "configuredSection": "Configured",
@@ -255,7 +255,7 @@
       "imageQuickActions": {
         "icon": {
           "title": "Design an app icon",
-          "prompt": "Generate a clean 1:1 app icon for learnbuddy: friendly robot, simple vector style, soft blue and white palette, no text."
+          "prompt": "Generate a clean 1:1 app icon for catbuddy: friendly robot, simple vector style, soft blue and white palette, no text."
         },
         "sticker": {
           "title": "Make a sticker",
@@ -338,7 +338,7 @@
             "description": "Cancel the active agent turn for this chat."
           },
           "restart": {
-            "title": "Restart learnbuddy",
+            "title": "Restart catbuddy",
             "description": "Restart the bot process in place."
           },
           "status": {
@@ -439,7 +439,7 @@
     },
     "gatewayDesktopOffline": {
       "title": "Desktop app not ready",
-      "body": "Your message needs to be handled on this computer's learnbuddy desktop app. Open the app and turn on Remote Control in the sidebar, then try again."
+      "body": "Your message needs to be handled on this computer's catbuddy desktop app. Open the app and turn on Remote Control in the sidebar, then try again."
     },
     "generic": {
       "title": "Something went wrong",

@@ -13,7 +13,7 @@ export function EmptyState({
       <div className="space-y-1">
         <p className="text-lg font-medium">No chats yet</p>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Start a conversation — your sessions are stored locally on the learnbuddy
+          Start a conversation — your sessions are stored locally on the catbuddy
           workspace and stay available across reloads.
         </p>
       </div>

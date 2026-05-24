@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { resolveAuthEmailPrefix } from "@learnbuddy/platform";
+import { resolveAuthEmailPrefix } from "@catbuddy/platform";
 
 import { BrandMark } from "@/components/BrandMark";
 

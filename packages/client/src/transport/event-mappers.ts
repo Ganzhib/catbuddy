@@ -1,6 +1,6 @@
-import type { ToolEvent } from "@learnbuddy/shared";
-import type { InboundEvent, UIFileEdit } from "@learnbuddy/shared";
-import { toolProgressFromBackendEvent } from "@learnbuddy/client";
+import type { ToolEvent } from "@catbuddy/shared";
+import type { InboundEvent, UIFileEdit } from "@catbuddy/shared";
+import { toolProgressFromBackendEvent } from "@catbuddy/client";
 
 /** Map desktop IPC tool payload → UI tool_hint frame. */
 export function inboundFromToolEvent(

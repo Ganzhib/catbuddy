@@ -1,4 +1,4 @@
-import type { UIMessage } from "@learnbuddy/shared";
+import type { UIMessage } from "@catbuddy/shared";
 
 /** Match websocket/session scrub: keep header + Result body only; trim model tail. */
 const SUBAGENT_UI_RESULT_MAX_CHARS = 800;

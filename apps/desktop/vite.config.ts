@@ -86,9 +86,9 @@ export default defineConfig({
           },
           resolve: {
             alias: {
-              "@learnbuddy/shared/brand": path.resolve(repoRoot, "packages/shared/src/brand.mjs"),
-              "@learnbuddy/shared": path.resolve(repoRoot, "packages/shared/src/index.ts"),
-              "@learnbuddy/gateway-sdk-desktop": path.resolve(
+              "@catbuddy/shared/brand": path.resolve(repoRoot, "packages/shared/src/brand.mjs"),
+              "@catbuddy/shared": path.resolve(repoRoot, "packages/shared/src/index.ts"),
+              "@catbuddy/gateway-sdk-desktop": path.resolve(
                 repoRoot,
                 "gateway/packages/sdk-desktop/src/index.ts",
               ),
@@ -103,14 +103,14 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@", replacement: uiRoot },
-      { find: /^@learnbuddy\/ui$/, replacement: path.resolve(repoRoot, "packages/ui/src/index.ts") },
-      { find: /^@learnbuddy\/ui\//, replacement: `${path.resolve(repoRoot, "packages/ui/src")}/` },
-      { find: "@learnbuddy/shared/brand", replacement: path.resolve(repoRoot, "packages/shared/src/brand.mjs") },
-      { find: /^@learnbuddy\/shared$/, replacement: path.resolve(repoRoot, "packages/shared/src/index.ts") },
-      { find: "@learnbuddy/client", replacement: path.resolve(repoRoot, "packages/client/src/index.ts") },
-      { find: "@learnbuddy/platform", replacement: path.resolve(repoRoot, "packages/platform/src/index.ts") },
+      { find: /^@catbuddy\/ui$/, replacement: path.resolve(repoRoot, "packages/ui/src/index.ts") },
+      { find: /^@catbuddy\/ui\//, replacement: `${path.resolve(repoRoot, "packages/ui/src")}/` },
+      { find: "@catbuddy/shared/brand", replacement: path.resolve(repoRoot, "packages/shared/src/brand.mjs") },
+      { find: /^@catbuddy\/shared$/, replacement: path.resolve(repoRoot, "packages/shared/src/index.ts") },
+      { find: "@catbuddy/client", replacement: path.resolve(repoRoot, "packages/client/src/index.ts") },
+      { find: "@catbuddy/platform", replacement: path.resolve(repoRoot, "packages/platform/src/index.ts") },
       {
-        find: "@learnbuddy/gateway-sdk-desktop",
+        find: "@catbuddy/gateway-sdk-desktop",
         replacement: path.resolve(repoRoot, "gateway/packages/sdk-desktop/src/index.ts"),
       },
     ],

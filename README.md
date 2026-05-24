@@ -1,4 +1,4 @@
-# learnbuddy (pnpm monorepo)
+# catbuddy (pnpm monorepo)
 
 
 
@@ -16,19 +16,19 @@ Web + 桌面共用 UI 与客户端协议，分应用打包。详见 [docs/MONORE
 
 ```text
 
-learnbuddy/
+catbuddy/
 
 ├── apps/
 
-│   ├── desktop/     # @learnbuddy/desktop — Electron + 本地 Agent
+│   ├── desktop/     # @catbuddy/desktop — Electron + 本地 Agent
 
-│   └── web/         # @learnbuddy/web — 浏览器 SPA
+│   └── web/         # @catbuddy/web — 浏览器 SPA
 
 ├── packages/
 
 │   ├── shared/      # 协议与类型
 
-│   ├── client/      # learnbuddyClient + transport（IPC / WS / gateway）
+│   ├── client/      # catbuddyClient + transport（IPC / WS / gateway）
 
 │   ├── platform/    # bootstrap / REST·IPC API
 
@@ -46,7 +46,7 @@ learnbuddy/
 
 
 
-在 `learnbuddy/` 目录安装依赖：
+在 `catbuddy/` 目录安装依赖：
 
 
 
@@ -81,11 +81,11 @@ pnpm install
 
 
 
-### Web 开发（learnbuddy Gateway，推荐）
+### Web 开发（catbuddy Gateway，推荐）
 
 
 
-无需本地 `nanobot gateway`。Web UI 通过 **learnbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)、[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
+无需本地 `nanobot gateway`。Web UI 通过 **catbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)、[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
 
 
 
@@ -102,7 +102,7 @@ pnpm gateway:dev
 
 
 # 2) 桌面（需开启 gateway）
-# 复制 apps/desktop/.env.example → apps/desktop/.env，或写入 ~/.learnbuddy.env：
+# 复制 apps/desktop/.env.example → apps/desktop/.env，或写入 ~/.catbuddy.env：
 #   GATEWAY_ENABLED=true
 #   GATEWAY_URL=ws://127.0.0.1:18765/ws
 #   GATEWAY_SECRET=dev-secret
@@ -146,7 +146,7 @@ pnpm dev:web
 
 | 端 | 模板 | 复制为 |
 |----|------|--------|
-| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.learnbuddy.env` |
+| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.catbuddy.env` |
 | Web（开发） | `apps/web/.env.development.example` | `apps/web/.env.development` |
 | Web（生产 build） | `apps/web/.env.production.example` | `apps/web/.env.production` |
 | Gateway | `gateway/.env.example` | `gateway/.env` |
@@ -155,9 +155,9 @@ pnpm dev:web
 
 | 变量 | 说明 |
 |------|------|
-| `VITE_USE_GATEWAY` | `true`（dev 默认）→ learnbuddy gateway；`false` → nanobot gateway |
+| `VITE_USE_GATEWAY` | `true`（dev 默认）→ catbuddy gateway；`false` → nanobot gateway |
 | `VITE_GATEWAY_URL` | nanobot HTTP（`VITE_USE_GATEWAY=false` 时，默认 `http://127.0.0.1:8765`） |
-| `VITE_GATEWAY_HTTP_URL` | learnbuddy gateway HTTP（dev 默认 `http://127.0.0.1:18765`；生产建议 `/gateway-api` 或公网 URL） |
+| `VITE_GATEWAY_HTTP_URL` | catbuddy gateway HTTP（dev 默认 `http://127.0.0.1:18765`；生产建议 `/gateway-api` 或公网 URL） |
 
 详见 [docs/GATEWAY.md](./docs/GATEWAY.md)。
 

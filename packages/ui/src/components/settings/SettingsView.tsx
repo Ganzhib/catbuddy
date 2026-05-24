@@ -44,10 +44,10 @@ import {
   updateProviderSettings,
   updateSettings,
   updateWebSearchSettings,
-} from "@learnbuddy/platform";
+} from "@catbuddy/platform";
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
-import type { SettingsPayload, WebSearchSettingsUpdate } from "@learnbuddy/shared";
+import type { SettingsPayload, WebSearchSettingsUpdate } from "@catbuddy/shared";
 
 type SettingsSectionKey = "general" | "byok";
 type ByokPaneKey = "llm" | "web-search";
@@ -569,7 +569,7 @@ function CompactionSettings() {
   useEffect(() => {
     (async () => {
       try {
-        const config = await window.learnbuddy?.getConfig()
+        const config = await window.catbuddy?.getConfig()
         const compact = (config as any)?.agents?.defaults?.autoCompact ?? {}
         if (compact.enabled !== undefined) setEnabled(compact.enabled)
         if (compact.threshold) setThreshold(compact.threshold)
@@ -578,7 +578,7 @@ function CompactionSettings() {
   }, [])
 
   const save = async () => {
-    await window.learnbuddy?.updateConfig('agents.defaults.autoCompact', { enabled, threshold })
+    await window.catbuddy?.updateConfig('agents.defaults.autoCompact', { enabled, threshold })
   }
 
   return (

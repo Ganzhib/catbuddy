@@ -1,6 +1,6 @@
 /**
  * AgentLoop — 核心状态机引擎
- * 对应原版 learnbuddy/agent/loop.py
+ * 对应原版 catbuddy/agent/loop.py
  */
 import { nanoid } from "nanoid";
 import { ContextBuilder } from "./context";
@@ -18,7 +18,7 @@ import type {
   FileEditEvent,
   ToolEvent,
   TurnCompleteData,
-} from "@learnbuddy/shared";
+} from "@catbuddy/shared";
 import {
   CommandRouter,
   type CommandContext,
@@ -180,7 +180,7 @@ export class AgentLoop {
     return this._activeTasks.size;
   }
 
-  // ═══ Bus 模式：后台消费循环（参考 learnbuddy/agent/loop.py run()） ═══
+  // ═══ Bus 模式：后台消费循环（参考 catbuddy/agent/loop.py run()） ═══
   async run(): Promise<void> {
     if (!this.bus) throw new Error("AgentLoop.run() requires a MessageBus");
     this._running = true;
@@ -215,7 +215,7 @@ export class AgentLoop {
 
   /**
    * _dispatch — 处理单条消息。
-   * 参考 learnbuddy/agent/loop.py _dispatch()
+   * 参考 catbuddy/agent/loop.py _dispatch()
    * stream callback 直接发布到 bus.outbound（而不是 IPC），由 ChannelManager 路由。
    */
   private async _dispatch(msg: InboundMessage, log?: Logger): Promise<void> {

@@ -13,7 +13,7 @@ import { MarkdownText, preloadMarkdownText } from "@/components/MarkdownText";
 import { cn } from "@/lib/utils";
 import { formatTurnLatency } from "@/lib/format";
 import { ProgressTraceLines, ToolCallCards } from "@/components/thread/ToolCallCards";
-import type { UIImage, UIMediaAttachment, UIMessage } from "@learnbuddy/shared";
+import type { UIImage, UIMediaAttachment, UIMessage } from "@catbuddy/shared";
 
 interface MessageBubbleProps {
   message: UIMessage;

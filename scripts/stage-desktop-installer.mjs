@@ -2,20 +2,20 @@
 /**
  * Copy the desktop NSIS installer into apps/web/public/downloads/ for Web UI download button.
  *
- * Usage (from learnbuddy/):
+ * Usage (from catbuddy/):
  *   node scripts/stage-desktop-installer.mjs
  *   node scripts/stage-desktop-installer.mjs --source path/to/installer.exe
  *   node scripts/stage-desktop-installer.mjs --dry-run
  *
  * Env:
- *   LEARNBUDDY_DESKTOP_RELEASE_DIR  — release | release-fresh (default: try both)
+ *   CATBUDDY_DESKTOP_RELEASE_DIR  — release | release-fresh (default: try both)
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** @see packages/shared/src/desktop-download.ts */
-const DESKTOP_INSTALLER_FILENAME = 'learnbuddy-setup-win-x64.exe';
+const DESKTOP_INSTALLER_FILENAME = 'catbuddy-setup-win-x64.exe';
 const DESKTOP_DOWNLOAD_PATH = `/downloads/${DESKTOP_INSTALLER_FILENAME}`;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -45,14 +45,14 @@ function parseArgs(argv) {
 
 function readDesktopMeta() {
   const pkg = JSON.parse(fs.readFileSync(path.join(desktopRoot, 'package.json'), 'utf8'));
-  const productName = pkg.build?.productName ?? 'learnbuddy';
+  const productName = pkg.build?.productName ?? 'catbuddy';
   const version = pkg.version ?? '0.0.0';
   const expectedName = `${productName} Setup ${version}.exe`;
   return { productName, version, expectedName };
 }
 
 function listReleaseDirs() {
-  const preferred = process.env.LEARNBUDDY_DESKTOP_RELEASE_DIR?.trim();
+  const preferred = process.env.CATBUDDY_DESKTOP_RELEASE_DIR?.trim();
   if (preferred) {
     return [path.join(desktopRoot, preferred)];
   }

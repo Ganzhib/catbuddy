@@ -120,11 +120,11 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
         )}
 
         <p className="mt-5 text-center text-[10px] leading-relaxed text-[#1E3A8A]/45">
-          继续即表示您同意 learnbuddy 的服务条款与隐私政策。
+          继续即表示您同意 catbuddy 的服务条款与隐私政策。
         </p>
       </div>
       <p className="mt-1 text-center text-[10px] text-[#1E3A8A]/45 lg:hidden">
-          © learnbuddy · 作者：甘智斌
+          © catbuddy · 作者：甘智斌
       </p>
     </main>
   )

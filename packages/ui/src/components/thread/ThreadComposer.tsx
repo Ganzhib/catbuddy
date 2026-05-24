@@ -40,8 +40,8 @@ import {
   MAX_IMAGES_PER_MESSAGE,
 } from "@/hooks/useAttachedImages";
 import { useClipboardAndDrop } from "@/hooks/useClipboardAndDrop";
-import type { SendImage, SendOptions } from "@/hooks/uselearnbuddyStream";
-import type { SlashCommand, GoalStateWsPayload } from "@learnbuddy/shared";
+import type { SendImage, SendOptions } from "@/hooks/useCatbuddyStream";
+import type { SlashCommand, GoalStateWsPayload } from "@catbuddy/shared";
 import { cn } from "@/lib/utils";
 
 /** ``<input accept>``: aligned with the server's MIME whitelist. SVG is
@@ -271,10 +271,10 @@ function RunElapsedStrip({
       {goalPanelOpen && canExpandGoal && markdownBody ? (
         <div
           ref={panelRef}
-          id="learnbuddy-goal-panel-root"
+          id="catbuddy-goal-panel-root"
           role="dialog"
           aria-modal="false"
-          aria-labelledby="learnbuddy-goal-panel-title"
+          aria-labelledby="catbuddy-goal-panel-title"
           tabIndex={-1}
           className={cn(
             "absolute bottom-[calc(100%+8px)] left-3 right-3 z-[50] flex max-w-none flex-col overflow-hidden",
@@ -285,7 +285,7 @@ function RunElapsedStrip({
         >
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/[0.06] px-3 py-2 dark:border-white/[0.08]">
             <h2
-              id="learnbuddy-goal-panel-title"
+              id="catbuddy-goal-panel-title"
               className="min-w-0 truncate text-[13px] font-semibold tracking-tight text-foreground"
             >
               {t("thread.composer.goalStateSheetTitle")}
@@ -304,7 +304,7 @@ function RunElapsedStrip({
             </button>
           </div>
           <div
-            id="learnbuddy-goal-panel-scroll"
+            id="catbuddy-goal-panel-scroll"
             className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-3 pb-3 pt-2"
           >
             <MarkdownText className="max-w-none text-[13.5px] leading-relaxed text-foreground/90">
@@ -346,7 +346,7 @@ function RunElapsedStrip({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
             aria-expanded={goalPanelOpen}
-            aria-controls={goalPanelOpen ? "learnbuddy-goal-panel-root" : undefined}
+            aria-controls={goalPanelOpen ? "catbuddy-goal-panel-root" : undefined}
             aria-label={t("thread.composer.goalStateExpandAria")}
             title={t("thread.composer.goalStateExpandAria")}
             onClick={() => setGoalPanelOpen((o) => !o)}

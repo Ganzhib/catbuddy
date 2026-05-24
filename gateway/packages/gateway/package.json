@@ -1,5 +1,5 @@
 {
-  "name": "@learnbuddy/gateway",
+  "name": "@catbuddy/gateway",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",
-    "@learnbuddy/shared": "workspace:*",
+    "@catbuddy/shared": "workspace:*",
     "dotenv": "16.6.1",
     "fastify": "^4.26.0",
     "jsonwebtoken": "^9.0.0",

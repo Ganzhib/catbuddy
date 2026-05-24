@@ -1,29 +1,29 @@
 {
   "app": {
-    "brand": "learnbuddy",
+    "brand": "catbuddy",
     "loading": {
-      "connecting": "正在连接 learnbuddy…",
-      "boot": "正在加载 learnbuddy…"
+      "connecting": "正在连接 catbuddy…",
+      "boot": "正在加载 catbuddy…"
     },
     "error": {
-      "title": "无法连接到 learnbuddy",
+      "title": "无法连接到 catbuddy",
       "gatewayHint": "开发模式请运行 `pnpm gateway:dev` 与桌面（GATEWAY_ENABLED=true），或启动 nanobot gateway；并确认本页与后端在同一台机器。"
     },
     "system": {
       "section": "系统",
-      "restartHint": "重启 learnbuddy 以应用运行时更改。",
-      "restart": "重启 learnbuddy",
+      "restartHint": "重启 catbuddy 以应用运行时更改。",
+      "restart": "重启 catbuddy",
       "restarting": "正在重启..."
     },
     "restart": {
       "completed": "重启已完成，用时 {{seconds}} 秒。"
     },
     "documentTitle": {
-      "base": "learnbuddy",
-      "chat": "{{title}} · learnbuddy"
+      "base": "catbuddy",
+      "chat": "{{title}} · catbuddy"
     },
     "meta": {
-      "description": "learnbuddy Web UI —— 与你的 learnbuddy 工作区对话。"
+      "description": "catbuddy Web UI —— 与你的 catbuddy 工作区对话。"
     }
   },
   "desktopDownload": {
@@ -45,7 +45,7 @@
       "loginRequired": "请先登录账号后再开启",
       "unauthorized": "Gateway 密钥不匹配，请检查配置",
       "error": "连接失败，请查看设置中的 Gateway 状态",
-      "localGatewayDown": "无法连接本机 Gateway，请确认 .env 中 LEARNBUDDY_GATEWAY_USE_LOCAL=false"
+      "localGatewayDown": "无法连接本机 Gateway，请确认 .env 中 CATBUDDY_GATEWAY_USE_LOCAL=false"
     },
     "searchAria": "搜索会话",
     "searchPlaceholder": "搜索会话",
@@ -107,7 +107,7 @@
       "language": "语言",
       "provider": "提供商",
       "model": "模型",
-      "restart": "重启 learnbuddy",
+      "restart": "重启 catbuddy",
       "configPath": "配置路径",
       "compaction": "自动压缩",
       "compactionEnable": "启用",
@@ -117,7 +117,7 @@
       "theme": "在浅色和深色外观之间切换。",
       "language": "选择 WebUI 使用的语言。",
       "provider": "选择新模型请求使用的服务提供商。",
-      "model": "设置 learnbuddy 默认使用的模型名称。",
+      "model": "设置 catbuddy 默认使用的模型名称。",
       "configPath": "当前网关正在使用的配置文件。",
       "compactionEnable": "自动压缩旧对话以节省 token。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
@@ -131,7 +131,7 @@
       "loading": "正在加载设置...",
       "loadError": "无法加载设置",
       "unsaved": "有未保存的更改。",
-      "savedRestart": "已保存。重启 learnbuddy 后生效。"
+      "savedRestart": "已保存。重启 catbuddy 后生效。"
     },
     "actions": {
       "save": "保存",
@@ -140,7 +140,7 @@
       "cancel": "取消"
     },
     "byok": {
-      "description": "自带 provider key。learnbuddy 会从当前 config 读取这些值，只有已配置的 provider 才能在通用设置里选择。",
+      "description": "自带 provider key。catbuddy 会从当前 config 读取这些值，只有已配置的 provider 才能在通用设置里选择。",
       "configured": "已配置",
       "notConfigured": "未配置",
       "configuredSection": "已配置",
@@ -243,7 +243,7 @@
       "imageQuickActions": {
         "icon": {
           "title": "设计应用图标",
-          "prompt": "生成一个干净的 1:1 learnbuddy 应用图标：友好的机器人，简洁矢量风格，蓝白柔和配色，不要文字。"
+          "prompt": "生成一个干净的 1:1 catbuddy 应用图标：友好的机器人，简洁矢量风格，蓝白柔和配色，不要文字。"
         },
         "sticker": {
           "title": "制作贴纸",
@@ -325,7 +325,7 @@
             "description": "取消这个对话中正在运行的 agent 回合。"
           },
           "restart": {
-            "title": "重启 learnbuddy",
+            "title": "重启 catbuddy",
             "description": "原地重启 bot 进程。"
           },
           "status": {
@@ -427,7 +427,7 @@
     },
     "gatewayDesktopOffline": {
       "title": "桌面助手未就绪",
-      "body": "消息需要在本机的 learnbuddy 桌面应用中处理。请先打开桌面应用，并在侧边栏开启「远程控制」后重试。"
+      "body": "消息需要在本机的 catbuddy 桌面应用中处理。请先打开桌面应用，并在侧边栏开启「远程控制」后重试。"
     },
     "generic": {
       "title": "出错了",

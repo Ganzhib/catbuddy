@@ -1,14 +1,14 @@
 /**
  * Shared Web ⇄ Gateway session protocol (WS subscribe + HTTP send).
- * Used by {@link GatewayTransport} (`@learnbuddy/gateway-sdk-web`).
+ * Used by {@link GatewayTransport} (`@catbuddy/gateway-sdk-web`).
  */
 import type {
   GatewayHttpSendResponse,
   GatewaySessionServerMessage,
   InboundEvent,
-} from '@learnbuddy/shared'
-import { bareChatId, toSessionKey } from '@learnbuddy/shared'
-import type { SessionUpdateScope } from '@learnbuddy/shared'
+} from '@catbuddy/shared'
+import { bareChatId, toSessionKey } from '@catbuddy/shared'
+import type { SessionUpdateScope } from '@catbuddy/shared'
 
 export function isInboundEvent(value: unknown): value is InboundEvent {
   return (
@@ -213,7 +213,7 @@ export function resolveGatewayWebToken(configured: string): string {
   if (fromConfig) return fromConfig
   if (typeof window === 'undefined') return ''
   try {
-    return window.localStorage.getItem('learnbuddy-webui.auth-token')?.trim() || ''
+    return window.localStorage.getItem('catbuddy-webui.auth-token')?.trim() || ''
   } catch {
     return ''
   }

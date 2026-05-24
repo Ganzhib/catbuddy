@@ -1,4 +1,4 @@
-import type { ToolProgressEvent } from "@learnbuddy/shared";
+import type { ToolProgressEvent } from "@catbuddy/shared";
 
 const DETAIL_PREVIEW_CHARS = 120;
 

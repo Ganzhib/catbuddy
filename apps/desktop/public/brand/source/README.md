@@ -26,10 +26,10 @@ pnpm run brand:generate
 |------|------|
 | `logo.png` | Pre-made horizontal logo (only if you already have final artwork) |
 
-**If `logo.png` is missing**, `pnpm run brand:generate` **composes** the sidebar logo from `icon.png` + the word `learnbuddy` (orange `learn` + brown `buddy`), so you are not stuck with old `nanobot` text baked into PNGs.
+**If `logo.png` is missing**, `pnpm run brand:generate` **composes** the sidebar logo from `icon.png` + the word `catbuddy` (orange `learn` + brown `buddy`), so you are not stuck with old `nanobot` text baked into PNGs.
 
 ```bash
-pnpm run brand:generate -- --logo-text learnbuddy --logo-split 5
+pnpm run brand:generate -- --logo-text catbuddy --logo-split 5
 ```
 
 App code imports paths from `shared/brand.mjs` (`src/lib/brand.ts`, `BrandLogo`, `BrandMark`).
@@ -40,10 +40,10 @@ SVG masters (`icon.svg`, `logo.svg`) work via `--icon` / `--logo`.
 
 | Output | Use |
 |--------|-----|
-| `learnbuddy_favicon_32.png` | Browser tab (`index.html`) |
-| `learnbuddy_icon.png` | Secondary favicon |
-| `learnbuddy_apple_touch.png` | iOS home screen |
-| `learnbuddy_logo.png` / `.webp` | Sidebar (`Sidebar.tsx`) |
+| `catbuddy_favicon_32.png` | Browser tab (`index.html`) |
+| `catbuddy_icon.png` | Secondary favicon |
+| `catbuddy_apple_touch.png` | iOS home screen |
+| `catbuddy_logo.png` / `.webp` | Sidebar (`Sidebar.tsx`) |
 | `electron/assets/icon.png` | Electron window + `electron-builder` (512×512) |
 
 ## Commands
@@ -55,4 +55,4 @@ pnpm run brand:generate
 pnpm run brand:generate -- --icon ./my-icon.png --logo ./my-logo.png
 ```
 
-After renaming the product, only the **output filenames** use the `learnbuddy_` prefix; you can keep designing in any tool and drop masters into `source/`.
+After renaming the product, only the **output filenames** use the `catbuddy_` prefix; you can keep designing in any tool and drop masters into `source/`.

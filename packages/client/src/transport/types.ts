@@ -3,7 +3,7 @@ export type {
   SessionUpdateScope,
   TransportCallbacks,
   TransportKind,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 
 export interface CreateTransportOptions {
   mode?: 'auto' | 'desktop' | 'web' | 'gateway'

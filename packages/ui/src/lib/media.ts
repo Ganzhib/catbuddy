@@ -1,4 +1,4 @@
-import type { UIMediaAttachment, UIMediaKind } from "@learnbuddy/shared";
+import type { UIMediaAttachment, UIMediaKind } from "@catbuddy/shared";
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",

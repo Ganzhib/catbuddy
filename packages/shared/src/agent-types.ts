@@ -167,7 +167,7 @@ export interface AgentStatus {
 }
 
 // ── 配置 ──
-export interface learnbuddyConfig {
+export interface catbuddyConfig {
   workspace: string
   agents: {
     defaults: {

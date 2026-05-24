@@ -1,10 +1,10 @@
-# learnbuddy — 项目计划（Monorepo）
+# catbuddy — 项目计划（Monorepo）
 
 > 历史单包结构说明已归档；当前以 **pnpm workspace** 为准。详见 [README.md](./README.md)、[docs/MONOREPO_MIGRATION.md](./docs/MONOREPO_MIGRATION.md)。
 
 ## 概述
 
-Web + 桌面共用 UI（`@learnbuddy/ui`）与客户端协议（`@learnbuddy/client`），桌面内置本地 Agent，Web 连接 nanobot gateway。
+Web + 桌面共用 UI（`@catbuddy/ui`）与客户端协议（`@catbuddy/client`），桌面内置本地 Agent，Web 连接 nanobot gateway。
 
 ## 技术栈
 
@@ -17,12 +17,12 @@ Web + 桌面共用 UI（`@learnbuddy/ui`）与客户端协议（`@learnbuddy/cli
 ## 目录结构
 
 ```text
-learnbuddy/
+catbuddy/
 ├── apps/desktop/       # Electron 主进程 + Agent + 打包
 ├── apps/web/           # 浏览器 SPA
 ├── packages/
 │   ├── shared/         # 类型与协议
-│   ├── client/         # learnbuddyClient + transport
+│   ├── client/         # catbuddyClient + transport
 │   ├── platform/       # IPC / HTTP bootstrap & API
 │   └── ui/             # React 应用
 ├── gateway-legacy-removed/       # 跨端 relay
@@ -32,7 +32,7 @@ learnbuddy/
 ## 当前状态
 
 - [x] Monorepo 骨架（M1–M5）
-- [x] `@learnbuddy/platform` IPC + HTTP 双实现
+- [x] `@catbuddy/platform` IPC + HTTP 双实现
 - [x] `pnpm -r lint`
 - [ ] Web 与 gateway 端到端验收（见迁移文档 §6）
 - [ ] 根目录 `webui/` 废弃说明（见 [docs/WEBUI_DEPRECATED.md](./docs/WEBUI_DEPRECATED.md)）

@@ -1,4 +1,4 @@
-const SECRET_STORAGE_KEY = 'learnbuddy-webui.bootstrap-secret'
+const SECRET_STORAGE_KEY = 'catbuddy-webui.bootstrap-secret'
 
 export function loadSavedSecret(): string {
   if (typeof window === 'undefined') return ''

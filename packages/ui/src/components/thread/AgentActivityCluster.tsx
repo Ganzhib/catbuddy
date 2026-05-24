@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FileReferenceChip } from "@/components/FileReferenceChip";
 import { ReasoningBubble, StreamingLabelSheen, TraceGroup } from "@/components/MessageBubble";
 import { cn } from "@/lib/utils";
-import type { UIFileEdit, UIMessage } from "@learnbuddy/shared";
+import type { UIFileEdit, UIMessage } from "@catbuddy/shared";
 
 /** Scrollport height for the Cursor-style “live trace” strip (tailwind spacing). */
 const CLUSTER_SCROLL_MAX_CLASS = "max-h-52";

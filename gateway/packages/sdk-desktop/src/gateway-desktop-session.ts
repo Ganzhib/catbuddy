@@ -5,8 +5,8 @@ import type {
   GatewaySessionClientMessage,
   GatewaySessionRow,
   GatewaySessionServerMessage,
-} from '@learnbuddy/shared'
-import { bareChatId } from '@learnbuddy/shared'
+} from '@catbuddy/shared'
+import { bareChatId } from '@catbuddy/shared'
 
 export const GATEWAY_DESKTOP_RECONNECT_MS = 3_000
 

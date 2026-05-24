@@ -5,12 +5,12 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["../../packages/ui/src/*"],
-      "@learnbuddy/ui": ["../../packages/ui/src/index.ts"],
-      "@learnbuddy/ui/*": ["../../packages/ui/src/*"],
-      "@learnbuddy/shared/brand": ["../../packages/shared/src/brand.d.ts"],
-      "@learnbuddy/shared": ["../../packages/shared/src/index.ts"],
-      "@learnbuddy/client": ["../../packages/client/src/index.ts"],
-      "@learnbuddy/platform": ["../../packages/platform/src/index.ts"]
+      "@catbuddy/ui": ["../../packages/ui/src/index.ts"],
+      "@catbuddy/ui/*": ["../../packages/ui/src/*"],
+      "@catbuddy/shared/brand": ["../../packages/shared/src/brand.d.ts"],
+      "@catbuddy/shared": ["../../packages/shared/src/index.ts"],
+      "@catbuddy/client": ["../../packages/client/src/index.ts"],
+      "@catbuddy/platform": ["../../packages/platform/src/index.ts"]
     }
   },
   "include": [

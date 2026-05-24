@@ -1,18 +1,18 @@
 export {
-  learnbuddyClient,
-  createLearnbuddyClient,
+  catbuddyClient,
+  createCatbuddyClient,
   type StreamError,
-} from './learnbuddy-client'
+} from './catbuddy-client'
 export {
   createAgentTransport,
   detectTransportMode,
-  hasLearnbuddyIpc,
+  hasCatbuddyIpc,
   type CreateTransportOptions,
 } from './transport'
 export type {
   AgentTransport,
   TransportCallbacks,
   SessionUpdateScope,
-} from '@learnbuddy/shared'
-export type { GatewayTransportConfig } from '@learnbuddy/gateway-sdk-web'
+} from '@catbuddy/shared'
+export type { GatewayTransportConfig } from '@catbuddy/gateway-sdk-web'
 export * from './tool-traces'

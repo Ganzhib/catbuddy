@@ -6,7 +6,7 @@ import {
   resolveGatewayHttpBase,
   syncDesktopGatewayAccountEmail,
   verifyRegister,
-} from '@learnbuddy/platform'
+} from '@catbuddy/platform'
 import type { AuthMode, RegisterStep } from './types'
 import { otpHint } from './utils'
 

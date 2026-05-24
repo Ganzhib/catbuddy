@@ -1,4 +1,4 @@
-import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate } from '@learnbuddy/shared'
+import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate } from '@catbuddy/shared'
 import { fetchBootstrapHttp, deriveWsUrlHttp } from './http-bootstrap'
 import { fetchBootstrapIpc, deriveWsUrlIpc } from './ipc-bootstrap'
 import {
@@ -26,8 +26,8 @@ import {
 export { ApiError } from './ipc-api'
 export { loadSavedSecret, saveSecret, clearSavedSecret } from './secrets'
 
-export function hasLearnbuddyIpc(): boolean {
-  return typeof window !== 'undefined' && !!window.learnbuddy
+export function hasCatbuddyIpc(): boolean {
+  return typeof window !== 'undefined' && !!window.catbuddy
 }
 
 export interface PlatformApi {
@@ -46,7 +46,7 @@ export interface PlatformApi {
 }
 
 export function createPlatformApi(): PlatformApi {
-  if (hasLearnbuddyIpc()) {
+  if (hasCatbuddyIpc()) {
     return {
       mode: 'desktop',
       fetchBootstrap: fetchBootstrapIpc,

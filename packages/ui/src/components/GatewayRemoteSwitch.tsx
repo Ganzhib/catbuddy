@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,
-} from "@learnbuddy/platform";
+} from "@catbuddy/platform";
 import { cn } from "@/lib/utils";
 
 type RemoteState = {
@@ -46,7 +46,7 @@ export function GatewayRemoteSwitch() {
   const [loginRequired, setLoginRequired] = useState(false);
 
   const refresh = useCallback(async () => {
-    const api = window.learnbuddy?.getGatewayRemoteEnabled;
+    const api = window.catbuddy?.getGatewayRemoteEnabled;
     if (!api) return;
     try {
       const remote = await api();
@@ -55,8 +55,8 @@ export function GatewayRemoteSwitch() {
         connected: remote.connected,
         needsLogin: remote.needsLogin,
       });
-      if (window.learnbuddy?.getGatewayStatus) {
-        const st = await window.learnbuddy.getGatewayStatus();
+      if (window.catbuddy?.getGatewayStatus) {
+        const st = await window.catbuddy.getGatewayStatus();
         setLastError(st.lastError ?? remote.lastError);
       } else {
         setLastError(remote.lastError);
@@ -72,7 +72,7 @@ export function GatewayRemoteSwitch() {
       await refresh();
     })();
     const id = setInterval(() => void refresh(), 3000);
-    const unsub = window.learnbuddy?.onGatewayConnectionChanged?.(() => {
+    const unsub = window.catbuddy?.onGatewayConnectionChanged?.(() => {
       void refresh();
     });
     return () => {
@@ -81,7 +81,7 @@ export function GatewayRemoteSwitch() {
     };
   }, [refresh]);
 
-  if (!window.learnbuddy?.getGatewayRemoteEnabled) return null;
+  if (!window.catbuddy?.getGatewayRemoteEnabled) return null;
 
   const onToggle = async () => {
     if (!state || busy) return;
@@ -96,7 +96,7 @@ export function GatewayRemoteSwitch() {
         }
         await syncDesktopGatewayAccountEmail();
       }
-      const next = await window.learnbuddy!.setGatewayRemoteEnabled!(!state.enabled);
+      const next = await window.catbuddy!.setGatewayRemoteEnabled!(!state.enabled);
       setState({
         enabled: next.enabled,
         connected: next.connected,

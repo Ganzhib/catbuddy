@@ -1,15 +1,15 @@
 # AgentLoop 架构（深度参考）
 
-> **桌面端实现**：`src/main/agent/loop.ts`、`runner.ts`（TypeScript，逻辑对齐 Python 版 nanobot/learnbuddy）。  
+> **桌面端实现**：`src/main/agent/loop.ts`、`runner.ts`（TypeScript，逻辑对齐 Python 版 nanobot/catbuddy）。  
 > **文档索引**：[../README.md](../README.md)
 
 ---
 
-# `learnbuddy/agent/loop.py` 架构引擎深度解读
+# `catbuddy/agent/loop.py` 架构引擎深度解读
 
 ## 一、总体定位
 
-`loop.py` 是 `learnbuddy` 项目的**核心编排引擎**，约 1600 行代码。它承接来自各通道（CLI / WebSocket / Telegram / Slack等）的消息，经过一个 **7 阶段状态机** 处理后返回响应。可以理解为一个 **Agent 的操作系统内核** ——它不直接做具体工作，而是调度所有子系统协同运作。
+`loop.py` 是 `catbuddy` 项目的**核心编排引擎**，约 1600 行代码。它承接来自各通道（CLI / WebSocket / Telegram / Slack等）的消息，经过一个 **7 阶段状态机** 处理后返回响应。可以理解为一个 **Agent 的操作系统内核** ——它不直接做具体工作，而是调度所有子系统协同运作。
 
 ---
 
@@ -222,7 +222,7 @@ SessionManager
 ## 五、并发与背压控制
 
 ```
-learnbuddy_MAX_CONCURRENT_REQUESTS (默认 3)
+catbuddy_MAX_CONCURRENT_REQUESTS (默认 3)
         │
         ▼
 asyncio.Semaphore ──▶ 限制同时进行的 LLM 调用数

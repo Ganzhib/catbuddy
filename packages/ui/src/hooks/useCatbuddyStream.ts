@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useClient } from "@/providers/ClientProvider";
 import { toMediaAttachment } from "@/lib/media";
-import { linesFromToolProgress, upsertToolProgress } from "@learnbuddy/client";
-import type { ToolProgressEvent } from "@learnbuddy/shared";
-import type { StreamError } from "@learnbuddy/client";
+import { linesFromToolProgress, upsertToolProgress } from "@catbuddy/client";
+import type { ToolProgressEvent } from "@catbuddy/shared";
+import type { StreamError } from "@catbuddy/client";
 import type {
   InboundEvent,
   OutboundImageGeneration,
@@ -13,7 +13,7 @@ import type {
   UIImage,
   UIFileEdit,
   UIMessage,
-} from "@learnbuddy/shared";
+} from "@catbuddy/shared";
 
 interface StreamBuffer {
   /** ID of the assistant message currently receiving deltas (cleared on ``stream_end``). */
@@ -444,7 +444,7 @@ export interface SendOptions {
   imageGeneration?: OutboundImageGeneration;
 }
 
-export function uselearnbuddyStream(
+export function useCatbuddyStream(
   chatId: string | null,
   initialMessages: UIMessage[] = [],
   hasPendingToolCalls = false,

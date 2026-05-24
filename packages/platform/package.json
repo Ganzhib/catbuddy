@@ -1,5 +1,5 @@
 {
-  "name": "@learnbuddy/platform",
+  "name": "@catbuddy/platform",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,6 +7,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@learnbuddy/shared": "workspace:*"
+    "@catbuddy/shared": "workspace:*"
   }
 }

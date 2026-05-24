@@ -7,7 +7,7 @@ description: Generate images and iteratively edit saved image artifacts.
 
 Use the `generate_image` tool when the user asks you to create, render, draw, design, generate, or edit an image.
 
-If the `generate_image` tool is not available in the current tool list, tell the user that image generation is not enabled for this learnbuddy instance.
+If the `generate_image` tool is not available in the current tool list, tell the user that image generation is not enabled for this catbuddy instance.
 
 ## When To Use
 
@@ -29,7 +29,7 @@ Write prompts with enough detail for image models:
 
 ## Artifact Rules
 
-The tool stores generated images as persistent artifacts under learnbuddy's media directory and returns structured metadata:
+The tool stores generated images as persistent artifacts under catbuddy's media directory and returns structured metadata:
 
 - `id`: generated image id, such as `img_ab12cd34ef56`.
 - `path`: local file path for internal follow-up edits.
@@ -94,7 +94,7 @@ Generate a new image:
 
 ```text
 generate_image(
-  prompt="A minimal app icon for learnbuddy: friendly robot head, rounded square, soft blue and white palette, clean vector style, no text",
+  prompt="A minimal app icon for catbuddy: friendly robot head, rounded square, soft blue and white palette, clean vector style, no text",
   aspect_ratio="1:1",
   image_size="1K"
 )
@@ -105,7 +105,7 @@ Edit the latest generated artifact:
 ```text
 generate_image(
   prompt="Use the reference image. Keep the same robot and composition, but change the palette to warm orange and add a subtle sunrise background.",
-  reference_images=["/home/user/.learnbuddy/media/generated/2026-05-08/img_ab12cd34ef56.png"],
+  reference_images=["/home/user/.catbuddy/media/generated/2026-05-08/img_ab12cd34ef56.png"],
   aspect_ratio="1:1",
   image_size="1K"
 )

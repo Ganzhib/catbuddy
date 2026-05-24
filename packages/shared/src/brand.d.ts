@@ -1,5 +1,5 @@
-declare module '@learnbuddy/shared/brand' {
-  export const BRAND_PREFIX: 'learnbuddy'
+declare module '@catbuddy/shared/brand' {
+  export const BRAND_PREFIX: 'catbuddy'
   export const BRAND_PUBLIC_DIR: '/brand'
 
   export function brandFilename(name: string): string

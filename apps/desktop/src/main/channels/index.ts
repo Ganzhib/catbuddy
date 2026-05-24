@@ -1,7 +1,7 @@
 /**
  * Channels 模块
  *
- * 参考 learnbuddy/channels/
+ * 参考 catbuddy/channels/
  */
 export type { BaseChannel } from "./base";
 export { ChannelManager } from "./manager";

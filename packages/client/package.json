@@ -1,5 +1,5 @@
 {
-  "name": "@learnbuddy/client",
+  "name": "@catbuddy/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,8 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@learnbuddy/gateway-sdk-web": "workspace:*",
-    "@learnbuddy/platform": "workspace:*",
-    "@learnbuddy/shared": "workspace:*"
+    "@catbuddy/gateway-sdk-web": "workspace:*",
+    "@catbuddy/platform": "workspace:*",
+    "@catbuddy/shared": "workspace:*"
   }
 }

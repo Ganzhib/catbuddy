@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Generate learnbuddy brand assets from master images in public/brand/source/.
+ * Generate catbuddy brand assets from master images in public/brand/source/.
  *
  * Usage:
  *   pnpm run brand:generate
  *   pnpm run brand:generate -- --icon path/to/icon.png --logo path/to/logo.png
- *   pnpm run brand:generate -- --compose-logo --logo-text learnbuddy --logo-split 5
+ *   pnpm run brand:generate -- --compose-logo --logo-text catbuddy --logo-split 5
  *
  * Masters (recommended):
  *   public/brand/source/icon.png  — square cat/icon only (≥512×512 ideal)
@@ -15,19 +15,28 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
-import sharp from 'sharp'
+
+const requireFromDesktop = createRequire(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'desktop', 'package.json'),
+)
+const sharp = requireFromDesktop('sharp')
 import {
   BRAND_PREFIX,
   brandAssets,
   brandFilename,
   electronIcon,
-} from '../shared/brand.mjs'
+} from '../packages/shared/src/brand.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const BRAND_DIR = path.join(ROOT, 'public', 'brand')
-const SOURCE_DIR = path.join(BRAND_DIR, 'source')
+/** Where Vite/Electron serve brand assets from. */
+const BRAND_OUT_DIRS = [
+  path.join(ROOT, 'apps/desktop/public/brand'),
+  path.join(ROOT, 'apps/web/public/brand'),
+]
+const SOURCE_DIR = path.join(BRAND_OUT_DIRS[0], 'source')
 const ELECTRON_ICON = path.join(ROOT, electronIcon)
 const INDEX_HTML = path.join(ROOT, 'apps/desktop/src/renderer/index.html')
 
@@ -55,8 +64,8 @@ function parseArgs(argv) {
     icon: null,
     logo: null,
     composeLogo: process.env.BRAND_COMPOSE_LOGO !== '0',
-    logoText: process.env.BRAND_LOGO_TEXT || 'learnbuddy',
-    logoSplit: Number(process.env.BRAND_LOGO_SPLIT || '5'),
+    logoText: process.env.BRAND_LOGO_TEXT || 'catbuddy',
+    logoSplit: Number(process.env.BRAND_LOGO_SPLIT || '3'),
   }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--icon' && argv[i + 1]) out.icon = path.resolve(argv[++i])
@@ -172,21 +181,21 @@ async function writeWebpFromPng(pngBuffer, dest) {
 
 function printHelp() {
   console.log(`
-Generate brand assets for learnbuddy-desktop.
+Generate brand assets for catbuddy-desktop.
 
 Place master files:
   public/brand/source/icon.png   square icon only (≥512px recommended)
   public/brand/source/logo.png   optional pre-made horizontal logo
 
-Without logo.png, composes icon + "learnbuddy" text (learn/buddy two-tone).
+Without logo.png, composes icon + "catbuddy" text (cat/buddy two-tone).
 
 Then run:
   pnpm run brand:generate
-  pnpm run brand:generate -- --logo-text learnbuddy --logo-split 5
+  pnpm run brand:generate -- --logo-text catbuddy --logo-split 5
 
-Outputs:
-  public/brand/${PREFIX}_*.png
-  public/brand/${PREFIX}_logo.webp
+Outputs (desktop + web):
+  apps/desktop/public/brand/${PREFIX}_*.png
+  apps/web/public/brand/${PREFIX}_*.png
   apps/desktop/src/main/assets/icon.png (${ELECTRON_ICON_SIZE}px, for electron-builder)
 `)
 }
@@ -203,7 +212,7 @@ async function main() {
   const iconSource = args.icon ?? firstExisting([
     path.join(SOURCE_DIR, 'icon.png'),
     path.join(SOURCE_DIR, 'icon.svg'),
-    path.join(BRAND_DIR, brandFilename('icon.png')),
+    path.join(BRAND_OUT_DIRS[0], brandFilename('icon.png')),
     ELECTRON_ICON,
   ])
 
@@ -213,7 +222,7 @@ async function main() {
   ])
 
   if (!iconSource) {
-    console.error('No icon source found. Add public/brand/source/icon.png or pass --icon <path>')
+    console.error('No icon source found. Add apps/desktop/public/brand/source/icon.png or pass --icon <path>')
     process.exit(1)
   }
 
@@ -227,7 +236,9 @@ async function main() {
   console.log('Icons:')
   for (const v of ICON_VARIANTS) {
     const buf = await resizeIcon(iconSource, v)
-    await writePng(buf, path.join(BRAND_DIR, v.file))
+    for (const brandDir of BRAND_OUT_DIRS) {
+      await writePng(buf, path.join(brandDir, v.file))
+    }
   }
 
   const electronBuf = await resizeIcon(iconSource, {
@@ -253,9 +264,10 @@ async function main() {
     logoPng = null
   }
   if (logoPng) {
-    const logoPath = path.join(BRAND_DIR, brandFilename('logo.png'))
-    await writePng(logoPng, logoPath)
-    await writeWebpFromPng(logoPng, path.join(BRAND_DIR, brandFilename('logo.webp')))
+    for (const brandDir of BRAND_OUT_DIRS) {
+      await writePng(logoPng, path.join(brandDir, brandFilename('logo.png')))
+      await writeWebpFromPng(logoPng, path.join(brandDir, brandFilename('logo.webp')))
+    }
   }
 
   console.log('\nHTML:')

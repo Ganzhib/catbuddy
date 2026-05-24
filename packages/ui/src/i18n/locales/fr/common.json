@@ -1,29 +1,29 @@
 {
   "app": {
-    "brand": "learnbuddy",
+    "brand": "catbuddy",
     "loading": {
-      "connecting": "Connexion à learnbuddy…",
-      "boot": "Chargement de learnbuddy…"
+      "connecting": "Connexion à catbuddy…",
+      "boot": "Chargement de catbuddy…"
     },
     "error": {
-      "title": "Impossible de joindre learnbuddy",
-      "gatewayHint": "Assurez-vous que la gateway est en cours d’exécution (`learnbuddy gateway`) et que cette page est ouverte sur la même machine."
+      "title": "Impossible de joindre catbuddy",
+      "gatewayHint": "Assurez-vous que la gateway est en cours d’exécution (`catbuddy gateway`) et que cette page est ouverte sur la même machine."
     },
     "system": {
       "section": "Système",
-      "restartHint": "Redémarrez learnbuddy pour appliquer les changements d’exécution.",
-      "restart": "Redémarrer learnbuddy",
+      "restartHint": "Redémarrez catbuddy pour appliquer les changements d’exécution.",
+      "restart": "Redémarrer catbuddy",
       "restarting": "Redémarrage..."
     },
     "restart": {
       "completed": "Redémarrage terminé en {{seconds}} s."
     },
     "documentTitle": {
-      "base": "learnbuddy",
-      "chat": "{{title}} · learnbuddy"
+      "base": "catbuddy",
+      "chat": "{{title}} · catbuddy"
     },
     "meta": {
-      "description": "Interface web learnbuddy — discutez avec votre espace de travail learnbuddy."
+      "description": "Interface web catbuddy — discutez avec votre espace de travail catbuddy."
     }
   },
   "sidebar": {
@@ -58,14 +58,14 @@
       "language": "Langue",
       "provider": "Fournisseur",
       "model": "Modèle",
-      "restart": "Redémarrer learnbuddy",
+      "restart": "Redémarrer catbuddy",
       "configPath": "Chemin de configuration"
     },
     "help": {
       "theme": "Basculer entre les apparences claire et sombre.",
       "language": "Choisissez la langue utilisée par le WebUI.",
       "provider": "Sélectionnez le fournisseur des nouvelles requêtes de modèle.",
-      "model": "Définissez le nom du modèle par défaut utilisé par learnbuddy.",
+      "model": "Définissez le nom du modèle par défaut utilisé par catbuddy.",
       "configPath": "Le fichier de configuration actuellement utilisé par la passerelle."
     },
     "values": {
@@ -77,7 +77,7 @@
       "loading": "Chargement des paramètres...",
       "loadError": "Impossible de charger les paramètres",
       "unsaved": "Modifications non enregistrées.",
-      "savedRestart": "Enregistré. Redémarrez learnbuddy pour appliquer."
+      "savedRestart": "Enregistré. Redémarrez catbuddy pour appliquer."
     },
     "actions": {
       "save": "Enregistrer",
@@ -86,7 +86,7 @@
       "cancel": "Annuler"
     },
     "byok": {
-      "description": "Utilisez vos propres clés de fournisseur. learnbuddy lit ces valeurs depuis la configuration actuelle, et seuls les fournisseurs configurés peuvent être sélectionnés dans Général.",
+      "description": "Utilisez vos propres clés de fournisseur. catbuddy lit ces valeurs depuis la configuration actuelle, et seuls les fournisseurs configurés peuvent être sélectionnés dans Général.",
       "configured": "Configuré",
       "notConfigured": "Non configuré",
       "configuredSection": "Configurés",
@@ -185,7 +185,7 @@
       "imageQuickActions": {
         "icon": {
           "title": "Créer une icône d’app",
-          "prompt": "Générez une icône d’application 1:1 propre pour learnbuddy : robot sympathique, style vectoriel simple, palette douce bleu et blanc, sans texte."
+          "prompt": "Générez une icône d’application 1:1 propre pour catbuddy : robot sympathique, style vectoriel simple, palette douce bleu et blanc, sans texte."
         },
         "sticker": {
           "title": "Créer un sticker",
@@ -269,7 +269,7 @@
             "description": "Annuler le tour agent actif pour cette discussion."
           },
           "restart": {
-            "title": "Redémarrer learnbuddy",
+            "title": "Redémarrer catbuddy",
             "description": "Redémarrer le processus du bot sur place."
           },
           "status": {

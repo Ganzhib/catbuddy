@@ -1,5 +1,5 @@
-# learnbuddy Gateway + MySQL
-# Usage (from learnbuddy/ root):
+# catbuddy Gateway + MySQL
+# Usage (from catbuddy/ root):
 #   开发: cp gateway/.env.example gateway/.env
 #   生产: cp gateway/.env.production.example gateway/.env.production
 #         docker compose -f gateway/docker-compose.yml --env-file gateway/.env.production up -d --build
@@ -8,19 +8,19 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: learnbuddy-gateway-mysql
+    container_name: catbuddy-gateway-mysql
     restart: unless-stopped
     ports:
       - '3306:3306'
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: learnbuddy_gateway
-      MYSQL_USER: learnbuddy
-      MYSQL_PASSWORD: learnbuddy
+      MYSQL_DATABASE: catbuddy_gateway
+      MYSQL_USER: catbuddy
+      MYSQL_PASSWORD: catbuddy
     volumes:
       - gateway_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-ulearnbuddy', '-plearnbuddy']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-ucatbuddy', '-pcatbuddy']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,8 +29,8 @@ services:
     build:
       context: ..
       dockerfile: gateway/Dockerfile
-    image: learnbuddy/gateway:latest
-    container_name: learnbuddy-gateway
+    image: catbuddy/gateway:latest
+    container_name: catbuddy-gateway
     restart: unless-stopped
     ports:
       - '18765:18765'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Minimal validator for learnbuddy skill folders.
+Minimal validator for catbuddy skill folders.
 """
 
 import re

@@ -1,10 +1,10 @@
 import {
-  LEARNBUDDY_GATEWAY_HTTP_URL,
-  LEARNBUDDY_GATEWAY_LOCAL_HTTP_URL,
+  CATBUDDY_GATEWAY_HTTP_URL,
+  CATBUDDY_GATEWAY_LOCAL_HTTP_URL,
   resolveBuiltinGatewayHttpUrl,
-} from '@learnbuddy/shared'
+} from '@catbuddy/shared'
 
-/** Resolve learnbuddy gateway HTTP base for browser + Vite dev proxy. */
+/** Resolve catbuddy gateway HTTP base for browser + Vite dev proxy. */
 export function resolveGatewayHttpBase(stored?: string): string {
   const fromEnv = import.meta.env.VITE_GATEWAY_HTTP_URL?.trim() ?? ''
   const raw = (stored?.trim() || fromEnv).replace(/\/$/, '')
@@ -14,18 +14,18 @@ export function resolveGatewayHttpBase(stored?: string): string {
     if (devPorts.has(port)) {
       const direct =
         !raw
-        || raw === LEARNBUDDY_GATEWAY_LOCAL_HTTP_URL
+        || raw === CATBUDDY_GATEWAY_LOCAL_HTTP_URL
         || /^https?:\/\/(127\.0\.0\.1|localhost):18765\/?$/i.test(raw)
       if (direct) return `${window.location.origin}/gateway-api`
     }
   }
   if (raw) return raw
   return import.meta.env?.DEV
-    ? LEARNBUDDY_GATEWAY_LOCAL_HTTP_URL
-    : LEARNBUDDY_GATEWAY_HTTP_URL
+    ? CATBUDDY_GATEWAY_LOCAL_HTTP_URL
+    : CATBUDDY_GATEWAY_HTTP_URL
 }
 
-export function useLearnbuddyGateway(): boolean {
+export function useCatbuddyGateway(): boolean {
   const env = import.meta.env
   if (env.VITE_USE_GATEWAY === 'false') return false
   if (env.VITE_USE_GATEWAY === 'true') return true

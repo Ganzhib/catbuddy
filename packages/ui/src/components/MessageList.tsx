@@ -4,7 +4,7 @@ import { ArrowDown } from "lucide-react";
 import { MessageBubble } from "@/components/MessageBubble";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { UIMessage } from "@learnbuddy/shared";
+import type { UIMessage } from "@catbuddy/shared";
 
 interface MessageListProps {
   messages: UIMessage[];

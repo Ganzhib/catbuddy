@@ -1,4 +1,4 @@
-export const LOCALE_STORAGE_KEY = "learnbuddy.locale";
+export const LOCALE_STORAGE_KEY = "catbuddy.locale";
 
 export const supportedLocales = [
   { code: "en", label: "English", nativeLabel: "English" },

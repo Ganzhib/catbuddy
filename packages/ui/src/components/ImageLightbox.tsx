@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
-import type { UIImage } from "@learnbuddy/shared";
+import type { UIImage } from "@catbuddy/shared";
 
 interface ImageLightboxProps {
   images: UIImage[];

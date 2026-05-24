@@ -1,4 +1,4 @@
-import type { BootstrapResponse } from '@learnbuddy/shared'
+import type { BootstrapResponse } from '@catbuddy/shared'
 import {
   BootstrapAuthRequired,
   hasAuthToken,

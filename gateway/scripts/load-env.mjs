@@ -24,10 +24,10 @@ export function resolveMysqlConfig() {
   return {
     host: process.env.MYSQL_HOST || process.env.GATEWAY_MYSQL_HOST || '127.0.0.1',
     port: Number(process.env.MYSQL_PORT || process.env.GATEWAY_MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER || process.env.GATEWAY_MYSQL_USER || 'learnbuddy',
+    user: process.env.MYSQL_USER || process.env.GATEWAY_MYSQL_USER || 'catbuddy',
     password:
-      process.env.MYSQL_PASSWORD || process.env.GATEWAY_MYSQL_PASSWORD || 'learnbuddy',
+      process.env.MYSQL_PASSWORD || process.env.GATEWAY_MYSQL_PASSWORD || 'catbuddy',
     database:
-      process.env.MYSQL_DATABASE || process.env.GATEWAY_MYSQL_DATABASE || 'learnbuddy_gateway',
+      process.env.MYSQL_DATABASE || process.env.GATEWAY_MYSQL_DATABASE || 'catbuddy_gateway',
   }
 }

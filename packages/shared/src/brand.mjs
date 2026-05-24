@@ -1,5 +1,5 @@
 /** Single source of truth for public/brand asset paths (used by app + scripts). */
-export const BRAND_PREFIX = 'learnbuddy'
+export const BRAND_PREFIX = 'catbuddy'
 export const BRAND_PUBLIC_DIR = '/brand'
 
 /** @param {string} name e.g. "logo.png", "favicon_32.png" */

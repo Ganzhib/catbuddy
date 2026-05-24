@@ -4,7 +4,7 @@
 import type {
   LLMMessage, LLMResponse, 
   ToolDefinition, GenerationSettings,
-} from "@learnbuddy/shared"
+} from "@catbuddy/shared"
 
 
 export interface ChatStreamOpts {

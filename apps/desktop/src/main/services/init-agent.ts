@@ -26,9 +26,9 @@ export interface AgentRuntime {
 
 export async function initAgent(): Promise<AgentRuntime> {
   const home = app.getPath("home");
-  const learnbuddyDir = path.join(home, ".learnbuddy-desktop");
-  const workspace = path.join(learnbuddyDir, "workspace");
-  const configFile = path.join(learnbuddyDir, "config", "config.json");
+  const catbuddyDir = path.join(home, ".catbuddy-desktop");
+  const workspace = path.join(catbuddyDir, "workspace");
+  const configFile = path.join(catbuddyDir, "config", "config.json");
 
   const fs = await import("node:fs");
   fs.mkdirSync(path.dirname(configFile), { recursive: true });

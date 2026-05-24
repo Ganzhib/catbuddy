@@ -1,10 +1,10 @@
 /**
  * MessageBus — 异步消息总线，解耦通道与 Agent 核心
  *
- * 参考 learnbuddy/bus/queue.py
+ * 参考 catbuddy/bus/queue.py
  * 单消费者模式：run() 独占 consumeInbound，ChannelDispatcher 独占 consumeOutbound
  */
-import type { InboundMessage, OutboundMessage } from "@learnbuddy/shared";
+import type { InboundMessage, OutboundMessage } from "@catbuddy/shared";
 
 type Resolver<T> = (msg: T) => void;
 

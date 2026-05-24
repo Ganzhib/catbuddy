@@ -11,15 +11,15 @@ import {
   fetchBootstrap,
   hasAuthToken,
   loadAuthToken,
-  hasLearnbuddyIpc,
+  hasCatbuddyIpc,
   requiresEmailLogin,
   resolveGatewayHttpBase,
   syncDesktopGatewayAccountEmail,
-} from '@learnbuddy/platform'
-import { createLearnbuddyClient, type learnbuddyClient } from '@learnbuddy/client'
+} from '@catbuddy/platform'
+import { createCatbuddyClient, type catbuddyClient } from '@catbuddy/client'
 
 export interface AuthGateSession {
-  client: learnbuddyClient
+  client: catbuddyClient
   token: string
   modelName: string | null
   onLogout: () => void
@@ -51,17 +51,17 @@ export function AuthGate({
     setNeedsLogin(false)
     try {
       const boot = await fetchBootstrap(
-        hasLearnbuddyIpc() ? undefined : resolveGatewayHttpBase(),
+        hasCatbuddyIpc() ? undefined : resolveGatewayHttpBase(),
       )
       const useGateway =
-        !hasLearnbuddyIpc()
+        !hasCatbuddyIpc()
         && boot.gateway_mode === 'gateway'
-      if (hasLearnbuddyIpc()) {
+      if (hasCatbuddyIpc()) {
         await syncDesktopGatewayAccountEmail()
       }
       const storedJwt = loadAuthToken().trim()
       const gatewayToken = useGateway && storedJwt ? storedJwt : boot.token
-      const client = createLearnbuddyClient({
+      const client = createCatbuddyClient({
         token: gatewayToken,
         wsPath: boot.ws_path,
         transportMode: useGateway ? 'gateway' : undefined,

@@ -1,29 +1,29 @@
 {
   "app": {
-    "brand": "learnbuddy",
+    "brand": "catbuddy",
     "loading": {
-      "connecting": "Conectando con learnbuddy…",
-      "boot": "Cargando learnbuddy…"
+      "connecting": "Conectando con catbuddy…",
+      "boot": "Cargando catbuddy…"
     },
     "error": {
-      "title": "No se pudo conectar con learnbuddy",
-      "gatewayHint": "Asegúrate de que la gateway esté en ejecución (`learnbuddy gateway`) y de que esta página esté abierta en la misma máquina."
+      "title": "No se pudo conectar con catbuddy",
+      "gatewayHint": "Asegúrate de que la gateway esté en ejecución (`catbuddy gateway`) y de que esta página esté abierta en la misma máquina."
     },
     "system": {
       "section": "Sistema",
-      "restartHint": "Reinicia learnbuddy para aplicar los cambios de ejecución.",
-      "restart": "Reiniciar learnbuddy",
+      "restartHint": "Reinicia catbuddy para aplicar los cambios de ejecución.",
+      "restart": "Reiniciar catbuddy",
       "restarting": "Reiniciando..."
     },
     "restart": {
       "completed": "Reinicio completado en {{seconds}} s."
     },
     "documentTitle": {
-      "base": "learnbuddy",
-      "chat": "{{title}} · learnbuddy"
+      "base": "catbuddy",
+      "chat": "{{title}} · catbuddy"
     },
     "meta": {
-      "description": "Interfaz web de learnbuddy: conversa con tu espacio de trabajo de learnbuddy."
+      "description": "Interfaz web de catbuddy: conversa con tu espacio de trabajo de catbuddy."
     }
   },
   "sidebar": {
@@ -58,14 +58,14 @@
       "language": "Idioma",
       "provider": "Proveedor",
       "model": "Modelo",
-      "restart": "Reiniciar learnbuddy",
+      "restart": "Reiniciar catbuddy",
       "configPath": "Ruta de configuración"
     },
     "help": {
       "theme": "Cambia entre apariencia clara y oscura.",
       "language": "Elige el idioma usado por la WebUI.",
       "provider": "Selecciona el proveedor para nuevas solicitudes de modelo.",
-      "model": "Define el nombre del modelo predeterminado que usa learnbuddy.",
+      "model": "Define el nombre del modelo predeterminado que usa catbuddy.",
       "configPath": "El archivo de configuración que usa actualmente el gateway."
     },
     "values": {
@@ -77,7 +77,7 @@
       "loading": "Cargando configuración...",
       "loadError": "No se pudo cargar la configuración",
       "unsaved": "Hay cambios sin guardar.",
-      "savedRestart": "Guardado. Reinicia learnbuddy para aplicar."
+      "savedRestart": "Guardado. Reinicia catbuddy para aplicar."
     },
     "actions": {
       "save": "Guardar",
@@ -86,7 +86,7 @@
       "cancel": "Cancelar"
     },
     "byok": {
-      "description": "Usa tus propias claves de proveedor. learnbuddy lee estos valores desde la configuración actual, y solo los proveedores configurados se pueden elegir en General.",
+      "description": "Usa tus propias claves de proveedor. catbuddy lee estos valores desde la configuración actual, y solo los proveedores configurados se pueden elegir en General.",
       "configured": "Configurado",
       "notConfigured": "Sin configurar",
       "configuredSection": "Configurados",
@@ -185,7 +185,7 @@
       "imageQuickActions": {
         "icon": {
           "title": "Diseñar un icono de app",
-          "prompt": "Genera un icono de app 1:1 limpio para learnbuddy: robot amigable, estilo vectorial simple, paleta suave azul y blanca, sin texto."
+          "prompt": "Genera un icono de app 1:1 limpio para catbuddy: robot amigable, estilo vectorial simple, paleta suave azul y blanca, sin texto."
         },
         "sticker": {
           "title": "Crear un sticker",
@@ -269,7 +269,7 @@
             "description": "Cancela el turno activo del agent en este chat."
           },
           "restart": {
-            "title": "Reiniciar learnbuddy",
+            "title": "Reiniciar catbuddy",
             "description": "Reinicia el proceso del bot en el mismo lugar."
           },
           "status": {

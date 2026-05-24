@@ -2,7 +2,7 @@
 /**
  * 清空 Gateway MySQL 中的注册用户 / 会话，便于重新测试。
  *
- * 用法（在 learnbuddy/gateway 目录）:
+ * 用法（在 catbuddy/gateway 目录）:
  *   node scripts/clear-auth-users.mjs
  *   node scripts/clear-auth-users.mjs --email you@example.com
  *   node scripts/clear-auth-users.mjs --sessions

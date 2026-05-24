@@ -15,7 +15,7 @@ release-build-*/
 docs/superpowers/
 docs/plans/
 .env
-# learnbuddy packages — accidental `tsc` emit beside sources (use Vite aliases, not dist/)
+# catbuddy packages — accidental `tsc` emit beside sources (use Vite aliases, not dist/)
 packages/*/src/**/*.js
 packages/*/src/**/*.js.map
 !packages/shared/src/brand.mjs

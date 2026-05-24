@@ -15,7 +15,7 @@ const SETTINGS_STUB = {
   },
   providers: [],
   web_search: { provider: 'none', providers: [] },
-  runtime: { config_path: '(learnbuddy gateway — desktop agent host)' },
+  runtime: { config_path: '(catbuddy gateway — desktop agent host)' },
   requires_restart: false,
 }
 

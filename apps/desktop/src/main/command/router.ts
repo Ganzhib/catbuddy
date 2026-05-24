@@ -1,10 +1,10 @@
 /**
  * CommandRouter — 三层命令路由表
  *
- * 参考 learnbuddy/command/router.py
+ * 参考 catbuddy/command/router.py
  * priority > exact > prefix（最长前缀优先）
  */
-import type { OutboundMessage } from "@learnbuddy/shared";
+import type { OutboundMessage } from "@catbuddy/shared";
 import type { CommandContext } from "./context";
 
 export type CommandHandler = (

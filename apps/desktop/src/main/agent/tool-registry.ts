@@ -4,7 +4,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { exec as cpExec } from 'child_process'
-import type { FileEditEvent, ToolDefinition, ToolCallRequest } from "@learnbuddy/shared"
+import type { FileEditEvent, ToolDefinition, ToolCallRequest } from "@catbuddy/shared"
 
 export interface Tool {
   readonly name: string
@@ -448,7 +448,7 @@ export class ToolRegistry {
         try {
           const controller = new AbortController()
           const timer = setTimeout(() => controller.abort(), 15000)
-          const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'learnbuddy-desktop/1.0' } })
+          const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'catbuddy-desktop/1.0' } })
           clearTimeout(timer)
           const html = await res.text()
 
@@ -511,7 +511,7 @@ export class ToolRegistry {
         try {
           const controller = new AbortController()
           const timer = setTimeout(() => controller.abort(), 20000)
-          const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'learnbuddy-desktop/1.0' } })
+          const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'catbuddy-desktop/1.0' } })
           clearTimeout(timer)
 
           if (!res.ok) return `Error: HTTP ${res.status} ${res.statusText}`

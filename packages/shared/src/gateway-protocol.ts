@@ -1,5 +1,5 @@
 /**
- * Unified learnbuddy Gateway wire protocol.
+ * Unified catbuddy Gateway wire protocol.
  *
  * Session WebSocket (`register` / `ui_event` / `inbound_message` …): Web ↔ Gateway ↔ Desktop.
  */

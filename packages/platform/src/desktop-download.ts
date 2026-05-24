@@ -1,7 +1,7 @@
-import { DESKTOP_DOWNLOAD_PATH } from '@learnbuddy/shared/desktop-download'
+import { DESKTOP_DOWNLOAD_PATH } from '@catbuddy/shared/desktop-download'
 
-import { hasLearnbuddyIpc } from './create-platform'
-import { useLearnbuddyGateway } from './gateway-http'
+import { hasCatbuddyIpc } from './create-platform'
+import { useCatbuddyGateway } from './gateway-http'
 
 /** Full URL for the desktop installer (Web only). Override with VITE_DESKTOP_DOWNLOAD_URL. */
 export function resolveDesktopDownloadUrl(): string {
@@ -17,5 +17,5 @@ export function resolveDesktopDownloadUrl(): string {
 
 /** True in browser Web UI (not Electron desktop). */
 export function shouldOfferDesktopDownload(): boolean {
-  return useLearnbuddyGateway() && !hasLearnbuddyIpc()
+  return useCatbuddyGateway() && !hasCatbuddyIpc()
 }

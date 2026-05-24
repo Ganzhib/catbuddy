@@ -20,4 +20,4 @@ This file stores important information that should persist across sessions.
 
 ---
 
-*This file is automatically updated by learnbuddy when important information should be remembered.*
+*This file is automatically updated by catbuddy when important information should be remembered.*

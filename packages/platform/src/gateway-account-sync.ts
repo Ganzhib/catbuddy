@@ -1,6 +1,6 @@
 import { emailFromGatewayToken } from './auth/jwt-email'
 import { loadAuthEmail, loadAuthToken } from './auth/session'
-import { hasLearnbuddyIpc } from './create-platform'
+import { hasCatbuddyIpc } from './create-platform'
 
 /** Account email for Gateway desktop register (must match Web JWT `sub`). */
 export function resolveGatewayAccountEmail(): string | undefined {
@@ -13,10 +13,10 @@ export function resolveGatewayAccountEmail(): string | undefined {
 
 /** Push logged-in email to Electron main for Gateway WS `accountEmail`. */
 export async function syncDesktopGatewayAccountEmail(): Promise<string | null> {
-  if (!hasLearnbuddyIpc()) return null
+  if (!hasCatbuddyIpc()) return null
   const email = resolveGatewayAccountEmail()
   if (!email) return null
-  const api = window.learnbuddy?.setGatewayAccountEmail
+  const api = window.catbuddy?.setGatewayAccountEmail
   if (!api) return null
   const res = await api({ email })
   return res.accountEmail

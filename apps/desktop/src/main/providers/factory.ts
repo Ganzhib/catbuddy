@@ -5,7 +5,7 @@ import { OpenAICompatProvider } from './openai-compat'
 import { AnthropicProvider } from './anthropic'
 import { FallbackProvider } from './fallback'
 import type { LLMProvider } from './base-provider'
-import type { learnbuddyConfig } from "@learnbuddy/shared"
+import type { catbuddyConfig } from "@catbuddy/shared"
 /**
  * 
  * @param params    创建 Provider 的参数
@@ -24,7 +24,7 @@ function makeProvider(params: {
   return new OpenAICompatProvider({ apiKey, apiBase, defaultModel: model })
 }
 
-export function createProvider(config: learnbuddyConfig): LLMProvider {
+export function createProvider(config: catbuddyConfig): LLMProvider {
   const defaults = config.agents.defaults
   const primary = buildProvider(config, defaults.model, defaults.provider)
 
@@ -55,7 +55,7 @@ export function createProvider(config: learnbuddyConfig): LLMProvider {
   return new FallbackProvider({ primary, fallbacks })
 }
 
-function buildProvider(config: learnbuddyConfig, model: string, providerName: string): LLMProvider {
+function buildProvider(config: catbuddyConfig, model: string, providerName: string): LLMProvider {
   const providerCfg = config.providers[providerName]
   if (!providerCfg) {
     throw new Error(

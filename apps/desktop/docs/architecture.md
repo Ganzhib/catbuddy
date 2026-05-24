@@ -7,9 +7,9 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Renderer (src/renderer/)                                   │
-│  React + @learnbuddy/ui  ·  无 Node 集成                     │
+│  React + @catbuddy/ui  ·  无 Node 集成                     │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ contextBridge (window.learnbuddy)
+                            │ contextBridge (window.catbuddy)
 ┌───────────────────────────▼─────────────────────────────────┐
 │  Preload (src/preload/)                                     │
 │  index.cjs → api/ + security/  ·  纯 CommonJS，不经 tsc 编译   │
@@ -55,7 +55,7 @@
 用户发送一条聊天消息时的路径：
 
 ```
-Renderer: learnbuddy.sendMessage(chatId, content)
+Renderer: catbuddy.sendMessage(chatId, content)
     → Preload: ipcRenderer.invoke('agent:send', …)
     → Main: ipcHandlers → bus.publishInbound(InboundMessage)
     → AgentLoop.run() 消费 inbound → 状态机处理
@@ -90,11 +90,11 @@ sequenceDiagram
 
 | 包 | 用途 |
 |----|------|
-| `@learnbuddy/ui` | 聊天界面、设置、主题（与 Web 共用） |
-| `@learnbuddy/shared` | 消息类型、`learnbuddyConfig`、品牌资源路径 |
-| `@learnbuddy/platform` | `window.learnbuddy` 类型声明 |
-| `@learnbuddy/client` | 客户端协议（按需） |
-| `@learnbuddy/gateway-sdk-desktop` | 桌面端 Gateway WebSocket 客户端 |
+| `@catbuddy/ui` | 聊天界面、设置、主题（与 Web 共用） |
+| `@catbuddy/shared` | 消息类型、`catbuddyConfig`、品牌资源路径 |
+| `@catbuddy/platform` | `window.catbuddy` 类型声明 |
+| `@catbuddy/client` | 客户端协议（按需） |
+| `@catbuddy/gateway-sdk-desktop` | 桌面端 Gateway WebSocket 客户端 |
 
 Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于联调。
 
@@ -114,12 +114,12 @@ Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于
 
 | 路径 | 内容 |
 |------|------|
-| `~/.learnbuddy-desktop/workspace/` | Agent 工作区 |
-| `~/.learnbuddy-desktop/config/config.json` | 模型、Provider、Gateway 等配置 |
+| `~/.catbuddy-desktop/workspace/` | Agent 工作区 |
+| `~/.catbuddy-desktop/config/config.json` | 模型、Provider、Gateway 等配置 |
 
 环境变量加载顺序（`src/main/index.ts`）：
 
 1. `apps/desktop/.env`
-2. `~/.learnbuddy.env`
+2. `~/.catbuddy.env`
 
 模板见 `apps/desktop/.env.example`。

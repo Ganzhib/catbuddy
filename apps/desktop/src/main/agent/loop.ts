@@ -249,6 +249,31 @@ export class AgentLoop implements RuntimeState {
     );
   }
 
+  /** Update MCP server config, persist, and reconnect without restart. */
+  async setMcpServers(
+    servers: Record<string, import("@catbuddy/shared").McpServerConfig> | undefined,
+  ): Promise<string> {
+    if (!this.mcpManager) return "MCP manager not initialized";
+    if (this._config) {
+      if (!this._config.tools) {
+        this._config.tools = {
+          restrictToWorkspace: false,
+          exec: { enable: true },
+          web: { enable: true },
+          my: { enable: false, allowSet: false },
+          imageGeneration: { enable: false },
+        };
+      }
+      this._config.tools.mcpServers = servers;
+    }
+    this.mcpManager.updateServers(servers);
+    return this.mcpManager.reload();
+  }
+
+  getMcpServerStatus() {
+    return this.mcpManager?.getServerStatus() ?? [];
+  }
+
   // ═══ 公开属性 ═══
   get uptime() {
     return Math.floor((Date.now() - this._startTime) / 1000);

@@ -130,7 +130,9 @@ export class ContextBuilder {
     if (skillsSummary) parts.push(skillsSummary)
 
     if (parts.length === 0) {
-      parts.push(`You are catbuddy 🐈, a helpful AI assistant. Reply concisely.`)
+      parts.push(
+        `You are catbuddy 🐱, a smart and caring cat-spirit AI assistant. Reply in Chinese (简体中文) by default. Keep functional output accurate; show cat personality in natural language only; keep code and technical docs professional.`,
+      )
     }
 
     return parts.join('\n\n---\n\n')

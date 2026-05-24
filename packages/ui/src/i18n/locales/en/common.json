@@ -79,7 +79,33 @@
     },
     "nav": {
       "general": "General",
-      "byok": "BYOK"
+      "byok": "BYOK",
+      "mcp": "MCP Tools"
+    },
+    "mcp": {
+      "loading": "Loading MCP settings…",
+      "serversTitle": "Connected servers",
+      "serversHelp": "Changes apply immediately — no restart required.",
+      "empty": "No MCP servers yet. Add one from the marketplace or paste a config below.",
+      "connected": "{{count}} tools",
+      "disconnected": "Not connected",
+      "remove": "Remove {{name}}",
+      "saveAndConnect": "Reconnect",
+      "connecting": "Connecting…",
+      "marketplaceTitle": "MCP Marketplace",
+      "marketplaceHelp": "One-click install popular MCP servers. Edit env vars in config if needed.",
+      "add": "Add",
+      "added": "Added",
+      "docs": "Documentation",
+      "requiresEnv": "Requires env",
+      "pasteTitle": "Paste configuration",
+      "pasteHelp": "Paste a full tools.mcpServers object, a single server config, or one server entry.",
+      "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
+      "pasteApply": "Apply & connect",
+      "pasteInvalid": "Invalid JSON or MCP config format.",
+      "copyTemplate": "Copy config",
+      "templateCopied": "Config copied to clipboard and filled in the paste box below.",
+      "templateCopiedPaste": "Config filled in the paste box below."
     },
     "sections": {
       "interface": "Interface",

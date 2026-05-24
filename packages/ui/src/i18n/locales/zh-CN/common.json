@@ -67,7 +67,33 @@
     },
     "nav": {
       "general": "通用",
-      "byok": "BYOK"
+      "byok": "BYOK",
+      "mcp": "MCP 工具"
+    },
+    "mcp": {
+      "loading": "正在加载 MCP 设置…",
+      "serversTitle": "已配置的服务",
+      "serversHelp": "保存后立即生效，无需重启应用。",
+      "empty": "还没有 MCP 服务。可从下方市场添加，或粘贴配置。",
+      "connected": "{{count}} 个工具",
+      "disconnected": "未连接",
+      "remove": "删除 {{name}}",
+      "saveAndConnect": "重新连接",
+      "connecting": "连接中…",
+      "marketplaceTitle": "MCP 市场",
+      "marketplaceHelp": "一键添加常用 MCP 服务。如需 API Key，请在配置中修改 env。",
+      "add": "添加",
+      "added": "已添加",
+      "docs": "文档",
+      "requiresEnv": "需要环境变量",
+      "pasteTitle": "粘贴配置",
+      "pasteHelp": "可粘贴完整的 tools.mcpServers 对象、单个 server 配置，或一个 server 条目。",
+      "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
+      "pasteApply": "应用并连接",
+      "pasteInvalid": "JSON 格式无效或不符合 MCP 配置结构。",
+      "copyTemplate": "复制配置",
+      "templateCopied": "配置已复制到剪贴板，并填入下方粘贴框。",
+      "templateCopiedPaste": "配置已填入下方粘贴框。"
     },
     "sections": {
       "interface": "界面",

@@ -15,6 +15,7 @@ export {
   resolveDesktopDownloadUrl,
   shouldOfferDesktopDownload,
 } from './desktop-download'
+export { openWorkspaceFile } from './workspace-file'
 export {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,

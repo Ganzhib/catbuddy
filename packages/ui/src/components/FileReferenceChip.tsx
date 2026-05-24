@@ -1,3 +1,6 @@
+import { useCallback, type KeyboardEvent, type MouseEvent } from "react";
+import { useTranslation } from "react-i18next";
+
 import {
   Tooltip,
   TooltipContent,
@@ -5,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { hasCatbuddyIpc, openWorkspaceFile } from "@catbuddy/platform";
 
 type FileReferenceKind =
   | "default"
@@ -25,6 +29,8 @@ interface FileReferenceChipProps {
   className?: string;
   textClassName?: string;
   testId?: string;
+  /** When false, never open on click (e.g. nested inside another button). */
+  openOnClick?: boolean;
 }
 
 export function FileReferenceChip({
@@ -35,47 +41,98 @@ export function FileReferenceChip({
   className,
   textClassName,
   testId = "inline-file-path",
+  openOnClick = true,
 }: FileReferenceChipProps) {
+  const { t } = useTranslation();
   const { directory, name } = splitFilePath(path);
   const kind = fileKindForPath(path);
   const displayText = display === "path" ? path.replace(/\\/g, "/") : name;
   const fullPath = tooltipPath || path;
+  const canOpen = openOnClick && hasCatbuddyIpc() && !!path.trim();
+
+  const handleOpen = useCallback(
+    (event: MouseEvent | KeyboardEvent) => {
+      if (!canOpen) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void openWorkspaceFile(path, tooltipPath);
+    },
+    [canOpen, path, tooltipPath],
+  );
+
+  const labelBody = (
+    <>
+      <FileReferenceIcon kind={kind} />
+      <span
+        data-sheen-text={active ? displayText : undefined}
+        className={cn(
+          "min-w-0 max-w-full truncate",
+          active && "streaming-text-sheen file-reference-sheen",
+          textClassName,
+        )}
+      >
+        {display === "path" && directory ? (
+          <>
+            <span className="text-muted-foreground/65">{directory}</span>
+            <span className="font-semibold text-sky-700 dark:text-sky-200">{name}</span>
+          </>
+        ) : (
+          displayText
+        )}
+      </span>
+    </>
+  );
+
   return (
     <TooltipProvider delayDuration={500} skipDelayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
-            className={cn("not-prose inline-flex max-w-full align-baseline leading-[inherit]", className)}
-          >
-            <span
+          {canOpen ? (
+            <button
+              type="button"
               data-testid={testId}
-              aria-label={fullPath}
+              aria-label={t("message.openFile", {
+                path: fullPath,
+                defaultValue: "Open file: {{path}}",
+              })}
+              title={t("message.openFileShort", { defaultValue: "Open in default app" })}
+              onClick={handleOpen}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") handleOpen(e);
+              }}
               className={cn(
-                "inline-flex max-w-full items-center gap-1 font-medium leading-[inherit]",
-                "text-sky-600 transition-colors hover:text-sky-700",
-                "dark:text-sky-300 dark:hover:text-sky-200",
+                "not-prose inline-flex max-w-full cursor-pointer align-baseline leading-[inherit]",
+                "rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                className,
               )}
             >
-              <FileReferenceIcon kind={kind} />
               <span
-                data-sheen-text={active ? displayText : undefined}
                 className={cn(
-                  "min-w-0 max-w-full truncate",
-                  active && "streaming-text-sheen file-reference-sheen",
-                  textClassName,
+                  "inline-flex max-w-full items-center gap-1 font-medium leading-[inherit]",
+                  "text-sky-600 transition-colors hover:text-sky-700",
+                  "dark:text-sky-300 dark:hover:text-sky-200",
                 )}
               >
-                {display === "path" && directory ? (
-                  <>
-                    <span className="text-muted-foreground/65">{directory}</span>
-                    <span className="font-semibold text-sky-700 dark:text-sky-200">{name}</span>
-                  </>
-                ) : (
-                  displayText
+                {labelBody}
+              </span>
+            </button>
+          ) : (
+            <span
+              className={cn("not-prose inline-flex max-w-full align-baseline leading-[inherit]", className)}
+            >
+              <span
+                data-testid={testId}
+                aria-label={fullPath}
+                className={cn(
+                  "inline-flex max-w-full items-center gap-1 font-medium leading-[inherit]",
+                  "text-sky-600 transition-colors hover:text-sky-700",
+                  "dark:text-sky-300 dark:hover:text-sky-200",
                 )}
+              >
+                {labelBody}
               </span>
             </span>
-          </span>
+          )}
         </TooltipTrigger>
         <TooltipContent
           side="top"

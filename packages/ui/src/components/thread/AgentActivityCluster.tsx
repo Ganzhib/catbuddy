@@ -271,14 +271,20 @@ export function AgentActivityCluster({
               >
                 {fileActivityVerb(hasLiveEditingFiles, hasFailedFiles)}
               </StreamingLabelSheen>
-              <FileReferenceChip
-                path={singleFilePath}
-                tooltipPath={singleFileTooltipPath}
-                active={hasLiveEditingFiles}
+              <span
                 className="-my-0.5 min-w-0"
-                textClassName="text-xs"
-                testId="activity-header-file-reference"
-              />
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <FileReferenceChip
+                  path={singleFilePath}
+                  tooltipPath={singleFileTooltipPath}
+                  active={hasLiveEditingFiles}
+                  className="min-w-0"
+                  textClassName="text-xs"
+                  testId="activity-header-file-reference"
+                />
+              </span>
             </span>
           ) : (
             <StreamingLabelSheen

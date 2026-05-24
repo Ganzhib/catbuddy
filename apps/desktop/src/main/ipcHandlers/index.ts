@@ -1,7 +1,9 @@
 /**
  * IPC Handlers — 注册所有 main process 侧的 IPC 处理
  */
-import { ipcMain, app, BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+import { ipcMain, app, BrowserWindow, shell } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
@@ -177,6 +179,34 @@ export function registerIpcHandlers(
     })
     return result.canceled ? agentLoop.workspace : result.filePaths[0]
   })
+
+  ipcMain.handle(
+    'workspace:open-file',
+    async (
+      _event,
+      { path: filePath, absolute_path }: { path: string; absolute_path?: string },
+    ) => {
+      const workspace = agentLoop.workspace
+      const candidates: string[] = []
+      if (absolute_path?.trim()) {
+        candidates.push(path.resolve(absolute_path.trim()))
+      }
+      const rel = (filePath ?? '').trim()
+      if (rel) {
+        candidates.push(
+          path.isAbsolute(rel) ? path.resolve(rel) : path.resolve(workspace, rel),
+        )
+      }
+      const target = candidates.find((p) => fs.existsSync(p))
+      if (!target) {
+        return { ok: false as const, error: 'file_not_found' }
+      }
+      const err = await shell.openPath(target)
+      if (!err) return { ok: true as const, path: target }
+      shell.showItemInFolder(target)
+      return { ok: false as const, error: err, path: target }
+    },
+  )
 
   // ═══ Skills ═══
   ipcMain.handle('skills:list', async () => agentLoop.listSkills())

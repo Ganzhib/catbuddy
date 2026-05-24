@@ -47,6 +47,10 @@ export interface CatbuddyPreloadApi {
 
   selectWorkspace(): Promise<string>
   getWorkspace(): Promise<string>
+  openWorkspaceFile(
+    path: string,
+    absolutePath?: string,
+  ): Promise<{ ok: boolean; path?: string; error?: string }>
 
   listSkills(): Promise<SkillInfo[]>
   toggleSkill(name: string, enabled: boolean): Promise<void>

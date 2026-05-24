@@ -22,6 +22,7 @@ export const IPC = {
   CONFIG_SET_MODEL: 'config:set-model',
   WORKSPACE_SELECT: 'workspace:select',
   WORKSPACE_GET: 'workspace:get',
+  WORKSPACE_OPEN_FILE: 'workspace:open-file',
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
   CHANNELS_STATUS: 'channels:status',

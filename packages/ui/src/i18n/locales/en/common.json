@@ -412,6 +412,8 @@
     "agentActivityLiveSummary": "Working… · {{reasoning}} steps · {{tools}} tool calls",
     "agentActivityLiveToolsOnly": "Working… · {{tools}} tool calls",
     "imageAttachment": "Image attachment",
+    "openFile": "Open file: {{path}}",
+    "openFileShort": "Open in default app",
     "copyReply": "Copy reply",
     "copiedReply": "Copied reply",
     "turnLatencyTitle": "Response time (end-to-end)"

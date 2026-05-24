@@ -50,6 +50,11 @@ function createCatbuddyApi() {
 
     selectWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_SELECT),
     getWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_GET),
+    openWorkspaceFile: (filePath, absolutePath) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_OPEN_FILE, {
+        path: filePath,
+        absolute_path: absolutePath,
+      }),
 
     listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
     toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),

@@ -78,6 +78,7 @@ Session 键默认规则（`ipcHandlers/index.ts`）：
 | `config:set-model` | invoke | 切换模型预设 |
 | `workspace:get` | invoke | 当前工作区路径 |
 | `workspace:select` | invoke | 目录选择对话框 |
+| `workspace:open-file` | invoke | 用系统默认应用打开工作区内的文件 |
 | `skills:list` | invoke | Skill 列表 |
 | `skills:toggle` | invoke | 启用/禁用 Skill |
 

@@ -1,6 +1,6 @@
 # Desktop installer (static download)
 
-Web UI links to `/downloads/catbuddy-setup-win-x64.exe`.
+Web UI links to `/downloads/catbuddy-setup-win-x64.zip` (contains `catbuddy-setup-win-x64.exe`).
 
 ## Stage installer (cross-platform)
 
@@ -10,7 +10,7 @@ From `catbuddy/` after `pnpm build:desktop`:
 pnpm build:web
 ```
 
-(`build:web` = stage installer + Vite build. Only Vite: `pnpm build:web:only`.)
+(`build:web` = stage zip + Vite build. Only Vite: `pnpm build:web:only`.)
 
 One-shot (desktop + web):
 

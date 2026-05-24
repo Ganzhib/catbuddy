@@ -79,10 +79,10 @@ pnpm build:web
 
 （已包含 `stage:desktop-installer`；仅改前端、安装包已就位时用 `pnpm build:web:only`。）
 
-生产上传：
+用户从 Web 下载 **ZIP**（内含安装包 exe，比直接下 exe 更利于慢网）。生产上传：
 
 ```bash
-pnpm deploy:web:full    # 桌面包 + web 构建 + 上传到服务器（推荐）
+pnpm deploy:web:full    # 桌面包 + web 构建 + tar.gz 上传到服务器（推荐）
 # 或已打过桌面包：pnpm deploy:web
 ```
 

@@ -1,0 +1,14 @@
+{
+  "host": "服务器IP",
+  "user": "root",
+  "port": 22,
+  "identityFile": "",
+  "remoteDir": "/opt/catbuddy/gateway",
+  "domain": "服务器域名",
+  "envFile": ".env.production",
+  "build": true,
+  "setupNginx": false,
+  "certEmail": "邮箱",
+  "webDomain": "web端域名",
+  "webRemoteDir": "/opt/catbuddy/web"
+}

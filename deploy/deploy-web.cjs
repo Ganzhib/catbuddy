@@ -15,7 +15,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const DEPLOY_DIR = __dirname
-const TAR_NAME = 'catbuddy-web.tar'
+const TAR_NAME = 'catbuddy-web.tar.gz'
 
 const DEFAULTS = {
   host: '',
@@ -34,6 +34,11 @@ function log(step, msg) {
 function fail(msg) {
   console.error(`\n[web-deploy] ERROR: ${msg}`)
   process.exit(1)
+}
+
+function formatBytes(n) {
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function findRoot() {
@@ -106,7 +111,7 @@ EMAIL=${JSON.stringify(email)}
 
 mkdir -p "$REMOTE"
 cd "$REMOTE"
-tar xf ${TAR_NAME}
+tar xzf ${TAR_NAME}
 rm -f ${TAR_NAME}
 
 if ! command -v nginx >/dev/null 2>&1; then
@@ -170,7 +175,10 @@ function main() {
   const remoteScript = path.join(outDir, 'remote-web-deploy.sh')
 
   if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath)
-  run(`tar -cf "${tarPath}" -C apps/web dist`, root)
+  log('pack', `tar.gz apps/web/dist → ${TAR_NAME}`)
+  run(`tar -czf "${tarPath}" -C apps/web dist`, root)
+  const { size: tarSize } = fs.statSync(tarPath)
+  log('pack', `archive ${formatBytes(tarSize)}`)
 
   writeRemoteScript(remoteScript, cfg)
 

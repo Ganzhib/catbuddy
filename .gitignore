@@ -86,7 +86,7 @@ dist-*/*
 htmlcov/
 coverage.xml
 *.cover
-
+deploy/deploy.config.json
 # Lock files (project policy)
 poetry.lock
 uv.lock

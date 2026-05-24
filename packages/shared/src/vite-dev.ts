@@ -1,4 +1,4 @@
-import { loadRepoEnvFiles } from '../../../scripts/load-repo-env.mjs'
+import { loadRepoEnvFiles } from './load-repo-env.js'
 import { applyCatbuddyDevMode, resolveDevMode, viteGatewayProxyTarget } from './dev-mode.js'
 
 /** Shared dev env + gateway proxy for apps/web and apps/desktop Vite configs. */

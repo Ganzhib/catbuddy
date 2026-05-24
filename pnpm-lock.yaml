@@ -292,6 +292,9 @@ importers:
       '@types/uuid':
         specifier: ^9.0.0
         version: 9.0.8
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

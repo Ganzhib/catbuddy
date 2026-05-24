@@ -29,6 +29,8 @@ pnpm deploy:gateway
 | `pnpm deploy:web` | Web 静态站 → `catbuddy.ganzhibin.icu` |
 | `pnpm deploy:web:full` | 桌面包 + Web 构建 + 上传 |
 
+桌面包以 **zip** 提供给用户下载；整站以 **tar.gz** 上传部署。
+
 ## deploy.config.json
 
 `deploy.config.json` 含 SSH 与服务器信息，**勿提交 Git**（已在 `.gitignore` 忽略）。

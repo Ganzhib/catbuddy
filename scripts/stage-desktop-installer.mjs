@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copy the desktop NSIS installer into apps/web/public/downloads/ for Web UI download button.
+ * Stage the desktop NSIS installer as a zip in apps/web/public/downloads/.
  *
  * Usage (from catbuddy/):
  *   node scripts/stage-desktop-installer.mjs
@@ -10,18 +10,21 @@
  * Env:
  *   CATBUDDY_DESKTOP_RELEASE_DIR  — release | release-fresh (default: try both)
  */
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** @see packages/shared/src/desktop-download.ts */
 const DESKTOP_INSTALLER_FILENAME = 'catbuddy-setup-win-x64.exe';
-const DESKTOP_DOWNLOAD_PATH = `/downloads/${DESKTOP_INSTALLER_FILENAME}`;
+const DESKTOP_DOWNLOAD_ARCHIVE_FILENAME = 'catbuddy-setup-win-x64.zip';
+const DESKTOP_DOWNLOAD_PATH = `/downloads/${DESKTOP_DOWNLOAD_ARCHIVE_FILENAME}`;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const desktopRoot = path.join(repoRoot, 'apps', 'desktop');
 const destDir = path.join(repoRoot, 'apps', 'web', 'public', 'downloads');
-const destFile = path.join(destDir, DESKTOP_INSTALLER_FILENAME);
+const destExe = path.join(destDir, DESKTOP_INSTALLER_FILENAME);
+const destZip = path.join(destDir, DESKTOP_DOWNLOAD_ARCHIVE_FILENAME);
 
 function log(msg) {
   console.log(`[stage-desktop-installer] ${msg}`);
@@ -99,6 +102,32 @@ function formatBytes(n) {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function createZipArchive(exePath, zipPath) {
+  const dir = path.dirname(exePath);
+  const base = path.basename(exePath);
+  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+
+  const tryTar = () => {
+    const r = spawnSync('tar', ['-acf', zipPath, '-C', dir, base], {
+      stdio: 'pipe',
+      encoding: 'utf8',
+    });
+    if (r.status !== 0 && r.stderr?.trim()) log(`tar: ${r.stderr.trim()}`);
+    return r.status === 0 && fs.existsSync(zipPath);
+  };
+
+  const tryZip = () => {
+    const r = spawnSync('zip', ['-j', zipPath, exePath], { stdio: 'pipe', encoding: 'utf8' });
+    if (r.status !== 0 && r.stderr?.trim()) log(`zip: ${r.stderr.trim()}`);
+    return r.status === 0 && fs.existsSync(zipPath);
+  };
+
+  if (tryTar()) return;
+  if (tryZip()) return;
+  log('error: could not create zip (need `tar -acf` or `zip` on PATH)');
+  process.exit(1);
+}
+
 const { sourceOverride, dryRun } = parseArgs(process.argv.slice(2));
 const meta = readDesktopMeta();
 
@@ -126,21 +155,20 @@ if (srcPath) {
 const { size: srcSize } = fs.statSync(srcPath);
 
 log(`source: ${srcPath}${releaseDir ? ` (${path.basename(releaseDir)})` : ''}`);
-log(`dest:   ${destFile}`);
-log(`size:   ${formatBytes(srcSize)}`);
+log(`dest:   ${destZip}`);
+log(`exe:    ${formatBytes(srcSize)}`);
 
 if (dryRun) {
-  log('dry-run — no files copied');
+  log('dry-run — no files written');
   process.exit(0);
 }
 
 fs.mkdirSync(destDir, { recursive: true });
-fs.copyFileSync(srcPath, destFile);
+fs.copyFileSync(srcPath, destExe);
+createZipArchive(destExe, destZip);
+fs.unlinkSync(destExe);
 
-const { size: destSize } = fs.statSync(destFile);
-if (destSize !== srcSize) {
-  log(`error: size mismatch after copy (${srcSize} vs ${destSize})`);
-  process.exit(1);
-}
-
-log(`ok → public/${DESKTOP_DOWNLOAD_PATH}`);
+const { size: zipSize } = fs.statSync(destZip);
+const ratio = srcSize > 0 ? ((1 - zipSize / srcSize) * 100).toFixed(0) : '0';
+log(`zip:    ${formatBytes(zipSize)} (~${ratio}% vs raw exe)`);
+log(`ok → public${DESKTOP_DOWNLOAD_PATH}`);

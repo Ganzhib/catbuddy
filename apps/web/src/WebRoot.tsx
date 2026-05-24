@@ -1,5 +1,6 @@
 import App from '@catbuddy/ui'
 import { useEffect } from 'react'
+import { applyWebShellTheme } from './landing-theme'
 import { LandingPage } from './landing/LandingPage'
 import { isAppRoute, usePathname } from './usePathname'
 
@@ -9,6 +10,7 @@ export function WebRoot() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('catbuddy-web-landing', !showApp)
+    applyWebShellTheme(showApp)
     return () => document.documentElement.classList.remove('catbuddy-web-landing')
   }, [showApp])
 

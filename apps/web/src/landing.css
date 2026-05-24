@@ -9,4 +9,5 @@ html.catbuddy-web-landing #root {
 
 html.catbuddy-web-landing #landing-scroll-root {
   -webkit-overflow-scrolling: touch;
+  color-scheme: dark;
 }

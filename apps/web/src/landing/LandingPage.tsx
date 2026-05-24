@@ -10,19 +10,25 @@ import {
   authMuted,
   authNavGhost,
   authOutlineBtn,
-  authPrimaryBtn,
   authSubtle,
   authTitle,
 } from '@/components/auth/email-login/styles'
 import { DesktopClientDownload } from '@/components/DesktopClientDownload'
 import { Button } from '@/components/ui/button'
-import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
-import { Moon, Sun } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { LANDING_COPY, LANDING_FEATURES, LANDING_VIDEO_SRC } from './landing-content'
 
 const APP_HREF = '/app'
+
+const NAV_ITEMS = [
+  { id: 'landing-home', label: '首页' },
+  { id: 'landing-roles', label: '产品价值' },
+  { id: 'landing-steps', label: '如何开始' },
+  { id: 'landing-features', label: '能力' },
+  { id: 'landing-author', label: '关于作者' },
+] as const
 
 function LandingCtaRow({
   loginLabel,
@@ -62,7 +68,7 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function LandingNav({ onToggleTheme, theme }: { onToggleTheme: () => void; theme: 'light' | 'dark' }) {
+function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -78,56 +84,45 @@ function LandingNav({ onToggleTheme, theme }: { onToggleTheme: () => void; theme
     <header
       className={cn(
         'sticky top-0 z-30 border-b transition-colors duration-200',
-        scrolled
-          ? 'border-sky-100/60 bg-white/75 backdrop-blur-xl dark:border-white/10 dark:bg-[#0c1929]/80'
-          : 'border-transparent bg-transparent',
+        scrolled ? 'border-white/10 bg-[#0c1929]/85 backdrop-blur-xl' : 'border-transparent bg-transparent',
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-        <a href="/" className="flex min-w-0 items-center gap-2.5">
+        <a
+          href="/"
+          className="flex min-w-0 items-center gap-2.5"
+          onClick={(e) => {
+            e.preventDefault()
+            scrollToId('landing-home')
+          }}
+        >
           <BrandMark className="h-8 w-8 shrink-0 object-contain sm:h-9 sm:w-9" />
           <span className={cn('truncate text-sm sm:text-base', authTitle)}>catbuddy</span>
         </a>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Landing">
-          <Button
-            type="button"
-            variant="ghost"
-            className={authNavGhost}
-            onClick={() => scrollToId('landing-roles')}
-          >
-            产品价值
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className={authNavGhost}
-            onClick={() => scrollToId('landing-steps')}
-          >
-            如何开始
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className={authNavGhost}
-            onClick={() => scrollToId('landing-features')}
-          >
-            能力
-          </Button>
+        <nav className="hidden items-center gap-0.5 md:flex" aria-label="Landing">
+          {NAV_ITEMS.map(({ id, label }) => (
+            <Button key={id} type="button" variant="ghost" className={authNavGhost} onClick={() => scrollToId(id)}>
+              {label}
+            </Button>
+          ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn('h-9 w-9 rounded-full', authNavGhost)}
-            onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <nav className="flex items-center gap-0.5 md:hidden" aria-label="Landing mobile">
+            {NAV_ITEMS.filter(({ id }) => id === 'landing-home' || id === 'landing-author').map(({ id, label }) => (
+              <Button
+                key={id}
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn('px-2 text-xs', authNavGhost)}
+                onClick={() => scrollToId(id)}
+              >
+                {label}
+              </Button>
+            ))}
+          </nav>
         </div>
       </div>
     </header>
@@ -187,7 +182,7 @@ function HeroVideo() {
 
 function HeroSection() {
   return (
-    <section className="relative px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-10 lg:pb-20 lg:pt-12">
+    <section id="landing-home" className="relative scroll-mt-16 px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-10 lg:pb-20 lg:pt-12">
       <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-12 xl:gap-16">
         <div className="order-2 lg:order-1">
           <span className={cn('mb-4 text-[10px] sm:text-[11px]', authBadge)}>
@@ -306,6 +301,74 @@ function FeaturesSection() {
   )
 }
 
+function AuthorAvatar() {
+  const { avatar, avatarFallback, name } = LANDING_COPY.author
+  const [src, setSrc] = useState<string>(avatar)
+
+  return (
+    <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl border border-white/15 bg-white/[0.04] shadow-lg shadow-sky-900/20 sm:max-w-none lg:max-w-[280px]">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-teal-500/10" />
+      <img
+        src={src}
+        alt={name}
+        className="relative h-full w-full object-cover"
+        onError={() => {
+          if (src !== avatarFallback) setSrc(avatarFallback)
+        }}
+      />
+    </div>
+  )
+}
+
+function AuthorSection() {
+  const { name, handle, bio, links } = LANDING_COPY.author
+
+  return (
+    <section id="landing-author" className="scroll-mt-16 px-4 py-10 sm:px-6 sm:py-14">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className={cn('text-xl sm:text-2xl', authHeading)}>About me</h2>
+        </div>
+
+        <div className="mt-8 grid items-start gap-8 sm:mt-10 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-12">
+          <AuthorAvatar />
+
+          <div className="min-w-0">
+            <p className={cn('text-lg sm:text-xl', authTitle)}>{name}</p>
+            <p className={cn('mt-1 text-sm', authAccent)}>联系方式：luli_0819@qq.com</p>
+
+            <div className="mt-5 space-y-3">
+              {bio.map((paragraph) => (
+                <p key={paragraph} className={cn('text-sm leading-[1.85] sm:text-[15px]', authBody)}>
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {links.map(({ label, href }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors',
+                    authOutlineBtn,
+                  )}
+                >
+                  {label}
+                  <ExternalLink className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function FinalCtaSection() {
   return (
     <section className="px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-6">
@@ -336,8 +399,6 @@ function LandingFooter() {
 }
 
 export function LandingPage() {
-  const { theme, toggle } = useTheme()
-
   useEffect(() => {
     document.title = 'catbuddy · 智能学习助手'
     const meta = document.querySelector('meta[name="description"]')
@@ -349,16 +410,17 @@ export function LandingPage() {
   return (
     <div
       id="landing-scroll-root"
-      className="relative h-dvh max-h-dvh w-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground"
+      className="relative h-dvh max-h-dvh w-full overflow-x-hidden overflow-y-auto overscroll-y-contain bg-background text-foreground dark"
     >
       <AmbientBackground />
       <div className="relative z-10 flex min-h-full flex-col">
-        <LandingNav onToggleTheme={toggle} theme={theme} />
+        <LandingNav />
         <main className="flex-1">
           <HeroSection />
           <RolesSection />
           <StepsSection />
           <FeaturesSection />
+          <AuthorSection />
           <FinalCtaSection />
         </main>
         <LandingFooter />

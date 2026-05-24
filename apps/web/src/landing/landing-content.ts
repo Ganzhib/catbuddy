@@ -39,6 +39,23 @@ export const LANDING_COPY = {
   ctaTitle: '准备好迎接你的 catbuddy 了吗？',
   ctaSub: '下载桌面端，登录网页，随时随地继续你的学习之旅。',
   downloadHint: '安装后使用与网页相同的邮箱登录，并在侧栏开启「远程控制」。',
+  author: {
+    name: '甘智斌',
+    handle: 'ganzhibin',
+    /** 可将作者照片放到 apps/web/public/brand/author.webp */
+    avatar: '/avatar/image.png',
+    avatarFallback: '/brand/catbuddy_icon.png',
+    bio: [
+      'Hi ~  我是 catbuddy 的开发者，相信好的工具应该像猫一样——安静陪伴，也能在需要时真正帮上忙。',
+      '这个项目从个人学习场景出发：让 AI 不只会聊天，还能在本地动手执行；网页随时接入，换设备也能接着学。',
+      '欢迎邮箱交流 ，或在博客里看更多思考与更新。',
+    ],
+    links: [
+      { label: 'Gitee', href: 'https://gitee.com/luli1314520' },
+      { label: 'Blog', href: 'https://resume.ganzhibin.icu/' },
+      {label: '稀土掘金', href: 'https://juejin.cn/user/3806962499980916/posts'},
+    ],
+  },
 } as const
 
 export { FEATURES as LANDING_FEATURES }

@@ -1,4 +1,5 @@
 import { exec as cpExec } from 'child_process'
+import { containsInternalUrl } from '../../security/network.js'
 import type { Tool, ToolContext } from './types'
 
 export function createExecTool(ctx: ToolContext): Tool {
@@ -29,6 +30,7 @@ export function createExecTool(ctx: ToolContext): Tool {
 
       const dangerous = /\brm\s+-rf\b|\bformat\b|\bdd\b|\bmkfs\b|\b:\(\)\b|\bchmod\s+777\b/i
       if (dangerous.test(cmd)) return 'Error: dangerous command blocked'
+      if (containsInternalUrl(cmd)) return 'Error: command contains blocked internal URL'
 
       return new Promise<string>((resolve) => {
         cpExec(

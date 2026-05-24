@@ -48,6 +48,11 @@ function createCatbuddyApi() {
     listModels: () => ipcRenderer.invoke(IPC.CONFIG_LIST_MODELS),
     setModel: (name) => ipcRenderer.invoke(IPC.CONFIG_SET_MODEL, { presetName: name }),
 
+    getMcpSettings: () => ipcRenderer.invoke('mcp:get'),
+    updateMcpServers: (servers) => ipcRenderer.invoke('mcp:update-and-reload', { servers }),
+    listMcpMarketplace: () => ipcRenderer.invoke('mcp:marketplace-list'),
+    addMcpFromMarketplace: (id) => ipcRenderer.invoke('mcp:marketplace-add', { id }),
+
     selectWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_SELECT),
     getWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_GET),
     openWorkspaceFile: (filePath, absolutePath) =>

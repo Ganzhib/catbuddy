@@ -8,7 +8,9 @@ import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
 import { buildSettingsPayload } from '../config/env-provider-fallback'
-import type { catbuddyConfig } from "@catbuddy/shared"
+import { MCP_MARKETPLACE, resolveMarketplaceConfig } from '../config/mcp-marketplace.js'
+import { validateMcpServers } from '../config/mcp-config.js'
+import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
 
 export function registerIpcHandlers(
@@ -155,6 +157,11 @@ export function registerIpcHandlers(
       }
     }
 
+    if (path === 'tools.mcpServers') {
+      agentLoop.mcpManager?.updateServers(value as Record<string, McpServerConfig> | undefined)
+      await agentLoop.mcpManager?.reload()
+    }
+
     persistConfig()
   })
 
@@ -166,6 +173,83 @@ export function registerIpcHandlers(
   ipcMain.handle('config:set-model', async (_event, { presetName }: { presetName: string }) => {
     agentLoop.setModelPreset(presetName)
     persistConfig()
+  })
+
+  // ═══ MCP ═══
+  const mapMcpServersForUi = (
+    servers: Record<string, import('@catbuddy/shared').McpServerConfig>,
+  ) => {
+    const status = agentLoop.getMcpServerStatus()
+    const statusMap = new Map(status.map((s) => [s.name, s]))
+    return Object.entries(servers).map(([name, serverConfig]) => {
+      const st = statusMap.get(name)
+      return {
+        name,
+        config: serverConfig,
+        connected: st?.connected ?? false,
+        toolCount: st?.toolCount ?? 0,
+        lastError: st?.lastError,
+      }
+    })
+  }
+
+  ipcMain.handle('mcp:get', async () => ({
+    servers: mapMcpServersForUi(config.tools?.mcpServers ?? {}),
+  }))
+
+  ipcMain.handle('mcp:update-and-reload', async (_event, { servers }: { servers: unknown }) => {
+    const validated = validateMcpServers(servers)
+    if (!config.tools) {
+      config.tools = {
+        restrictToWorkspace: false,
+        exec: { enable: true },
+        web: { enable: true },
+        my: { enable: false, allowSet: false },
+        imageGeneration: { enable: false },
+      }
+    }
+    config.tools.mcpServers = Object.keys(validated).length > 0 ? validated : undefined
+    const message = await agentLoop.setMcpServers(config.tools.mcpServers)
+    persistConfig()
+    return {
+      message,
+      servers: mapMcpServersForUi(config.tools.mcpServers ?? {}),
+    }
+  })
+
+  ipcMain.handle('mcp:marketplace-list', async () => MCP_MARKETPLACE)
+
+  ipcMain.handle('mcp:marketplace-add', async (_event, { id }: { id: string }) => {
+    const entry = MCP_MARKETPLACE.find((item) => item.id === id)
+    if (!entry) throw new Error(`Unknown marketplace entry: ${id}`)
+    if (entry.pasteOnly) {
+      throw new Error(
+        entry.setupNote
+        ?? 'This MCP uses remote HTTP transport. Copy the config template and paste it below.',
+      )
+    }
+    if (Object.keys(entry.config).length === 0) {
+      throw new Error('No installable config for this marketplace entry.')
+    }
+    const resolved = resolveMarketplaceConfig(entry.config)
+    const existing = config.tools?.mcpServers ?? {}
+    const merged = { ...existing, ...resolved }
+    if (!config.tools) {
+      config.tools = {
+        restrictToWorkspace: false,
+        exec: { enable: true },
+        web: { enable: true },
+        my: { enable: false, allowSet: false },
+        imageGeneration: { enable: false },
+      }
+    }
+    config.tools.mcpServers = merged
+    const message = await agentLoop.setMcpServers(merged)
+    persistConfig()
+    return {
+      message,
+      servers: mapMcpServersForUi(merged),
+    }
   })
 
   // ═══ Workspace ═══

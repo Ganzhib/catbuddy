@@ -109,15 +109,7 @@ HTTP 列表（`GET /api/sessions`）在 Gateway 在线时仍可走代理；**实
 `POST /gateway-api/api/sessions/.../messages` 返回 **503** 表示 gateway **没有在线的桌面端**（不是 Vite 代理坏了）。
 
 1. 终端 A：`pnpm gateway:dev`（监听 `18765`）
-2. 复制 `apps/desktop/.env.example` → `apps/desktop/.env`，设置：
-   ```env
-   GATEWAY_ENABLED=true
-   GATEWAY_URL=ws://127.0.0.1:18765/ws
-   GATEWAY_SECRET=dev-secret
-   ```
-3. 终端 B：`pnpm dev:desktop`，侧栏打开 **「远程控制」**（日志：`[main] Gateway remote enabled:`）
-4. 终端 C：`pnpm dev:web` 或 `pnpm dev:web:full`
-5. 自检：`curl http://127.0.0.1:18765/health` → `"online":true`、`desktops` ≥ 1
+2. 根目录 `.env` 已含 `CATBUDDY_GATEWAY_USE_LOCAL=true` 与 `GATEWAY_SECRET=dev-secret` 时，侧栏打开 **「远程控制」** 即可
 
 Web UI 在 503 时会显示「桌面端未连接 Gateway」提示条，并停止「模型正在回复…」转圈。
 
@@ -146,7 +138,7 @@ Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面端�
 - 用户发消息写入 Gateway，再转发 Desktop；**Desktop 离线**时 Gateway 经 WS 返回系统提示（不 503）。
 - Desktop 连接且开启「远程控制」后双向同步会话列表与历史。
 
-**桌面远程控制**：侧栏「新建对话」上方开关。关闭时不连 Gateway，仅本机；开启且 `apps/desktop/.env` 配置 `GATEWAY_*` 时连接并同步。
+**桌面远程控制**：侧栏「新建对话」上方开关。关闭时不连 Gateway，仅本机；开启且根目录 `.env` 配置 `GATEWAY_*` 时连接并同步。
 
 若 Desktop workspace 下有大量空会话，可删除仅含元数据的 `.jsonl` 文件，或发一条消息后刷新列表。
 

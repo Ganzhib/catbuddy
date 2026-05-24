@@ -21,6 +21,8 @@ export const CATBUDDY_GATEWAY_LOCAL_WS_URL = 'ws://127.0.0.1:18765/ws'
  * (Not end-user configurable; routing is by login email.)
  */
 export const CATBUDDY_GATEWAY_DESKTOP_SECRET = 'catbuddy-desktop-pair-v1'
+/** Live gateway.ganzhibin.icu still uses pre-rename secret until server redeploy. */
+export const CATBUDDY_GATEWAY_PROD_DESKTOP_SECRET = 'learnbuddy-desktop-pair-v1'
 export const CATBUDDY_GATEWAY_LOCAL_SECRET = 'dev-secret'
 
 export function resolveBuiltinGatewayHttpUrl(useLocal: boolean): string {
@@ -32,5 +34,5 @@ export function resolveBuiltinGatewayWsUrl(useLocal: boolean): string {
 }
 
 export function resolveBuiltinGatewaySecret(useLocal: boolean): string {
-  return useLocal ? CATBUDDY_GATEWAY_LOCAL_SECRET : CATBUDDY_GATEWAY_DESKTOP_SECRET
+  return useLocal ? CATBUDDY_GATEWAY_LOCAL_SECRET : CATBUDDY_GATEWAY_PROD_DESKTOP_SECRET
 }

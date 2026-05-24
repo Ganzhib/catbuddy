@@ -22,14 +22,12 @@ Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。�
                                  MySQL + SMTP
 ```
 
-## 环境变量模板
+## 环境变量
 
-| 端 | 模板 | 复制为 |
-|----|------|--------|
-| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.catbuddy.env` |
-| Web 开发 | `apps/web/.env.development.example` | `apps/web/.env.development` |
-| Web 生产 build | `apps/web/.env.production.example` | `apps/web/.env.production` |
-| Gateway | `gateway/.env.example` | `gateway/.env` |
+| 用途 | 模板 | 复制为 |
+|------|------|--------|
+| 本地开发 | `.env.example` | `.env` |
+| 生产 / Docker / 打包 | `.env.production.example` | `.env.production` |
 
 ## 1. Gateway
 
@@ -37,7 +35,7 @@ Web（薄客户端）+ Gateway（中转/鉴权）+ Desktop（Agent 宿主）。�
 
 ```bash
 docker compose -f gateway/docker-compose.yml up -d mysql
-cp gateway/.env.example gateway/.env   # 首次
+cp .env.example .env   # 首次（monorepo 根目录）
 pnpm gateway:dev
 ```
 
@@ -45,8 +43,8 @@ pnpm gateway:dev
 
 ```bash
 cd catbuddy
-cp gateway/.env.example gateway/.env   # 填写 SMTP、JWT、GATEWAY_SECRET
-docker compose -f gateway/docker-compose.yml up -d --build
+cp .env.production.example .env.production   # 填写 SMTP、JWT、GATEWAY_SECRET
+docker compose -f gateway/docker-compose.yml --env-file .env.production up -d --build
 curl http://127.0.0.1:18765/health
 ```
 
@@ -149,7 +147,7 @@ pnpm build:desktop
 
 安装后：**登录 → 侧栏打开远程控制**，自动连 `gateway.ganzhibin.icu`。
 
-开发者可选 `apps/desktop/.env`（API Key、本地 Gateway 覆盖）。Gateway 服务端见 `gateway/.env`。
+开发者可选根目录 `.env`（API Key、Gateway 覆盖）或 `~/.catbuddy.env`。
 
 ## 一键构建
 

@@ -41,7 +41,7 @@ export class EmailService {
     const transport = this.getTransporter()
     if (!transport) {
       this.log.warn(
-        `[gateway] SMTP 未配置 — 验证码未发邮件。邮箱 ${email} 验证码: ${code}（请配置 gateway/.env 的 SMTP_* 或查看本终端）`,
+        `[gateway] SMTP 未配置 — 验证码未发邮件。邮箱 ${email} 验证码: ${code}（请配置根目录 .env 的 SMTP_* 或查看本终端）`,
       )
       return 'console'
     }

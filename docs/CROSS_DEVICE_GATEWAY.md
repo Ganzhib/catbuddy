@@ -21,7 +21,7 @@ apps/web                 gateway (@catbuddy)      apps/desktop
 ```bash
 # 在 catbuddy/ 根目录
 docker compose -f gateway/docker-compose.yml up -d mysql   # 可选
-cp gateway/.env.example gateway/.env
+cp .env.example .env
 pnpm gateway:dev    # 或 pnpm gateway:build && pnpm gateway:start
 ```
 

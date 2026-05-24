@@ -1,16 +1,8 @@
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import dotenv from 'dotenv'
+import { loadRepoEnvFiles } from '../../scripts/load-repo-env.mjs'
 
-const scriptsDir = path.dirname(fileURLToPath(import.meta.url))
-const gatewayRoot = path.resolve(scriptsDir, '..')
-
-/** gateway/.env（+ `.env.production` when NODE_ENV=production）。 */
+/** Repo root `.env`（+ `.env.production` when NODE_ENV=production）。 */
 export function loadGatewayEnvFiles() {
-  dotenv.config({ path: path.join(gatewayRoot, '.env') })
-  if (process.env.NODE_ENV === 'production') {
-    dotenv.config({ path: path.join(gatewayRoot, '.env.production'), override: true })
-  }
+  loadRepoEnvFiles()
 }
 
 /** MySQL 连接配置（与 `config/env.ts` 默认一致；脚本侧保留 GATEWAY_* 别名）。 */

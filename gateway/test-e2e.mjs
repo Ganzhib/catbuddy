@@ -1,6 +1,6 @@
 /**
  * E2E smoke test: desktop WS + web HTTP without Electron.
- * Requires gateway on :18765. Restart gateway after changing gateway/.env.
+ * Requires gateway on :18765. Restart gateway after changing root `.env`.
  */
 const HTTP = process.env.GATEWAY_HTTP || "http://127.0.0.1:18765";
 const WS_URL = process.env.GATEWAY_WS || "ws://127.0.0.1:18765/ws";
@@ -12,7 +12,7 @@ function authHint(health) {
     "当前 Gateway 进程: "
     + `web_login_required=${health.web_login_required} `
     + `(require_email=${health.auth_require_email}, dev_bypass=${health.auth_dev_bypass}). `
-    + "请确认 gateway/.env 后 **重启** `pnpm gateway:dev`（仅改文件不会生效）。"
+    + "请确认根目录 `.env` 后 **重启** `pnpm gateway:dev`（仅改文件不会生效）。"
     + "E2E 需要 web_login_required=false。"
   );
 }

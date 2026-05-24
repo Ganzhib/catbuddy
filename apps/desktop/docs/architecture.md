@@ -119,7 +119,7 @@ Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于
 
 环境变量加载顺序（`src/main/index.ts`）：
 
-1. `apps/desktop/.env`
-2. `~/.catbuddy.env`
+1. 根目录 `.env`（开发）或 `.env.production`（打包）
+2. `~/.catbuddy.env`（可选覆盖）
 
-模板见 `apps/desktop/.env.example`。
+模板见根目录 `.env.example`。

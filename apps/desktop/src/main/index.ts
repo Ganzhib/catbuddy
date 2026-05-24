@@ -5,12 +5,11 @@ import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { configureElectronApp } from "./configure-app.js";
-import { loadEnvFile } from "./utils/index.js";
+import { loadCatbuddyEnv, loadEnvFile } from "./utils/index.js";
 import { createMainWindow } from "./windows/main-window.js";
 import { initAgent } from "./services/init-agent.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envDir = path.join(__dirname, "..");
 
 // ── Global uncaught exception guard (WebSocket / async errors in main process) ──
 process.on("uncaughtException", (err) => {
@@ -24,10 +23,7 @@ process.on("unhandledRejection", (reason) => {
 });
 
 // Load .env before initAgent / Gateway (whenReady alone is too late for first apply).
-if (app.isPackaged) {
-  loadEnvFile(path.join(envDir, ".env.production"));
-}
-loadEnvFile(path.join(envDir, ".env"));
+loadCatbuddyEnv(__dirname, app.isPackaged);
 
 let mainWindow: BrowserWindow | null = null;
 

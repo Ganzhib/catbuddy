@@ -20,6 +20,7 @@
     "lint": "pnpm -r lint",
     "clean:packages": "node scripts/clean-package-emit.mjs",
     "update:logo": "pnpm --filter @catbuddy/desktop brand:generate -- --compose-logo --logo-text catbuddy --logo-split 3",
+    "build:database":"docker compose -f gateway/docker-compose.yml up -d mysql",
     "gateway:dev": "pnpm --filter @catbuddy/gateway dev",
     "dev:gateway": "pnpm gateway:dev",
     "gateway:build": "pnpm --filter @catbuddy/gateway build",
@@ -36,9 +37,13 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7",
     "typescript": "^5.7.2"
   },
   "pnpm": {
+    "overrides": {
+      "sharp": "^0.33.5"
+    },
     "onlyBuiltDependencies": [
       "electron",
       "esbuild",

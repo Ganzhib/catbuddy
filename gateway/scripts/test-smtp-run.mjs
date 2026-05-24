@@ -1,6 +1,6 @@
 /**
  * Run from repo: pnpm exec node gateway/scripts/test-smtp-run.mjs [to-email]
- * Uses gateway/.env (loads via load-env.mjs).
+ * Uses repo root `.env` (loads via load-env.mjs).
  */
 import nodemailer from 'nodemailer'
 import { loadGatewayEnvFiles } from './load-env.mjs'
@@ -22,7 +22,7 @@ const secure =
       : port === 465
 
 if (!host || !user || !pass) {
-  console.error('[smtp-test] 请配置 gateway/.env: SMTP_HOST, SMTP_USER, SMTP_PASS')
+  console.error('[smtp-test] 请配置根目录 .env: SMTP_HOST, SMTP_USER, SMTP_PASS')
   process.exit(1)
 }
 

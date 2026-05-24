@@ -20,7 +20,7 @@ pnpm gateway:dev          # tsx watch，默认 :18765
 pnpm gateway:build && pnpm gateway:start
 ```
 
-复制 `gateway/.env.example` → `gateway/.env`，配置 MySQL / SMTP / `GATEWAY_SECRET`。
+复制根目录 `.env.example` → `.env`，配置 MySQL / SMTP / `GATEWAY_SECRET`。
 
 Docker（Gateway + MySQL）：在 `catbuddy/` 根目录执行 `docker compose -f gateway/docker-compose.yml up -d --build`。详见 [docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)。
 

@@ -97,7 +97,7 @@ NSIS 安装包文件名：`catbuddy Setup <version>.exe`（与 `package.json` �
 
 ## 配置与密钥
 
-- 复制 `catbuddy/.env.example` 或 `apps/desktop/.env.example`（若存在）为 `.env`。
+- 复制根目录 `.env.example` 为 `.env`。
 - **不要**将 `.env`、API Key 提交到 Git。
 - 用户级覆盖：`~/.catbuddy.env`。
 

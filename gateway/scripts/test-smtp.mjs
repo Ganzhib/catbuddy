@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 测试 gateway/.env 中的 SMTP 能否发信。
+ * 测试根目录 `.env` 中的 SMTP 能否发信。
  * 用法: node scripts/test-smtp.mjs you@example.com
  */
 import nodemailer from 'nodemailer'
@@ -28,7 +28,7 @@ const secure =
       : port === 465
 
 if (!host || !user || !pass) {
-  console.error('[smtp-test] 请在 gateway/.env 配置 SMTP_HOST、SMTP_USER、SMTP_PASS')
+  console.error('[smtp-test] 请在根目录 .env 配置 SMTP_HOST、SMTP_USER、SMTP_PASS')
   process.exit(1)
 }
 

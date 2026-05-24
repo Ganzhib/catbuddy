@@ -1,8 +1,8 @@
 # catbuddy Gateway + MySQL
 # Usage (from catbuddy/ root):
-#   开发: cp gateway/.env.example gateway/.env
-#   生产: cp gateway/.env.production.example gateway/.env.production
-#         docker compose -f gateway/docker-compose.yml --env-file gateway/.env.production up -d --build
+#   开发: cp .env.example .env
+#   生产: cp .env.production.example .env.production
+#         docker compose -f gateway/docker-compose.yml --env-file .env.production up -d --build
 #   curl http://127.0.0.1:18765/health
 
 services:
@@ -35,7 +35,7 @@ services:
     ports:
       - '18765:18765'
     env_file:
-      - ${GATEWAY_ENV_FILE:-.env}
+      - ${GATEWAY_ENV_FILE:-../.env.production}
     environment:
       NODE_ENV: production
       MYSQL_HOST: mysql

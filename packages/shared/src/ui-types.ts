@@ -1,3 +1,5 @@
+import type { McpServerConfig } from './agent-types.js'
+
 export type Role = "user" | "assistant" | "tool" | "system";
 
 /** "trace" rows are intermediate agent breadcrumbs (tool-call hints,
@@ -179,6 +181,38 @@ export interface WebSearchSettingsUpdate {
   provider: string;
   apiKey?: string;
   baseUrl?: string;
+}
+
+export interface McpSettingsServer {
+  name: string;
+  config: McpServerConfig;
+  connected: boolean;
+  toolCount: number;
+  lastError?: string;
+}
+
+export interface McpSettingsPayload {
+  servers: McpSettingsServer[];
+}
+
+export interface McpSettingsUpdateResult extends McpSettingsPayload {
+  message: string;
+}
+
+export interface McpMarketplaceEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  config: Record<string, McpServerConfig>;
+  docsUrl?: string;
+  requiresEnv?: string[];
+  /** Extra setup steps shown in the marketplace card. */
+  setupNote?: string;
+  /** Remote HTTP MCP — cannot one-click connect until HTTP transport is supported. */
+  pasteOnly?: boolean;
+  /** JSON snippet to copy when pasteOnly is true. */
+  pasteTemplate?: string;
 }
 
 export interface SlashCommand {

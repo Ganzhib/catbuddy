@@ -78,7 +78,11 @@ export async function initAgent(): Promise<AgentRuntime> {
     disabledSkills: config.agents.defaults.disabledSkills ?? [],
     sessionManager: sessions,
     bus,
+    config,
+    sessionTtlMinutes: config.agents?.defaults?.sessionTtlMinutes ?? 0,
   });
+
+  await agentLoop.connectMcp();
 
   registerIpcHandlers(
     agentLoop,

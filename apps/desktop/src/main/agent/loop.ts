@@ -8,7 +8,23 @@ import { AgentRunner } from "./runner";
 import { ToolRegistry } from "./tools";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./memory";
+import { MemoryStore } from "./memory-store";
+import { Dream } from "./dream";
+import { AutoCompact } from "./autocompact";
+import { SubagentManager } from "./subagent";
+import {
+  buildProviderSnapshot,
+  configuredModelPresets,
+  normalizePresetName,
+  type ProviderSnapshot,
+} from "./model_presets";
+import { FileStateStore, runWithFileStates } from "./tools/file_state";
+import { createMyTool } from "./tools/self";
+import { createSpawnTool, type SpawnContext } from "./tools/spawn";
+import { McpManager } from "./tools/mcp";
+import type { RuntimeState } from "./tools/runtime_state";
 import { LLMProvider } from "../providers";
+import type { catbuddyConfig, TokenUsage } from "@catbuddy/shared";
 import { type Logger, logger, trace as newTrace } from "../utils/logger";
 import type {
   InboundMessage,
@@ -98,7 +114,7 @@ interface TurnCtx {
 // ══════════════════════════════
 // AgentLoop
 // ══════════════════════════════
-export class AgentLoop {
+export class AgentLoop implements RuntimeState {
   readonly workspace: string;
   readonly sessions: SessionManager;
   readonly tools: ToolRegistry;
@@ -112,14 +128,32 @@ export class AgentLoop {
   readonly consolidator: Consolidator;
   private _running = false;
   private _startTime = Date.now();
-  private maxIterations: number;
-  private contextWindowTokens: number;
-  private maxToolResultChars: number;
+  maxIterations: number;
+  contextWindowTokens: number;
+  maxToolResultChars: number;
   private maxMessages: number;
-  private providerRetryMode: "standard" | "persistent";
+  providerRetryMode: "standard" | "persistent";
   private _activeTasks = new Map<string, AbortController[]>();
 
   readonly bus: MessageBus | null;
+  readonly fileStateStore = new FileStateStore();
+  memoryStore: MemoryStore | null = null;
+  dream: Dream | null = null;
+  autoCompact: AutoCompact | null = null;
+  subagents: SubagentManager | null = null;
+  mcpManager: McpManager | null = null;
+
+  private _config: catbuddyConfig | null = null;
+  private _providerSnapshot: ProviderSnapshot | null = null;
+  modelPreset: string | null = null;
+  currentIteration = 0;
+  private readonly _runtimeVars: Record<string, unknown> = {};
+  private _lastUsage: TokenUsage | null = null;
+  private _spawnContext: SpawnContext = {
+    originChannel: "desktop",
+    originChatId: "main",
+    sessionKey: "desktop:main",
+  };
 
   constructor(opts: {
     provider: LLMProvider;
@@ -135,6 +169,8 @@ export class AgentLoop {
     consolidationRatio?: number;
     sessionManager?: SessionManager;
     bus?: MessageBus;
+    config?: catbuddyConfig;
+    sessionTtlMinutes?: number;
   }) {
     this.provider = opts.provider;
     this.workspace = opts.workspace;
@@ -166,10 +202,51 @@ export class AgentLoop {
       consolidationRatio: opts.consolidationRatio ?? 0.5,
     });
 
+    if (opts.config) {
+      this._config = opts.config;
+      this.memoryStore = new MemoryStore(opts.workspace);
+      this.autoCompact = new AutoCompact(
+        this.sessions,
+        this.consolidator,
+        opts.sessionTtlMinutes ?? 0,
+      );
+      this.dream = new Dream(this.memoryStore, opts.provider, this.model);
+      if (opts.bus) {
+        this.subagents = new SubagentManager(
+          opts.provider,
+          opts.workspace,
+          opts.bus,
+          this.model,
+          this.maxToolResultChars,
+          this.maxIterations,
+          opts.restrictToWorkspace ?? false,
+        );
+      }
+      this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
+      const allowSet = opts.config.tools?.my?.allowSet ?? false;
+      this.tools.register(createMyTool(this, { modifyAllowed: allowSet }));
+      if (this.subagents) {
+        this.tools.register(
+          createSpawnTool(this.subagents, () => this._spawnContext),
+        );
+      }
+      this._refreshProviderSnapshot();
+    }
+
     this.bus = opts.bus ?? null;
 
     this.commands = new CommandRouter();
     registerBuiltinCommands(this.commands);
+  }
+
+  /** Connect MCP servers from config (call after construction). */
+  async connectMcp(): Promise<void> {
+    if (!this.mcpManager) return;
+    const names = await this.mcpManager.registerTools(this.tools);
+    console.info(
+      "[McpManager] tools:",
+      names.filter((n) => n.startsWith("mcp_")).join(", ") || "(none)",
+    );
   }
 
   // ═══ 公开属性 ═══
@@ -219,8 +296,12 @@ export class AgentLoop {
    * stream callback 直接发布到 bus.outbound（而不是 IPC），由 ChannelManager 路由。
    */
   private async _dispatch(msg: InboundMessage, log?: Logger): Promise<void> {
-    const key = msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
-    const turnLog = (log ?? newTrace(`turn:${nanoid(8)}`)).step("dispatch");
+      const key = msg.sessionKeyOverride ?? `${msg.channel}:${msg.chatId}`;
+      this.autoCompact?.checkExpired(
+        (task) => { void task(); },
+        [...this._activeTasks.keys()],
+      );
+      const turnLog = (log ?? newTrace(`turn:${nanoid(8)}`)).step("dispatch");
     const turnStartedAt = performance.now();
     const streamBase = `${key}:${Date.now()}`;
     let segment = 0;
@@ -543,14 +624,14 @@ export class AgentLoop {
       maxMessages: this.maxMessages,
     });
 
-    // 提取归档摘要（由 Consolidator 写入 session metadata）
     const session = this.sessions.getOrCreate(ctx.sessionKey);
-    let sessionSummary: string | null = null;
+    let sessionSummary: string | null =
+      this.autoCompact?.prepareSession(ctx.sessionKey).summary ?? null;
     const lastSummary = session.metadata?._last_summary as {
       text?: string;
       last_active?: string;
     } | undefined;
-    if (lastSummary?.text) {
+    if (!sessionSummary && lastSummary?.text) {
       sessionSummary = `Previous conversation summary (last active ${
         lastSummary.last_active ?? "unknown"
       }):\n${lastSummary.text}`;
@@ -583,30 +664,40 @@ export class AgentLoop {
 
     const streamId = `${ctx.sessionKey}:${Date.now()}`;
 
+    this._spawnContext = {
+      originChannel: ctx.msg.channel,
+      originChatId: ctx.msg.chatId,
+      sessionKey: ctx.sessionKey,
+    };
     this.tools.setFileEditCallback(
       cbs?.onFileEdit
         ? async (edit) => { await cbs.onFileEdit!(edit) }
         : undefined,
     );
     const persistFromIndex = ctx.allMessages.length
+    const fileStates = this.fileStateStore.forSession(ctx.sessionKey);
     let result;
     try {
-      result = await this.runner.run({
-        initialMessages: ctx.allMessages,
-        tools: this.tools,
-        model: this.model,
-        maxIterations: this.maxIterations,
-        maxToolResultChars: this.maxToolResultChars,
-        concurrentTools: true,
-        workspace: this.workspace,
-        sessionKey: ctx.sessionKey,
-        contextWindowTokens: this.contextWindowTokens,
-        providerRetryMode: this.providerRetryMode,
-        progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
-        retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
-        onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
-        onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
+      result = await runWithFileStates(fileStates, async () => {
+        this.currentIteration = 0;
+        return this.runner.run({
+          initialMessages: ctx.allMessages,
+          tools: this.tools,
+          model: this.model,
+          maxIterations: this.maxIterations,
+          maxToolResultChars: this.maxToolResultChars,
+          concurrentTools: true,
+          workspace: this.workspace,
+          sessionKey: ctx.sessionKey,
+          contextWindowTokens: this.contextWindowTokens,
+          providerRetryMode: this.providerRetryMode,
+          progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
+          retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
+          onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
+          onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
+        });
       });
+      this._lastUsage = result.usage;
     } finally {
       this.tools.setFileEditCallback(undefined);
     }
@@ -673,6 +764,79 @@ export class AgentLoop {
     return "ok";
   }
 
+  // ═══ RuntimeState (MyTool) ═══
+
+  get toolNames(): string[] {
+    return this.tools.toolNames;
+  }
+
+  get runtimeVars(): Record<string, unknown> {
+    return this._runtimeVars;
+  }
+
+  get lastUsage(): TokenUsage | null {
+    return this._lastUsage;
+  }
+
+  setRuntimeValue(key: string, value: unknown): string {
+    if (key === "maxIterations") {
+      const n = Number(value);
+      if (Number.isNaN(n) || n < 1 || n > 100) return "Error: maxIterations out of range (1-100)";
+      this.maxIterations = n;
+      this.subagents?.setProvider(this.provider, this.model);
+      return `maxIterations set to ${n}`;
+    }
+    if (key === "contextWindowTokens") {
+      const n = Number(value);
+      if (Number.isNaN(n) || n < 4096 || n > 1_000_000) {
+        return "Error: contextWindowTokens out of range";
+      }
+      this.contextWindowTokens = n;
+      return `contextWindowTokens set to ${n}`;
+    }
+    if (key === "model") {
+      const m = String(value).trim();
+      if (!m) return "Error: model must be non-empty";
+      this.setModel(m);
+      return `model set to ${m}`;
+    }
+    this._runtimeVars[key] = value;
+    return `${key} stored in runtime scratchpad`;
+  }
+
+  _refreshProviderSnapshot(): void {
+    if (!this._config) return;
+    try {
+      const snapshot = buildProviderSnapshot(
+        this._config,
+        this.modelPreset ?? undefined,
+      );
+      this._applyProviderSnapshot(snapshot);
+    } catch (err) {
+      console.warn("[agent] provider snapshot refresh failed:", err);
+    }
+  }
+
+  private _applyProviderSnapshot(snapshot: ProviderSnapshot): void {
+    const sig = JSON.stringify(snapshot.signature);
+    const prev = this._providerSnapshot
+      ? JSON.stringify(this._providerSnapshot.signature)
+      : null;
+    if (sig === prev) return;
+    this._providerSnapshot = snapshot;
+    this.provider = snapshot.provider;
+    this.model = snapshot.model;
+    this.contextWindowTokens = snapshot.contextWindowTokens;
+    this.runner.setProvider(snapshot.provider);
+    this.consolidator.setProvider(
+      snapshot.provider,
+      snapshot.model,
+      snapshot.contextWindowTokens,
+    );
+    this.dream?.setProvider(snapshot.provider, snapshot.model);
+    this.subagents?.setProvider(snapshot.provider, snapshot.model);
+  }
+
   // ═══ 命令 ═══
 
   async cancelSession(sessionKey: string): Promise<number> {
@@ -689,30 +853,52 @@ export class AgentLoop {
     return cancelled;
   }
 
-  setModelPreset(name: string) {
-    console.log(`Model preset set to: ${name}`);
+  setModelPreset(name: string | null, publishUpdate = true): void {
+    if (!this._config) {
+      console.warn("[agent] setModelPreset: no config");
+      return;
+    }
+    void publishUpdate;
+    try {
+      const presets = configuredModelPresets(this._config);
+      if (name) normalizePresetName(name, presets);
+      this.modelPreset = name;
+      this._refreshProviderSnapshot();
+      console.log(`[agent] Model preset: ${name ?? "(default)"}`);
+    } catch (err) {
+      console.warn("[agent] setModelPreset failed:", err);
+    }
   }
 
   setModel(model: string) {
     console.log(`[agent] Model switched: ${this.model} → ${model}`);
     this.model = model;
-    this.runner = new AgentRunner(this.provider);
+    this.runner.setProvider(this.provider);
     this.consolidator.setProvider(
       this.provider,
       model,
       this.contextWindowTokens,
     );
+    this.subagents?.setProvider(this.provider, model);
+    this.dream?.setProvider(this.provider, model);
   }
 
   setProvider(provider: LLMProvider) {
     console.log(`[agent] Provider reloaded`);
     this.provider = provider;
-    this.runner = new AgentRunner(provider);
+    this.runner.setProvider(provider);
     this.consolidator.setProvider(
       provider,
       this.model,
       this.contextWindowTokens,
     );
+    this.subagents?.setProvider(provider, this.model);
+    this.dream?.setProvider(provider, this.model);
+  }
+
+  /** Background Dream cycle (optional cron). */
+  async runDreamOnce(): Promise<string | null> {
+    return this.dream?.runOnce() ?? null;
   }
 
   listSkills(): SkillInfo[] {

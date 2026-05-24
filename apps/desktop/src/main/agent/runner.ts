@@ -4,6 +4,7 @@
  */
 import { LLMProvider } from '../providers'
 import { ToolRegistry } from './tools'
+import { AgentHook, type AgentHookContext } from './hook'
 import type {
   LLMMessage, ToolCallRequest, ToolEvent,
   AgentRunResult, TokenUsage,
@@ -23,6 +24,7 @@ export interface RunSpec {
   contextWindowTokens: number
   contextBlockLimit?: number
   providerRetryMode: 'standard' | 'persistent'
+  hook?: AgentHook
   progressCallback?: (ev: ToolEvent) => Promise<void>
   retryWaitCallback?: (msg: string) => Promise<void>
   onStream?: (delta: string) => Promise<void>
@@ -57,6 +59,10 @@ function estimateMessageTokens(msg: LLMMessage): number {
 export class AgentRunner {
   constructor(private provider: LLMProvider) {}
 
+  setProvider(provider: LLMProvider): void {
+    this.provider = provider
+  }
+
   async run(spec: RunSpec): Promise<AgentRunResult> {
     const messages: LLMMessage[] = [...spec.initialMessages]
     const toolsUsed: string[] = []
@@ -67,14 +73,38 @@ export class AgentRunner {
     let emptyRetries = 0
     let lengthRecoveries = 0
     let lastReasoningContent: string | undefined
-    // 重复外部查询计数
+    const hook = spec.hook ?? new AgentHook()
     const externalLookupCounts = new Map<string, number>()
 
     for (let iteration = 0; iteration < spec.maxIterations; iteration++) {
-      // ── 上下文治理：每轮前清理 ──
       this._governContext(messages, spec)
 
-      // 1. 调用 LLM
+      const hookCtx: AgentHookContext = {
+        iteration,
+        messages,
+        usage: { ...usage },
+        toolCalls: [],
+        toolResults: [],
+        toolEvents: [],
+        streamedContent: false,
+        streamedReasoning: false,
+        finalContent: null,
+        stopReason: null,
+        error: null,
+      }
+      await hook.beforeIteration(hookCtx)
+
+      const onContentDelta = async (delta: string) => {
+        hookCtx.streamedContent = true
+        if (hook.wantsStreaming()) await hook.onStream(hookCtx, delta)
+        await spec.onStream?.(delta)
+      }
+      const onThinkingDelta = async (delta: string) => {
+        hookCtx.streamedReasoning = true
+        await hook.emitReasoning(delta)
+        await spec.onReasoning?.(delta)
+      }
+
       const response = await this.provider.chatStreamWithRetry({
         messages,
         tools: spec.tools.getDefinitions(),
@@ -82,20 +112,29 @@ export class AgentRunner {
         maxTokens: spec.maxTokens ?? 4096,
         temperature: spec.temperature ?? 0.7,
         retryMode: spec.providerRetryMode,
-        onContentDelta: spec.onStream,
-        onThinkingDelta: spec.onReasoning,
+        onContentDelta: spec.onStream || hook.wantsStreaming() ? onContentDelta : undefined,
+        onThinkingDelta: spec.onReasoning ? onThinkingDelta : undefined,
         onRetryWait: spec.retryWaitCallback,
         timeout: spec.llmTimeoutS,
       })
 
-      // 2. 累加 usage
-      usage.inputTokens += response.usage.inputTokens
-      usage.outputTokens += response.usage.outputTokens
+      hookCtx.response = {
+        content: response.content,
+        toolCalls: response.toolCalls,
+        finishReason: response.finishReason,
+        reasoningContent: response.reasoningContent,
+        usage: response.usage,
+      }
       if (response.reasoningContent) {
+        await hook.emitReasoning(response.reasoningContent)
         lastReasoningContent = response.reasoningContent
       }
+      await hook.emitReasoningEnd()
 
-      // 3. 工具调用
+      usage.inputTokens += response.usage.inputTokens
+      usage.outputTokens += response.usage.outputTokens
+      hookCtx.usage = { ...usage }
+
       if (response.toolCalls.length > 0 && response.finishReason !== 'error') {
         // ── 重复外部搜索限制 ──
         const blockedTools: string[] = []
@@ -117,8 +156,13 @@ export class AgentRunner {
         }
 
         const activeCalls = response.toolCalls.filter(tc => !blockedTools.includes(tc.name))
-        if (activeCalls.length === 0) continue
+        if (activeCalls.length === 0) {
+          await hook.afterIteration(hookCtx)
+          continue
+        }
 
+        hookCtx.toolCalls = activeCalls
+        await hook.beforeExecuteTools(hookCtx)
         toolsUsed.push(...activeCalls.map(tc => tc.name))
 
         messages.push({
@@ -169,17 +213,18 @@ export class AgentRunner {
             name: toolCall.name,
             content: truncated,
           })
+          hookCtx.toolResults.push(truncated)
         }
+        hookCtx.toolEvents = [...toolEvents]
         emptyRetries = 0
         lengthRecoveries = 0
+        await hook.afterIteration(hookCtx)
         continue
       }
 
-      // 4. 最终回复
-      finalContent = response.content ?? ''
+      finalContent = hook.finalizeContent(hookCtx, response.content ?? '')
 
-      // 空回复重试
-      if (!finalContent.trim() && emptyRetries < MAX_EMPTY_RETRIES) {
+      if (!finalContent?.trim() && emptyRetries < MAX_EMPTY_RETRIES) {
         emptyRetries++
         messages.push({
           role: 'user',
@@ -198,6 +243,12 @@ export class AgentRunner {
         continue
       }
 
+      hookCtx.finalContent = finalContent
+      hookCtx.stopReason = response.finishReason
+      await hook.afterIteration(hookCtx)
+      if (hook.wantsStreaming()) {
+        await hook.onStreamEnd(hookCtx, { resuming: false })
+      }
       stopReason = response.finishReason
       break
     }

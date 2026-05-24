@@ -4,16 +4,20 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { resolveDesktopDownloadUrl, shouldOfferDesktopDownload } from '@catbuddy/platform'
+import { authMuted } from '@/components/auth/email-login/styles'
 
 type DesktopClientDownloadProps = {
   /** sidebar: under search; login: marketing panel; banner: under offline hint */
   variant?: 'sidebar' | 'login' | 'banner'
   className?: string
+  /** login variant only — hide helper text under the button */
+  showHint?: boolean
 }
 
 export function DesktopClientDownload({
   variant = 'sidebar',
   className,
+  showHint = true,
 }: DesktopClientDownloadProps) {
   const { t } = useTranslation()
 
@@ -47,7 +51,7 @@ export function DesktopClientDownload({
           href={href}
           download
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium',
+            'flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium',
             'bg-[#0EA5E9] text-white shadow-md shadow-sky-500/20 transition-all duration-200',
             'hover:bg-[#0284C7] hover:shadow-lg hover:shadow-sky-500/25',
           )}
@@ -55,7 +59,9 @@ export function DesktopClientDownload({
           <Download className="h-4 w-4 shrink-0" aria-hidden />
           {label}
         </a>
-        <p className="mt-2 text-center text-xs leading-relaxed text-[#1E3A8A]/50">{hint}</p>
+        {showHint ? (
+          <p className={cn('mt-2 text-center text-xs leading-relaxed', authMuted)}>{hint}</p>
+        ) : null}
       </div>
     )
   }

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { authSecondaryBtn } from './styles'
+import { authSecondaryBtn, authBody } from './styles'
 import type { AuthMode } from './types'
 import { resolveAuthErrorAction } from './utils'
 
@@ -21,7 +21,7 @@ export function AuthFeedback({
   return (
     <>
       {hint ? (
-        <p className="rounded-xl border border-white/50 bg-white/45 px-3.5 py-2.5 text-xs leading-relaxed text-[#1E3A8A]/70 backdrop-blur-sm dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-muted-foreground">
+        <p className={cn('rounded-xl border border-white/50 bg-white/45 px-3.5 py-2.5 text-xs leading-relaxed backdrop-blur-sm dark:border-sky-500/25 dark:bg-sky-500/10', authBody)}>
           {hint}
         </p>
       ) : null}

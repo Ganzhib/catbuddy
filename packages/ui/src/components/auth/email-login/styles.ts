@@ -1,5 +1,33 @@
 import { cn } from '@/lib/utils'
 
+export const authBrandLabel = cn(
+  'text-[9px] font-medium uppercase tracking-[0.18em] text-[#0EA5E9]/80 sm:text-[10px] dark:text-sky-400',
+)
+
+export const authHeading = cn('text-[#1E3A8A]/90 dark:text-slate-100')
+
+export const authTitle = cn('font-semibold tracking-tight text-[#1E3A8A]/95 dark:text-slate-50')
+
+export const authBody = cn('text-[#1E3A8A]/70 dark:text-slate-300')
+
+export const authBodyStrong = cn('font-medium text-[#1E3A8A]/85 dark:text-slate-200')
+
+export const authMuted = cn('text-[#1E3A8A]/55 dark:text-slate-400')
+
+export const authSubtle = cn('text-[#1E3A8A]/45 dark:text-slate-500')
+
+export const authBadge = cn(
+  'inline-flex items-center rounded-full border border-sky-200/50 bg-white/60 px-3 py-1',
+  'text-[10px] font-normal text-[#1E3A8A]/70 sm:text-[11px]',
+  'dark:border-white/15 dark:bg-white/[0.08] dark:text-slate-300',
+)
+
+export const authAccent = cn('text-[#0EA5E9]/80 dark:text-sky-400')
+
+export const authNavGhost = cn(
+  'text-[#1E3A8A]/70 hover:text-[#1E3A8A] dark:text-slate-300 dark:hover:text-slate-100',
+)
+
 export const authSecondaryBtn = cn(
   'rounded-xl border border-teal-200/80 bg-teal-50 text-teal-700',
   'hover:bg-teal-100 hover:border-[#2DD4BF]/60 transition-all duration-200',

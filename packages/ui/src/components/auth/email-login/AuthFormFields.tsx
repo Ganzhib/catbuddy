@@ -69,7 +69,7 @@ export function PasswordField({
           type="button"
           tabIndex={-1}
           aria-label={showPassword ? '隐藏密码' : '显示密码'}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[#1E3A8A]/40 transition-all duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] dark:hover:bg-sky-500/15 dark:hover:text-sky-400"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[#1E3A8A]/40 transition-all duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] dark:text-slate-400 dark:hover:bg-sky-500/15 dark:hover:text-sky-300"
           onClick={onToggleShow}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

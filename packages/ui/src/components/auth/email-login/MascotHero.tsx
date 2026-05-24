@@ -21,7 +21,7 @@ export function MascotHero({
             <BrandMark className="h-10 w-10 object-contain drop-shadow-md sm:h-14 sm:w-14" />
           </div>
           {showBubble ? (
-            <p className="auth-mascot-bubble absolute -right-2 -top-6 z-20 max-w-[7rem] whitespace-nowrap rounded-xl border border-teal-100/70 bg-white/80 px-1.5 py-0.5 text-[9px] font-normal leading-snug text-[#2DD4BF]/90 shadow-sm backdrop-blur-sm sm:-right-5 sm:-top-8 sm:max-w-[9rem] sm:px-2 sm:py-1 sm:text-[11px] dark:border-teal-500/20 dark:bg-teal-500/10">
+            <p className="auth-mascot-bubble absolute -right-2 -top-6 z-20 max-w-[7rem] whitespace-nowrap rounded-xl border border-teal-100/70 bg-white/80 px-1.5 py-0.5 text-[9px] font-normal leading-snug text-[#2DD4BF]/90 shadow-sm backdrop-blur-sm sm:-right-5 sm:-top-8 sm:max-w-[9rem] sm:px-2 sm:py-1 sm:text-[11px] dark:border-teal-500/30 dark:bg-teal-500/15 dark:text-teal-300">
               今天也要好好学习啊，喵~ 喵~ 喵~
             </p>
           ) : null}

@@ -1,0 +1,12 @@
+/* Web landing: scroll inside #landing-scroll-root; #root stays fixed like the chat app. */
+html.catbuddy-web-landing,
+html.catbuddy-web-landing body,
+html.catbuddy-web-landing #root {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+html.catbuddy-web-landing #landing-scroll-root {
+  -webkit-overflow-scrolling: touch;
+}

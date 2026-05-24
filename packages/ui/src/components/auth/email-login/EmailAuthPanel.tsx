@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AuthFeedback, ModeTabs, SwitchModeButton } from './AuthFormControls'
 import { EmailField, OtpInput, PasswordField } from './AuthFormFields'
-import { authInput, authOutlineBtn, authPanel, authPrimaryBtn, loginGlassCard } from './styles'
+import { authAccent, authHeading, authInput, authOutlineBtn, authPanel, authPrimaryBtn, authMuted, authSubtle, loginGlassCard } from './styles'
 import type { EmailAuthState } from './useEmailAuth'
 
 export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
@@ -48,10 +48,10 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
       )}
     >
       <div className={loginGlassCard}>
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-[#0EA5E9]">
+        <p className={cn('text-center text-[11px] font-semibold uppercase tracking-[0.2em]', authAccent)}>
           {formEyebrow}
         </p>
-        <h2 className="mt-2 text-center text-xl font-bold tracking-tight text-[#1E3A8A] sm:text-2xl dark:text-foreground">
+        <h2 className={cn('mt-2 text-center text-xl sm:text-2xl', authHeading)}>
           {formTitle}
         </h2>
 
@@ -59,7 +59,7 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
           <ModeTabs mode={mode} onChange={onModeChange} />
         )}
 
-        <p className="mb-5 mt-4 text-center text-xs leading-relaxed text-[#1E3A8A]/60 dark:text-muted-foreground">
+        <p className={cn('mb-5 mt-4 text-center text-xs leading-relaxed', authMuted)}>
           {mode === 'register' && registerStep === 'verify' ? (
             <>
               我们已向{' '}
@@ -119,11 +119,11 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
           />
         )}
 
-        <p className="mt-5 text-center text-[10px] leading-relaxed text-[#1E3A8A]/45">
+        <p className={cn('mt-5 text-center text-[10px] leading-relaxed', authSubtle)}>
           继续即表示您同意 catbuddy 的服务条款与隐私政策。
         </p>
       </div>
-      <p className="mt-1 text-center text-[10px] text-[#1E3A8A]/45 lg:hidden">
+      <p className={cn('mt-1 text-center text-[10px] lg:hidden', authSubtle)}>
           © catbuddy · 作者：甘智斌
       </p>
     </main>

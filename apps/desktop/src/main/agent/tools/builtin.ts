@@ -2,6 +2,7 @@ import type { ToolFactory } from './types'
 import { createEditFileTool } from './edit-file'
 import { createExecTool } from './exec'
 import { createGenerateImageTool } from './generate-image'
+import { createExecSessionTool } from './exec_session'
 import { createGrepTool } from './grep'
 import { createListDirTool } from './list-dir'
 import { createReadFileTool } from './read-file'
@@ -19,5 +20,6 @@ export const builtinToolFactories: ToolFactory[] = [
   () => createWebSearchTool(),
   () => createWebFetchTool(),
   createExecTool,
+  createExecSessionTool,
   createGenerateImageTool,
 ]

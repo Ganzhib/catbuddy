@@ -1,18 +1,20 @@
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
+import { applyCatbuddyDevMode } from '@catbuddy/shared'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(__dirname, '../../../..')
 
-/** Load `gateway/.env` (+ `.env.production` when NODE_ENV=production) before config reads process.env. */
+/** Load repo root `.env` (+ `.env.production` when NODE_ENV=production). */
 export function loadGatewayEnvFiles(): void {
-  const gatewayRoot = path.resolve(__dirname, '../../..')
-  const base = path.join(gatewayRoot, '.env')
-  const production = path.join(gatewayRoot, '.env.production')
-  // Do not override existing env (Docker Compose / systemd inject MYSQL_HOST, secrets, etc.)
+  const base = path.join(repoRoot, '.env')
+  const production = path.join(repoRoot, '.env.production')
   dotenv.config({ path: base })
   if (process.env.NODE_ENV === 'production') {
     dotenv.config({ path: production, override: true })
+  } else {
+    applyCatbuddyDevMode()
   }
 }
 

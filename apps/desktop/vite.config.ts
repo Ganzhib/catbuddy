@@ -6,6 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ignorePackageEmit } from "../../scripts/vite-ignore-package-emit.mjs";
+import { gatewayPreflightPlugin } from "../../scripts/gateway-preflight.mjs";
+import { setupCatbuddyViteDev } from "../../packages/shared/src/vite-dev.ts";
 import { launchElectronDev } from "./scripts/launch-electron-dev.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,7 +41,7 @@ function copyMainAssetsPlugin() {
       copyDirRecursive(preloadSrc, preloadDest);
     }
     for (const envName of [".env.production"]) {
-      const envSrc = path.join(__dirname, envName);
+      const envSrc = path.join(repoRoot, envName);
       if (fs.existsSync(envSrc)) {
         fs.copyFileSync(envSrc, path.join(__dirname, "dist-electron", envName));
       }
@@ -57,13 +59,19 @@ function copyMainAssetsPlugin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const { useCatbuddyGateway, catbuddyGatewayTarget, envDefine, proxy } =
+    setupCatbuddyViteDev(mode, "desktop");
+
+  return {
   // file:// loadFile: absolute /brand/* would point at disk root — use relative assets
   base: "./",
   root: path.resolve(__dirname, "src/renderer"),
   publicDir: path.resolve(__dirname, "public"),
+  define: envDefine,
   plugins: [
     react(),
+    gatewayPreflightPlugin(useCatbuddyGateway, catbuddyGatewayTarget),
     electron([
       {
         entry: path.resolve(__dirname, "src/main/index.ts"),
@@ -119,19 +127,7 @@ export default defineConfig({
     watch: {
       ignored: [ignorePackageEmit],
     },
-    proxy: {
-      "/gateway-api": {
-        target: "http://127.0.0.1:18765",
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/gateway-api/, ""),
-      },
-      "/gateway-ws": {
-        target: "http://127.0.0.1:18765",
-        ws: true,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/gateway-ws/, ""),
-      },
-    },
+    proxy,
   },
   build: {
     outDir: path.resolve(__dirname, "dist"),
@@ -142,4 +138,5 @@ export default defineConfig({
       },
     },
   },
+};
 });

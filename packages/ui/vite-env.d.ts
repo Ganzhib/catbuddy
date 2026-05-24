@@ -1,5 +1,6 @@
 interface ImportMetaEnv {
   readonly DEV?: boolean
+  readonly VITE_CATBUDDY_DEV_MODE?: string
   readonly VITE_USE_GATEWAY?: string
   readonly VITE_GATEWAY_HTTP_URL?: string
   readonly VITE_GATEWAY_URL?: string

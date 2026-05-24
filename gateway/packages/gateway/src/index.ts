@@ -12,7 +12,7 @@ import { isWebLoginRequired } from './session/auth/auth-policy.js'
 import { attachGatewaySessionWebSocket } from './ws-session.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const gatewayRoot = path.resolve(__dirname, '../../..')
+const repoRoot = path.resolve(__dirname, '../../../..')
 
 async function main() {
   const { pool, state, auth } = await createGatewayServices()
@@ -33,9 +33,10 @@ async function main() {
     `[gateway] auth require_email=${gatewayEnv.authRequireEmail} dev_bypass=${gatewayEnv.authDevBypass} `
     + `web_login_required=${isWebLoginRequired()}`,
   )
-  const envPath = path.join(gatewayRoot, '.env')
+  const envPath = path.join(repoRoot, '.env')
   console.log(
-    `[gateway] env: gateway/.env ${fs.existsSync(envPath) ? '(loaded)' : '(missing — copy .env.example)'}`,
+    `[gateway] dev_mode=${process.env.CATBUDDY_DEV_MODE ?? 'local'} env: ${envPath} `
+    + `${fs.existsSync(envPath) ? '(loaded)' : '(missing — copy .env.example)'}`,
   )
   const db = gatewayEnv.databaseUrl
     ? '(DATABASE_URL)'
@@ -49,7 +50,7 @@ async function main() {
     )
   } else {
     console.log(
-      '[gateway] SMTP 未配置 — 注册验证码不会发邮件，仅打印在本终端（请复制 gateway/.env.example → gateway/.env 并填写 SMTP_*）',
+      '[gateway] SMTP 未配置 — 注册验证码不会发邮件，仅打印在本终端（请复制 .env.example → .env 并填写 SMTP_*）',
     )
   }
 

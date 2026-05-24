@@ -46,14 +46,14 @@ catbuddy/
 
 
 
-在 `catbuddy/` 目录安装依赖：
+在 `catbuddy/` 目录安装依赖并配置环境：
 
 
 
 ```bash
-
 pnpm install
-
+cp .env.example .env          # 本地开发（Gateway + Desktop + Web）
+# cp .env.production.example .env.production   # 生产 / Docker / 打包
 ```
 
 
@@ -83,44 +83,37 @@ pnpm install
 
 ### Web 开发（catbuddy Gateway，推荐）
 
-
-
 无需本地 `nanobot gateway`。Web UI 通过 **catbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)、[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
 
+#### `CATBUDDY_DEV_MODE=remote`（连线上 Gateway，最简单）
 
-
-**三个终端：**
-
-
+根目录 `.env` 设 `CATBUDDY_DEV_MODE=remote`，**无需** `pnpm gateway:dev`：
 
 ```bash
-
-# 1) 中转 + Gateway 垫片（/webui/bootstrap、/api/*）
-
-pnpm gateway:dev
-
-
-
-# 2) 桌面（需开启 gateway）
-# 复制 apps/desktop/.env.example → apps/desktop/.env，或写入 ~/.catbuddy.env：
-#   GATEWAY_ENABLED=true
-#   GATEWAY_URL=ws://127.0.0.1:18765/ws
-#   GATEWAY_SECRET=dev-secret
-pnpm dev:desktop
-
-
-
-# 3) Web 前端
-# 复制 apps/web/.env.development.example → apps/web/.env.development（可选；dev 默认已走 Gateway）
-pnpm dev:web
-
+pnpm dev:desktop    # 桌面 + 内置 UI（http://localhost:5173）
+# 可选：pnpm dev:web   # 单独浏览器开 Web
 ```
 
+启动日志应含：`[catbuddy/desktop] dev_mode=remote gateway → https://gateway.ganzhibin.icu`
 
+桌面 **设置 → 远程控制** 打开；须与 Web **同一邮箱** 登录。
+
+若出现 `ENOTFOUND gateway.ganzhibin.icu`：本机 DNS/网络问题（非配置错误）。可试 `ipconfig /flushdns`、关 VPN，或改回 `local` 模式。
+
+#### `CATBUDDY_DEV_MODE=local`（本机 Gateway，三终端）
+
+```bash
+# 1) Gateway
+pnpm gateway:dev
+
+# 2) 桌面
+pnpm dev:desktop
+
+# 3) Web（可选）
+pnpm dev:web
+```
 
 浏览器打开 `http://127.0.0.1:5173/`。邮箱登录后由 `AuthGate` + `GatewayTransport` 连 Gateway，消息由桌面 Agent 处理。
-
-- 桌面 **设置 → 远程控制**：须与 Web **同一邮箱** 登录；开启远程控制后自动注册 Gateway
 
 
 
@@ -142,20 +135,30 @@ pnpm dev:web
 
 
 
-### 环境变量示例文件
+### 环境变量
 
-| 端 | 模板 | 复制为 |
-|----|------|--------|
-| Desktop | `apps/desktop/.env.example` | `apps/desktop/.env` 或 `~/.catbuddy.env` |
-| Web（开发） | `apps/web/.env.development.example` | `apps/web/.env.development` |
-| Web（生产 build） | `apps/web/.env.production.example` | `apps/web/.env.production` |
-| Gateway | `gateway/.env.example` | `gateway/.env` |
+根目录 **一个开关** 控制三端（Gateway / Desktop / Web）：
+
+| `CATBUDDY_DEV_MODE` | 说明 |
+|---------------------|------|
+| `local` | 本机 `pnpm gateway:dev`，Desktop/Web 走 `127.0.0.1:18765` |
+| `remote` | Desktop/Web 连 `gateway.ganzhibin.icu`，**无需**本地 Gateway |
+
+```bash
+cp .env.example .env
+# 改 CATBUDDY_DEV_MODE、GATEWAY_ACCOUNT_EMAIL、DEEPSEEK_KEY 即可
+```
+
+| 用途 | 模板 | 复制为 |
+|------|------|--------|
+| 开发 | `.env.example` | `.env` |
+| 生产 / 打包 | `.env.production.example` | `.env.production` |
 
 ### 环境变量（`apps/web`）
 
 | 变量 | 说明 |
 |------|------|
-| `VITE_USE_GATEWAY` | `true`（dev 默认）→ catbuddy gateway；`false` → nanobot gateway |
+| `VITE_USE_GATEWAY` | 根目录 `.env`；`true`（dev 默认）→ catbuddy gateway |
 | `VITE_GATEWAY_URL` | nanobot HTTP（`VITE_USE_GATEWAY=false` 时，默认 `http://127.0.0.1:8765`） |
 | `VITE_GATEWAY_HTTP_URL` | catbuddy gateway HTTP（dev 默认 `http://127.0.0.1:18765`；生产建议 `/gateway-api` 或公网 URL） |
 
@@ -165,13 +168,11 @@ pnpm dev:web
 
 ### 首次上手（约 30 分钟）
 
+1. `pnpm install` 后 `cp .env.example .env`（若 `sharp` 安装失败，可 `pnpm install --ignore-scripts`，桌面开发通常仍可运行）
 
+2. **remote 模式（推荐先试）**：`.env` 设 `CATBUDDY_DEV_MODE=remote` + `GATEWAY_ACCOUNT_EMAIL` + `DEEPSEEK_KEY` → `pnpm dev:desktop`
 
-1. `pnpm install`（若 `sharp` 安装失败，可 `pnpm install --ignore-scripts`，桌面开发通常仍可运行）
-
-2. 桌面：`pnpm dev:desktop` → 发消息、看流式回复与工具卡
-
-3. Web：`pnpm gateway:dev` + 桌面 `GATEWAY_ENABLED=true` + `pnpm dev:web`
+3. **local 模式**：`.env` 设 `CATBUDDY_DEV_MODE=local` → `pnpm gateway:dev` + `pnpm dev:desktop` +（可选）`pnpm dev:web`
 
 
 

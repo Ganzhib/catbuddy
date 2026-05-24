@@ -15,12 +15,16 @@ export async function checkGateway(url = 'http://127.0.0.1:18765/health') {
   }
 }
 
-export function gatewayPreflightPlugin(enabled) {
+export function gatewayPreflightPlugin(enabled, gatewayTarget = 'http://127.0.0.1:18765') {
   return {
     name: 'catbuddy-gateway-preflight',
     async configureServer() {
       if (!enabled) return
-      const result = await checkGateway()
+      const local =
+        /127\.0\.0\.1|localhost/.test(gatewayTarget) && gatewayTarget.includes(':18765')
+      if (!local) return
+      const health = `${gatewayTarget.replace(/\/$/, '')}/health`
+      const result = await checkGateway(health)
       if (result.ok) return
       console.error(
         '\n[catbuddy/web] gateway 未就绪（' + result.reason + '）。\n'

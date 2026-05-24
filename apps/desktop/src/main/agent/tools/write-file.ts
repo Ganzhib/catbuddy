@@ -1,6 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import type { Tool, ToolContext } from './types'
+import { currentFileStates } from './file_state'
 
 export function createWriteFileTool(ctx: ToolContext): Tool {
   return {
@@ -43,6 +44,7 @@ export function createWriteFileTool(ctx: ToolContext): Tool {
         fs.mkdirSync(path.dirname(resolved), { recursive: true })
         const after = String(content)
         fs.writeFileSync(resolved, after, 'utf-8')
+        currentFileStates(ctx.fileStates).recordWrite(resolved)
         const { added, deleted } = ctx.lineDelta(before, after)
         await ctx.notifyFileEdit({
           ...base,

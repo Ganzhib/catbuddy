@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import type { Tool, ToolContext } from './types'
+import { currentFileStates } from './file_state'
 
 export function createEditFileTool(ctx: ToolContext): Tool {
   return {
@@ -52,6 +53,7 @@ export function createEditFileTool(ctx: ToolContext): Tool {
         return 'Error: file not found'
       }
       try {
+        const warning = currentFileStates(ctx.fileStates).checkRead(resolved)
         const content = fs.readFileSync(resolved, 'utf-8')
         const old = String(old_string)
         const neu = String(new_string)
@@ -82,6 +84,7 @@ export function createEditFileTool(ctx: ToolContext): Tool {
         }
         const updated = content.replace(old, neu)
         fs.writeFileSync(resolved, updated, 'utf-8')
+        currentFileStates(ctx.fileStates).recordWrite(resolved)
         const added = neu.split('\n').length
         const deleted = old.split('\n').length
         await ctx.notifyFileEdit({
@@ -93,7 +96,8 @@ export function createEditFileTool(ctx: ToolContext): Tool {
           deleted,
           approximate: true,
         })
-        return `File edited: ${resolved} (1 replacement, ${updated.split('\n').length} lines)`
+        const prefix = warning ? `${warning}\n\n` : ''
+        return `${prefix}File edited: ${resolved} (1 replacement, ${updated.split('\n').length} lines)`
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err)
         await ctx.notifyFileEdit({

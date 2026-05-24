@@ -1,4 +1,5 @@
 import type { FileEditEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
+import type { FileStates } from './file_state'
 
 /** A single agent tool: schema + executor. */
 export interface Tool {
@@ -10,6 +11,8 @@ export interface Tool {
 /** Runtime dependencies injected into each tool factory. */
 export interface ToolContext {
   readonly workspace: string
+  /** Fallback when AsyncLocalStorage has no bound session. */
+  readonly fileStates: FileStates
   resolvePath(inputPath: string): string
   displayPath(resolved: string): string
   notifyFileEdit(edit: FileEditEvent): Promise<void>

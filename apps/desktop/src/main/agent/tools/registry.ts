@@ -6,6 +6,7 @@
 import * as path from 'path'
 import type { FileEditEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
 import { builtinToolFactories } from './builtin'
+import { FileStates } from './file_state'
 import type { Tool, ToolContext } from './types'
 
 export class ToolRegistry {
@@ -13,6 +14,7 @@ export class ToolRegistry {
   private _workspace: string = ''
   private _restrictWorkspace: boolean = false
   private _fileEditCallback?: (edit: FileEditEvent) => Promise<void>
+  private readonly _defaultFileStates = new FileStates()
 
   setWorkspace(dir: string, restrict: boolean = false): void {
     this._workspace = path.resolve(dir)
@@ -27,6 +29,7 @@ export class ToolRegistry {
   createToolContext(): ToolContext {
     return {
       workspace: this._workspace,
+      fileStates: this._defaultFileStates,
       resolvePath: (input) => this.resolvePath(input),
       displayPath: (resolved) => this.displayPath(resolved),
       notifyFileEdit: (edit) => this.notifyFileEdit(edit),
@@ -36,6 +39,22 @@ export class ToolRegistry {
 
   register(tool: Tool): void {
     this._tools.set(tool.name, tool)
+  }
+
+  unregister(name: string): boolean {
+    return this._tools.delete(name)
+  }
+
+  /** Remove tools whose names start with *prefix* (e.g. `mcp_` on reload). */
+  unregisterByPrefix(prefix: string): string[] {
+    const removed: string[] = []
+    for (const name of [...this._tools.keys()]) {
+      if (name.startsWith(prefix)) {
+        this._tools.delete(name)
+        removed.push(name)
+      }
+    }
+    return removed
   }
 
   get(name: string): Tool | undefined {

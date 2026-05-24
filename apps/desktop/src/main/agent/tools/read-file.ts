@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import type { Tool, ToolContext } from './types'
+import { currentFileStates } from './file_state'
 
-export function createReadFileTool(_ctx: ToolContext): Tool {
+export function createReadFileTool(ctx: ToolContext): Tool {
   return {
     name: 'read_file',
     definition: {
@@ -23,12 +24,20 @@ export function createReadFileTool(_ctx: ToolContext): Tool {
     execute: async (call) => {
       const { path: fp, offset = 0, limit } = call.arguments as Record<string, unknown>
       if (!fp) return 'Error: path required'
-      const resolved = _ctx.resolvePath(String(fp))
+      const resolved = ctx.resolvePath(String(fp))
+      const off = Number(offset) || 0
+      const lim = limit != null ? Number(limit) : null
+      const states = currentFileStates(ctx.fileStates)
+
+      if (states.isUnchanged(resolved, off, lim)) {
+        return 'File unchanged since last read at the same offset/limit.'
+      }
+
       const content = fs.readFileSync(resolved, 'utf-8')
       const lines = content.split('\n')
-      return lines
-        .slice(Number(offset) || 0, limit ? Number(offset) + Number(limit) : undefined)
-        .join('\n')
+      const slice = lines.slice(off, lim != null ? off + lim : undefined)
+      states.recordRead(resolved, off, lim)
+      return slice.join('\n')
     },
   }
 }

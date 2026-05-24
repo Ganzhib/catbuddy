@@ -6,6 +6,10 @@ import { AnthropicProvider } from './anthropic'
 import { FallbackProvider } from './fallback'
 import type { LLMProvider } from './base-provider'
 import type { catbuddyConfig } from "@catbuddy/shared"
+import {
+  resolveProviderApiBase,
+  resolveProviderApiKey,
+} from '../config/env-provider-fallback.js'
 /**
  * 
  * @param params    创建 Provider 的参数
@@ -66,7 +70,7 @@ function buildProvider(config: catbuddyConfig, model: string, providerName: stri
   return makeProvider({
     model,
     providerName,
-    apiKey: providerCfg.apiKey,
-    apiBase: providerCfg.apiBase,
+    apiKey: resolveProviderApiKey(providerName, providerCfg.apiKey),
+    apiBase: resolveProviderApiBase(providerName, providerCfg.apiBase),
   })
 }

@@ -5,6 +5,7 @@ import { ipcMain, app } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
+import { buildSettingsPayload } from '../config/env-provider-fallback'
 import type { catbuddyConfig } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
 
@@ -108,6 +109,7 @@ export function registerIpcHandlers(
 
   // ═══ Config ═══
   ipcMain.handle('config:get', async () => config)
+  ipcMain.handle('settings:get', async () => buildSettingsPayload(config))
   ipcMain.handle('config:update', async (_event, { path, value }: { path: string; value: unknown }) => {
     const keys = path.split('.')
     let obj: any = config

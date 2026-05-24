@@ -4,6 +4,7 @@ import { AgentLoop } from "../agent/loop.js";
 import { createProvider } from "../providers/index.js";
 import { SessionManager } from "../session/session-manager.js";
 import { getDefaultConfig } from "../config/defaults.js";
+import { saveConfig } from "../config/persist.js";
 import { log } from "../utils/index.js";
 import { MessageBus } from "../bus/index.js";
 import { ChannelManager, DesktopChannel } from "../channels/index.js";
@@ -40,7 +41,7 @@ export async function initAgent(): Promise<AgentRuntime> {
   } else {
     config = getDefaultConfig();
     config.workspace = workspace.replace(/\\/g, "/");
-    fs.writeFileSync(configFile, JSON.stringify(config, null, 2), "utf-8");
+    saveConfig(configFile, config);
     console.log("[main] Config written to:", configFile);
   }
 

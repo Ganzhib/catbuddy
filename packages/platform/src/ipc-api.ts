@@ -90,7 +90,11 @@ export async function fetchSettingsIpc(
   _token: string,
   _base: string = '',
 ): Promise<SettingsPayload> {
-  const config = await requireIpcBridge().getConfig()
+  const api = requireIpcBridge()
+  if (api.getSettingsPayload) {
+    return api.getSettingsPayload()
+  }
+  const config = await api.getConfig()
   return {
     agent: {
       model: config.agents.defaults.model,

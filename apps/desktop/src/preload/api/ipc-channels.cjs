@@ -21,6 +21,7 @@ module.exports = {
   SESSION_NEW: 'session:new',
   SESSION_CREATED: 'session:created',
   CONFIG_GET: 'config:get',
+  SETTINGS_GET: 'settings:get',
   CONFIG_UPDATE: 'config:update',
   CONFIG_LIST_MODELS: 'config:list-models',
   CONFIG_SET_MODEL: 'config:set-model',
@@ -33,4 +34,5 @@ module.exports = {
   GATEWAY_SUBSCRIBE: 'gateway:subscribe-session',
   GATEWAY_SYNC_ALL: 'gateway:sync-all-sessions',
   GATEWAY_SET_ACCOUNT_EMAIL: 'gateway:set-account-email',
+  GATEWAY_AUTH_POST: 'gateway:auth-post',
 }

@@ -2,6 +2,10 @@
  * 默认配置 — 内嵌在 Electron 中，无需外部 config.json
  */
 import type { catbuddyConfig } from "@catbuddy/shared"
+import {
+  resolveProviderApiBase,
+  resolveProviderApiKey,
+} from './env-provider-fallback.js'
 
 export function getDefaultConfig(): catbuddyConfig {
   const home = process.env.HOME || process.env.USERPROFILE || '.'
@@ -29,12 +33,12 @@ export function getDefaultConfig(): catbuddyConfig {
     },
     providers: {
       deepseek: {
-        apiKey: process.env.DEEPSEEK_KEY || process.env.OPENAI_API_KEY || '',
-        apiBase: process.env.DEEPSEEK_BASE || 'https://api.deepseek.com/v1',
+        apiKey: resolveProviderApiKey('deepseek'),
+        apiBase: resolveProviderApiBase('deepseek'),
       },
       openai: {
-        apiKey: process.env.OPENAI_API_KEY || '',
-        apiBase: process.env.OPENAI_API_BASE || 'https://api.openai.com/v1',
+        apiKey: resolveProviderApiKey('openai'),
+        apiBase: resolveProviderApiBase('openai'),
       },
     },
     modelPresets: {},

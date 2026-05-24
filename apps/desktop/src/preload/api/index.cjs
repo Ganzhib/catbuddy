@@ -42,6 +42,7 @@ function createCatbuddyApi() {
     onSessionCreated: (cb) => subscribe(IPC.SESSION_CREATED, cb),
 
     getConfig: () => ipcRenderer.invoke(IPC.CONFIG_GET),
+    getSettingsPayload: () => ipcRenderer.invoke(IPC.SETTINGS_GET),
     updateConfig: (path, value) => ipcRenderer.invoke(IPC.CONFIG_UPDATE, { path, value }),
     listModels: () => ipcRenderer.invoke(IPC.CONFIG_LIST_MODELS),
     setModel: (name) => ipcRenderer.invoke(IPC.CONFIG_SET_MODEL, { presetName: name }),
@@ -61,6 +62,8 @@ function createCatbuddyApi() {
     gatewaySyncAllSessions: () => ipcRenderer.invoke(IPC.GATEWAY_SYNC_ALL),
     setGatewayAccountEmail: (payload) =>
       ipcRenderer.invoke(IPC.GATEWAY_SET_ACCOUNT_EMAIL, payload),
+    postGatewayAuth: (payload) =>
+      ipcRenderer.invoke(IPC.GATEWAY_AUTH_POST, payload),
 
     getGatewayRemoteEnabled: () => ipcRenderer.invoke('gateway:get-remote-enabled'),
     setGatewayRemoteEnabled: (enabled) =>

@@ -16,6 +16,7 @@ export const IPC = {
   SESSION_CLEAR: 'session:clear',
   SESSION_NEW: 'session:new',
   CONFIG_GET: 'config:get',
+  SETTINGS_GET: 'settings:get',
   CONFIG_UPDATE: 'config:update',
   CONFIG_LIST_MODELS: 'config:list-models',
   CONFIG_SET_MODEL: 'config:set-model',

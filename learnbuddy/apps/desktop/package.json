@@ -78,7 +78,8 @@
     ],
     "win": {
       "target": ["nsis"],
-      "icon": "src/main/assets/icon.png"
+      "icon": "src/main/assets/icon.png",
+      "artifactName": "${productName}-Setup-${version}-${env.BUILD_TIMESTAMP}.${ext}"
     },
     "mac": {
       "target": ["dmg"],

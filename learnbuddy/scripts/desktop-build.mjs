@@ -37,6 +37,12 @@ function stamp() {
   return new Date().toISOString();
 }
 
+function buildTimestamp() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+}
+
 function log(msg) {
   console.log(`[${stamp()}] ${msg}`);
 }
@@ -67,6 +73,9 @@ function runStep(label, command, args, extraEnv = {}) {
 }
 
 const targetLabel = dirOnly ? 'win-unpacked (--dir)' : 'NSIS installer';
+
+// Inject build timestamp for artifact name (e.g. "learnbuddy-Setup-0.1.0-20260524-120530.exe")
+process.env.BUILD_TIMESTAMP = buildTimestamp();
 
 log(`learnbuddy desktop build → ${targetLabel}`);
 if (verbose) {
@@ -120,7 +129,10 @@ const outDir = path.join(desktopRoot, outputDirName);
 log(`Done. Output folder: ${outDir}`);
 
 const pkg = JSON.parse(fs.readFileSync(path.join(desktopRoot, 'package.json'), 'utf8'));
-const setupName = `${pkg.build?.productName ?? 'learnbuddy'} Setup ${pkg.version}.exe`;
+const productName = pkg.build?.productName ?? 'learnbuddy';
+// New naming: productName-Setup-version-TIMESTAMP.exe (see artifactName in package.json)
+const ts = process.env.BUILD_TIMESTAMP ?? 'YYYYMMDD-HHmmss';
+const setupName = `${productName}-Setup-${pkg.version}-${ts}.exe`;
 const setupPath = path.join(outDir, setupName);
 if (fs.existsSync(setupPath)) {
   log(`NSIS installer: ${setupPath}`);

@@ -39,6 +39,9 @@ type GatewayInboundPayload = Parameters<
 type SessionCreatedPayload = Parameters<
   Parameters<NonNullable<CatbuddyPreloadApi["onSessionCreated"]>>[0]
 >[0];
+type SessionDeletedPayload = Parameters<
+  Parameters<NonNullable<CatbuddyPreloadApi["onSessionDeleted"]>>[0]
+>[0];
 
 function chatIdFromPayload(
   data: { chatId?: string },
@@ -171,6 +174,12 @@ export class IpcTransport implements AgentTransport {
         const chat_id = data.chatId?.trim();
         if (!chat_id) return;
         callbacks.onSessionUpdate?.(chat_id, "focus");
+      }),
+
+      api.onSessionDeleted?.((data: SessionDeletedPayload) => {
+        const sessionKey = data.sessionKey?.trim();
+        if (!sessionKey) return;
+        callbacks.onSessionUpdate?.(sessionKey, "deleted");
       }),
     ];
 

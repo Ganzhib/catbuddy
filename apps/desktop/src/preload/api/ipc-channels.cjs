@@ -20,6 +20,7 @@ module.exports = {
   SESSION_CLEAR: 'session:clear',
   SESSION_NEW: 'session:new',
   SESSION_CREATED: 'session:created',
+  SESSION_DELETED: 'session:deleted',
   CONFIG_GET: 'config:get',
   SETTINGS_GET: 'settings:get',
   CONFIG_UPDATE: 'config:update',

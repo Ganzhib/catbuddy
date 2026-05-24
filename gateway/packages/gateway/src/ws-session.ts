@@ -124,6 +124,13 @@ export function attachGatewaySessionWebSocket(
         const payload = (msg.payload as Record<string, unknown> | null) ?? null
         const deviceId = clientKey.slice('desktop:'.length)
         void state.persistThreadSnapshot(sessionKey, payload, deviceId)
+        return
+      }
+
+      if (msg.type === 'session_delete' && clientKey.startsWith('desktop:')) {
+        const deviceId = clientKey.slice('desktop:'.length)
+        void state.deleteSessionFromDesktop(deviceId, String(msg.sessionKey || ''))
+        return
       }
     })
 

@@ -61,7 +61,12 @@ export function useSessions(): {
 
   useEffect(() => {
     return client.onSessionUpdate((_chatId, scope) => {
-      // metadata：桌面 sessions_sync；focus：桌面新建/切换会话
+      // metadata：桌面 sessions_sync；focus：桌面新建/切换会话；deleted：跨端删除
+      if (scope === "deleted") {
+        const key = _chatId.includes(":") ? _chatId : toSessionKey(_chatId);
+        setSessions((prev) => prev.filter((s) => s.key !== key));
+        return;
+      }
       if (scope !== "metadata" && scope !== "focus") return;
       if (refreshDebounceRef.current) clearTimeout(refreshDebounceRef.current);
       refreshDebounceRef.current = setTimeout(() => {

@@ -35,6 +35,7 @@ export type GatewaySessionClientMessage =
       sessionKey: string
       payload: Record<string, unknown> | null
     }
+  | { type: 'session_delete'; sessionKey: string }
   | {
       type: 'ui_event'
       sessionKey: string
@@ -57,6 +58,7 @@ export type GatewaySessionServerMessage =
       source: 'web' | 'gateway'
     }
   | { type: 'create_session'; sessionKey: string; chatId: string }
+  | { type: 'delete_session'; sessionKey: string }
   | { type: 'request_sessions'; requestId: string }
   | { type: 'request_thread'; requestId: string; sessionKey: string }
   | {
@@ -199,7 +201,9 @@ const GATEWAY_SESSION_TYPES = new Set<string>([
   'sessions_sync',
   'thread_response',
   'thread_snapshot',
+  'session_delete',
   'registered',
+  'delete_session',
   'inbound_message',
   'create_session',
   'request_sessions',

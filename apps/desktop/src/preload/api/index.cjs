@@ -40,6 +40,7 @@ function createCatbuddyApi() {
     clearSession: (key) => ipcRenderer.invoke(IPC.SESSION_CLEAR, { key }),
     newSession: () => ipcRenderer.invoke(IPC.SESSION_NEW),
     onSessionCreated: (cb) => subscribe(IPC.SESSION_CREATED, cb),
+    onSessionDeleted: (cb) => subscribe(IPC.SESSION_DELETED, cb),
 
     getConfig: () => ipcRenderer.invoke(IPC.CONFIG_GET),
     getSettingsPayload: () => ipcRenderer.invoke(IPC.SETTINGS_GET),

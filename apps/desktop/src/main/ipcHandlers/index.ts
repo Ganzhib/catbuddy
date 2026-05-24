@@ -1,7 +1,7 @@
 /**
  * IPC Handlers — 注册所有 main process 侧的 IPC 处理
  */
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, BrowserWindow } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
@@ -98,7 +98,15 @@ export function registerIpcHandlers(
   // ═══ Session ═══
   ipcMain.handle('session:list', async () => sessions.list())
   ipcMain.handle('session:get', async (_event, { key }: { key: string }) => sessions.getDetail(key))
-  ipcMain.handle('session:delete', async (_event, { key }: { key: string }) => sessions.delete(key))
+  ipcMain.handle('session:delete', async (_event, { key }: { key: string }) => {
+    const sessionKey = String(key || '').trim()
+    const ok = sessions.delete(sessionKey)
+    getGatewayClient()?.publishSessionDelete(sessionKey)
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('session:deleted', { sessionKey })
+    }
+    return ok
+  })
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => sessions.clear(key))
   ipcMain.handle('session:new', async () => {
     const key = `desktop:${Date.now()}`

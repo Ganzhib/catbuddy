@@ -201,6 +201,13 @@ export function applyGatewayRemote(state: GatewayRemoteState): void {
           win.webContents.send("session:created", { sessionKey, chatId });
         }
       },
+      onDeleteSession: (sessionKey) => {
+        appSessions!.delete(sessionKey);
+        console.log("[main] Gateway delete_session:", sessionKey);
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send("session:deleted", { sessionKey });
+        }
+      },
     },
   );
 

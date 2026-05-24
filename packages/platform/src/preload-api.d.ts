@@ -31,6 +31,7 @@ export interface CatbuddyPreloadApi {
     cb: (data: { connected: boolean; deviceId?: string; lastError?: string }) => void,
   ): () => void
   onSessionCreated(cb: (data: { sessionKey: string; chatId: string }) => void): () => void
+  onSessionDeleted(cb: (data: { sessionKey: string }) => void): () => void
 
   listSessions(): Promise<SessionInfo[]>
   getSession(key: string): Promise<SessionDetail | null>

@@ -301,6 +301,33 @@ export class MysqlSessionStore implements SessionStore {
     return out
   }
 
+  async deleteSession(sessionKey: string): Promise<boolean> {
+    const key = sessionKey.trim()
+    if (!key) return false
+    const conn = await this.db.getPool().getConnection()
+    try {
+      await conn.beginTransaction()
+      const [msgResult] = await conn.execute(
+        `DELETE FROM gateway_session_messages WHERE session_key = ?`,
+        [key],
+      )
+      const [sessResult] = await conn.execute(
+        `DELETE FROM gateway_sessions WHERE session_key = ?`,
+        [key],
+      )
+      await conn.commit()
+      this.cache.delete(key)
+      const msgCount = (msgResult as { affectedRows?: number }).affectedRows ?? 0
+      const sessCount = (sessResult as { affectedRows?: number }).affectedRows ?? 0
+      return msgCount > 0 || sessCount > 0
+    } catch (err) {
+      await conn.rollback()
+      throw err
+    } finally {
+      conn.release()
+    }
+  }
+
   async buildWebuiThread(sessionKey: string): Promise<Record<string, unknown> | null> {
     return buildWebuiThreadFromDetail(await this.getDetail(sessionKey))
   }

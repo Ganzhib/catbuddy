@@ -29,6 +29,7 @@ export interface SessionStore {
   setSessionOwner(sessionKey: string, ownerEmail: string): Promise<void>
   isSessionOwnedBy(sessionKey: string, ownerEmail: string): Promise<boolean>
   listRowsForOwner(ownerEmail: string): Promise<GatewaySessionRow[]>
+  deleteSession(sessionKey: string): Promise<boolean>
   buildWebuiThread(sessionKey: string): Promise<Record<string, unknown> | null>
   collectSyncThreads(): Promise<Record<string, Record<string, unknown>>>
   collectSyncThreadsForOwner(

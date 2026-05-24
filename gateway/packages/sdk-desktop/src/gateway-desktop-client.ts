@@ -56,6 +56,8 @@ export type GatewayInboundHandler = (msg: GatewayInboundMessage) => void
 
 export type GatewayCreateSessionHandler = (sessionKey: string, chatId: string) => void
 
+export type GatewayDeleteSessionHandler = (sessionKey: string) => void
+
 export interface GatewayDesktopClientOptions {
   sessionProvider?: GatewaySessionProvider
   buildThreadSnapshot?: ThreadSnapshotBuilder
@@ -64,6 +66,7 @@ export interface GatewayDesktopClientOptions {
   /** Publish to agent bus (used when onInboundMessage is not set). */
   publishInbound?: (msg: InboundMessage) => void
   onCreateSession?: GatewayCreateSessionHandler
+  onDeleteSession?: GatewayDeleteSessionHandler
   onConnected?: (deviceId: string) => void
   onDisconnected?: () => void
   onError?: (message: string) => void
@@ -79,6 +82,8 @@ export class GatewayDesktopClient {
   private _reconnectEnabled = true
   private sessionProvider: GatewaySessionProvider | null = null
   private readonly subscribedSessions = new Set<string>()
+  /** Deletes queued while Gateway WS was offline. */
+  private readonly pendingDeletes = new Set<string>()
   private readonly options: GatewayDesktopClientOptions
 
   constructor(
@@ -184,6 +189,17 @@ export class GatewayDesktopClient {
     })
   }
 
+  publishSessionDelete(sessionKey: string): void {
+    const key = sessionKey.trim()
+    if (!key) return
+    this.subscribedSessions.delete(key)
+    if (!this._connected) {
+      this.pendingDeletes.add(key)
+      return
+    }
+    this.send({ type: 'session_delete', sessionKey: key })
+  }
+
   private connect(): void {
     // Prevent overlapping connections
     if (this.ws) {
@@ -266,6 +282,10 @@ export class GatewayDesktopClient {
       for (const key of this.subscribedSessions) {
         this.send({ type: 'subscribe', sessionKey: key })
       }
+      for (const key of this.pendingDeletes) {
+        this.send({ type: 'session_delete', sessionKey: key })
+      }
+      this.pendingDeletes.clear()
       this.publishSessionsSync()
       return
     }
@@ -313,6 +333,15 @@ export class GatewayDesktopClient {
           chatId || bareChatId(sessionKey),
         )
         this.publishSessionsSync()
+      }
+      return
+    }
+
+    if (msg.type === 'delete_session') {
+      const sessionKey = msg.sessionKey.trim()
+      if (sessionKey) {
+        this.subscribedSessions.delete(sessionKey)
+        this.options.onDeleteSession?.(sessionKey)
       }
       return
     }

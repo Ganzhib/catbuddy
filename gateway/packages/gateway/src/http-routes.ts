@@ -133,15 +133,17 @@ export function registerHttpRoutes(
 
   app.get<{ Querystring: { key?: string } }>('/api/webui-thread', async (req) => {
     const email = await auth.resolveWebEmail(authHeader(req))
+    const token = await auth.resolveWebToken(authHeader(req))
     const sessionKey = decodeURIComponent(String(req.query.key || '').trim())
     if (!sessionKey) return null
-    return state.fetchThreadForWeb(email, sessionKey)
+    return state.fetchThreadForWeb(email, sessionKey, token)
   })
 
   app.delete<{ Params: { sessionKey: string } }>('/api/sessions/:sessionKey', async (req) => {
     const email = await auth.resolveWebEmail(authHeader(req))
+    const token = await auth.resolveWebToken(authHeader(req))
     const sessionKey = decodeURIComponent(req.params.sessionKey)
-    await state.assertWebOwnsSession(email, sessionKey)
+    await state.deleteSessionForWeb(email, sessionKey, token)
     return { ok: true }
   })
 

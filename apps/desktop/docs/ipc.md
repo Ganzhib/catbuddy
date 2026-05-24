@@ -91,6 +91,7 @@ Session 键默认规则（`ipcHandlers/index.ts`）：
 | `gateway:subscribe-session` | invoke | 订阅会话同步 |
 | `gateway:sync-all-sessions` | invoke | 同步全部会话到 Gateway |
 | `gateway:set-account-email` | invoke | 设置账号邮箱并重建连接 |
+| `gateway:auth-post` | invoke | 主进程向 Gateway 发 auth POST（login/register 等） |
 | `gateway:get-remote-enabled` | invoke | 远程开关与环境是否配置 |
 | `gateway:set-remote-enabled` | invoke | 开关远程并写回 config |
 

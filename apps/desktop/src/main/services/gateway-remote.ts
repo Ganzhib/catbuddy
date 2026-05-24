@@ -14,6 +14,23 @@ import type { ChannelManager } from "../channels/index.js";
 import { GatewayChannel } from "../channels/index.js";
 import type { SessionManager } from "../session/session-manager.js";
 import { buildWebuiThreadFromSession } from "../sync/session-thread.js";
+import { postGatewayAuthHttp } from "./gateway-auth-http.js";
+
+let lastGatewayErrorLog = "";
+let gatewayErrorLogCount = 0;
+
+function logGatewayWsError(message: string): void {
+  if (message === lastGatewayErrorLog) {
+    gatewayErrorLogCount += 1;
+    if (gatewayErrorLogCount !== 3 && gatewayErrorLogCount % 10 !== 0) return;
+  } else {
+    lastGatewayErrorLog = message;
+    gatewayErrorLogCount = 1;
+  }
+  const suffix =
+    gatewayErrorLogCount > 1 ? ` (×${gatewayErrorLogCount})` : "";
+  console.warn("[main] Gateway WS error:", message + suffix);
+}
 
 export interface GatewayRemoteState {
   gatewayWsClient: GatewayDesktopClient | null;
@@ -44,11 +61,16 @@ function isGatewayConfigured(state: GatewayRemoteState): boolean {
 }
 
 function connectionMode(state: GatewayRemoteState): 'env' | 'custom' | 'local' | 'builtin' {
-  if (process.env.GATEWAY_URL?.trim() || process.env.GATEWAY_SECRET?.trim()) return 'env'
+  const local = useLocalGateway()
+  if (local && process.env.GATEWAY_URL?.trim()) return 'env'
+  if (!local && (process.env.GATEWAY_URL?.trim() || process.env.GATEWAY_DESKTOP_SECRET?.trim())) {
+    return 'env'
+  }
+  if (local && process.env.GATEWAY_SECRET?.trim()) return 'env'
   if (state.appConfig?.gateway?.url?.trim() || state.appConfig?.gateway?.secret?.trim()) {
     return 'custom'
   }
-  return useLocalGateway() ? 'local' : 'builtin'
+  return local ? 'local' : 'builtin'
 }
 
 function requiresGatewayAccountEmail(): boolean {
@@ -145,7 +167,7 @@ export function applyGatewayRemote(state: GatewayRemoteState): void {
         }
       },
       onError: (message) => {
-        console.warn("[main] Gateway WS error:", message);
+        logGatewayWsError(message);
         for (const win of BrowserWindow.getAllWindows()) {
           win.webContents.send("gateway:connection-changed", {
             connected: false,
@@ -220,7 +242,9 @@ export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
       hasSecret: true,
       configured: isGatewayConfigured(state),
       envOverridesUrl: !!process.env.GATEWAY_URL?.trim(),
-      envOverridesSecret: !!process.env.GATEWAY_SECRET?.trim(),
+      envOverridesSecret: useLocalGateway()
+        ? !!process.env.GATEWAY_SECRET?.trim()
+        : !!process.env.GATEWAY_DESKTOP_SECRET?.trim(),
       selfHostCustom: connectionMode(state) === 'custom',
     };
   });
@@ -279,6 +303,27 @@ export function registerGatewayRemoteIpc(state: GatewayRemoteState): void {
         enabled: state.appConfig.gateway.remoteEnabled === true,
         connected: state.gatewayWsClient?.status.connected ?? false,
       };
+    },
+  );
+
+  safeIpcHandle(
+    "gateway:auth-post",
+    async (
+      _event,
+      payload: { path?: string; body?: Record<string, unknown> },
+    ) => {
+      const path = String(payload?.path ?? "").trim();
+      const body = payload?.body ?? {};
+      const allowed = new Set([
+        "login",
+        "register",
+        "register/verify",
+        "email/request-code",
+      ]);
+      if (!path || !allowed.has(path)) {
+        return { ok: false, status: 400, text: "invalid_auth_path" };
+      }
+      return postGatewayAuthHttp(path, body);
     },
   );
 }

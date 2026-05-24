@@ -25,7 +25,12 @@ function makeProvider(params: {
   if (apiBase?.includes('anthropic')) {
     return new AnthropicProvider({ apiKey, apiBase, defaultModel: model })
   }
-  return new OpenAICompatProvider({ apiKey, apiBase, defaultModel: model })
+  return new OpenAICompatProvider({
+    apiKey,
+    apiBase,
+    defaultModel: model,
+    providerName: params.providerName,
+  })
 }
 
 export function createProvider(config: catbuddyConfig): LLMProvider {

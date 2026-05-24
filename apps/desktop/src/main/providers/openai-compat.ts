@@ -3,16 +3,58 @@
  */
 import OpenAI from 'openai'
 import { LLMProvider, type ChatStreamOpts } from './base-provider'
-import type { LLMResponse, ToolCallRequest } from "@catbuddy/shared"
+import type { ContentBlock, LLMMessage, LLMResponse, ToolCallRequest } from "@catbuddy/shared"
+
+/** DeepSeek chat/completions only accepts string content (text), not OpenAI image_url parts. */
+function inferSupportsVision(apiBase?: string, providerName?: string): boolean {
+  const base = (apiBase ?? '').toLowerCase()
+  const name = (providerName ?? '').toLowerCase()
+  if (name === 'deepseek' || base.includes('deepseek.com')) return false
+  return true
+}
+
+function formatContentForApi(
+  content: LLMMessage['content'],
+  supportsVision: boolean,
+): string | ContentBlock[] | null {
+  if (content == null) return null
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return null
+
+  const textParts: string[] = []
+  let imageCount = 0
+  for (const block of content) {
+    if (block.type === 'text' && block.text) textParts.push(block.text)
+    else if (block.type === 'image_url') imageCount++
+  }
+
+  if (imageCount === 0) return textParts.join('\n\n') || null
+  if (supportsVision) return content
+
+  textParts.push(
+    `[${imageCount} attached image(s) not sent: this provider only accepts text. ` +
+      `Describe the image in your message, or switch to a vision-capable model.]`,
+  )
+  return textParts.join('\n\n')
+}
 
 export class OpenAICompatProvider extends LLMProvider {
   readonly name = 'openai_compat'
 
   private client: OpenAI
+  private readonly supportsVision: boolean
 
-  constructor(opts: { apiKey: string; apiBase?: string; defaultModel?: string }) {
+  constructor(opts: {
+    apiKey: string
+    apiBase?: string
+    defaultModel?: string
+    providerName?: string
+    supportsVision?: boolean
+  }) {
     super()
     this.defaultModel = opts.defaultModel ?? 'gpt-4o'
+    this.supportsVision =
+      opts.supportsVision ?? inferSupportsVision(opts.apiBase, opts.providerName)
     this.client = new OpenAI({
       apiKey: opts.apiKey || 'sk-placeholder',
       baseURL: opts.apiBase || 'https://api.openai.com/v1',
@@ -101,11 +143,11 @@ export class OpenAICompatProvider extends LLMProvider {
     }
   }
 
-  private toOpenAIMessages(messages: import('@catbuddy/shared').LLMMessage[]) {
+  private toOpenAIMessages(messages: LLMMessage[]) {
     return this.enforceRoleAlternation(messages).map((m) => {
       const row: Record<string, unknown> = {
         role: m.role,
-        content: m.content as string | null,
+        content: formatContentForApi(m.content, this.supportsVision),
         tool_calls: m.toolCalls?.map((tc) => ({
           id: tc.id,
           type: 'function' as const,

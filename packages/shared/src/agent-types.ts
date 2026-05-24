@@ -247,7 +247,18 @@ export interface ToolsConfig {
   web: { enable: boolean; searchProvider?: string }
   my: { enable: boolean; allowSet: boolean }
   imageGeneration: { enable: boolean; provider?: string }
-  mcpServers?: Record<string, { command: string; args: string[] }>
+  mcpServers?: Record<string, McpServerConfig>
+}
+
+export interface McpServerConfig {
+  command: string
+  args?: string[]
+  env?: Record<string, string>
+  cwd?: string
+  /** Per-tool call timeout in seconds (default 30). */
+  toolTimeout?: number
+  /** Raw tool names, wrapped names, or "*" for all. */
+  enabledTools?: string[]
 }
 
 export interface CronSchedule {

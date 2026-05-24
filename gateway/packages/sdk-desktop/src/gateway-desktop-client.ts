@@ -19,6 +19,7 @@ import {
   buildUiEventMessage,
   channelFromSessionKey,
   GATEWAY_DESKTOP_RECONNECT_MS,
+  GATEWAY_DESKTOP_RECONNECT_MAX_MS,
   sessionRowFromKey,
   type GatewayInboundMessage,
 } from './gateway-desktop-session.js'
@@ -71,6 +72,7 @@ export interface GatewayDesktopClientOptions {
 export class GatewayDesktopClient {
   private ws: WebSocket | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private reconnectAttempt = 0
   private readonly deviceId: string
   private _connected = false
   private _lastError?: string
@@ -110,6 +112,7 @@ export class GatewayDesktopClient {
 
   stop(): void {
     this._reconnectEnabled = false
+    this.reconnectAttempt = 0
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -202,7 +205,11 @@ export class GatewayDesktopClient {
     // Attach error listener FIRST — ws may emit 'error' synchronously in edge cases
     ws.on('error', (err) => {
       if (ws !== this.ws) return  // already disposed, ignore stale events
-      this._lastError = err instanceof Error ? err.message : 'websocket_error'
+      let message = err instanceof Error ? err.message : 'websocket_error'
+      if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET/i.test(message)) {
+        message += ' — 请检查网络/DNS；remote 模式可试 ipconfig /flushdns 或改用 CATBUDDY_DEV_MODE=local'
+      }
+      this._lastError = message
       console.warn('[gateway] error:', this._lastError)
       this.options.onError?.(this._lastError)
     })
@@ -248,6 +255,7 @@ export class GatewayDesktopClient {
     if (msg.type === 'registered') {
       this._connected = true
       this._lastError = undefined
+      this.reconnectAttempt = 0
       console.log(
         `[gateway] connected deviceId=${msg.deviceId} account=${this.config.accountEmail ?? 'n/a'}`,
       )
@@ -379,13 +387,21 @@ export class GatewayDesktopClient {
 
   private scheduleReconnect(): void {
     if (!this._reconnectEnabled || this.reconnectTimer || !this.ws) return
+    const delay = Math.min(
+      GATEWAY_DESKTOP_RECONNECT_MS * 2 ** this.reconnectAttempt,
+      GATEWAY_DESKTOP_RECONNECT_MAX_MS,
+    )
+    this.reconnectAttempt += 1
+    if (this.reconnectAttempt <= 3 || this.reconnectAttempt % 5 === 0) {
+      console.log(`[gateway] reconnect in ${Math.round(delay / 1000)}s (attempt ${this.reconnectAttempt})`)
+    }
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
       // Re-check: stop() may have been called, or a new connect() succeeded in between
       if (this._reconnectEnabled && !this._connected) {
         this.connect()
       }
-    }, GATEWAY_DESKTOP_RECONNECT_MS)
+    }, delay)
   }
 }
 
@@ -406,10 +422,17 @@ export function loadGatewayConfigFromSources(
     process.env.GATEWAY_URL?.trim()
     || stored?.url?.trim()
     || resolveBuiltinGatewayWsUrl(useLocal)
-  const secret =
-    process.env.GATEWAY_SECRET?.trim()
-    || stored?.secret?.trim()
-    || resolveBuiltinGatewaySecret(useLocal)
+  const secret = useLocal
+    ? (
+      process.env.GATEWAY_SECRET?.trim()
+      || stored?.secret?.trim()
+      || resolveBuiltinGatewaySecret(true)
+    )
+    : (
+      process.env.GATEWAY_DESKTOP_SECRET?.trim()
+      || stored?.secret?.trim()
+      || resolveBuiltinGatewaySecret(false)
+    )
   if (!url || !secret) return null
 
   const sessions = process.env.GATEWAY_DEFAULT_SESSIONS?.trim()
@@ -433,16 +456,23 @@ export function loadGatewayConfigFromEnv(): GatewayDesktopClientConfig | null {
  *  The `ws` library throws "WebSocket was closed before the connection was established"
  *  when terminate/close is called on a socket whose TCP handshake hasn't completed. */
 function disposeWebSocket(ws: WebSocket): void {
-  try { ws.removeAllListeners() } catch { /* ignore */ }
+  const swallow = () => {}
+  try { ws.on('error', swallow) } catch { /* ignore */ }
   try {
     const state = ws.readyState
-    if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) return
-    if (state === WebSocket.CONNECTING) {
-      ws.terminate()
+    if (state === WebSocket.CLOSED || state === WebSocket.CLOSING) {
+      try { ws.removeAllListeners() } catch { /* ignore */ }
       return
     }
-    ws.close()
+    if (state === WebSocket.CONNECTING) {
+      try { ws.terminate() } catch { /* ignore */ }
+      try { ws.removeAllListeners() } catch { /* ignore */ }
+      return
+    }
+    try { ws.close() } catch { /* ignore */ }
+    try { ws.removeAllListeners() } catch { /* ignore */ }
   } catch {
-    try { ws.terminate() } catch { /* final fallback */ }
+    try { ws.terminate() } catch { /* ignore */ }
+    try { ws.removeAllListeners() } catch { /* ignore */ }
   }
 }

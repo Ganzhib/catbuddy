@@ -6,6 +6,10 @@ import {
 
 /** Resolve catbuddy gateway HTTP base for browser + Vite dev proxy. */
 export function resolveGatewayHttpBase(stored?: string): string {
+  if (import.meta.env?.DEV && import.meta.env.VITE_CATBUDDY_DEV_MODE === 'remote') {
+    return CATBUDDY_GATEWAY_HTTP_URL
+  }
+
   const fromEnv = import.meta.env.VITE_GATEWAY_HTTP_URL?.trim() ?? ''
   const raw = (stored?.trim() || fromEnv).replace(/\/$/, '')
   if (typeof window !== 'undefined' && import.meta.env?.DEV) {

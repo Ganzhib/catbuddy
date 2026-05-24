@@ -39,6 +39,7 @@ export interface CatbuddyPreloadApi {
   newSession(): Promise<{ key: string }>
 
   getConfig(): Promise<catbuddyConfig>
+  getSettingsPayload?(): Promise<import('@catbuddy/shared').SettingsPayload>
   updateConfig(path: string, value: unknown): Promise<void>
   listModels(): Promise<ModelPresetConfig[]>
   setModel(presetName: string): Promise<void>
@@ -69,6 +70,13 @@ export interface CatbuddyPreloadApi {
   setGatewayAccountEmail(payload: {
     email: string
   }): Promise<{ ok: boolean; accountEmail: string | null }>
+  postGatewayAuth(payload: {
+    path: string
+    body: Record<string, unknown>
+  }): Promise<
+    | { ok: true; data: unknown }
+    | { ok: false; status: number; text: string }
+  >
 
   getGatewayRemoteEnabled(): Promise<{
     enabled: boolean

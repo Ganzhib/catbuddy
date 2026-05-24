@@ -18,18 +18,22 @@ export function mapAuthError(body: string, status: number): string {
       otp_invalid: '验证码不正确，请重试',
       no_pending_registration: '请先填写邮箱与密码并获取验证码；若已填写，请重新点击「获取验证码」',
       smtp_not_configured:
-        '邮件服务未配置：请在运行 Gateway 的终端查看 [dev] OTP 验证码，或配置 gateway/.env 中的 SMTP',
+        '邮件服务未配置：请在运行 Gateway 的终端查看 [dev] OTP 验证码，或配置根目录 `.env` 中的 SMTP',
       smtp_auth_failed:
         'SMTP 登录失败：请确认 SMTP_PASS 是 QQ 邮箱「授权码」（非 QQ 密码），并在 QQ 邮箱设置里开启 SMTP 服务后重新生成授权码',
       smtp_timeout:
-        '连接 SMTP 超时：请检查网络/防火墙，或在 gateway/.env 改用 SMTP_PORT=465 且 SMTP_SECURE=true',
+        '连接 SMTP 超时：请检查网络/防火墙，或在根目录 `.env` 改用 SMTP_PORT=465 且 SMTP_SECURE=true',
       smtp_send_failed:
-        '验证码邮件发送失败，请检查 gateway/.env 的 SMTP 配置（QQ 邮箱需使用授权码）',
+        '验证码邮件发送失败，请检查根目录 `.env` 的 SMTP 配置（QQ 邮箱需使用授权码）',
       unauthorized: '未授权，请重新登录',
       forbidden: '无权访问该会话，请用 Web 新建对话或确认已登录同一账号',
       ws_error: 'Gateway 连接异常，请确认已运行 pnpm gateway:dev 并刷新页面',
+      'fetch failed': '网络请求失败，请检查网络或 DNS（remote 模式可试 ipconfig /flushdns）',
     }
     if (labels[code]) return labels[code]
+    if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|fetch failed/i.test(code)) {
+      return '无法连接 Gateway，请检查网络/DNS；或改用 CATBUDDY_DEV_MODE=local + pnpm gateway:dev'
+    }
     if (code) return code
   } catch {
     /* ignore */

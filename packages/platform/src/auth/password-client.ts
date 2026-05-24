@@ -1,5 +1,4 @@
-import { resolveGatewayHttpBase } from '../gateway-http'
-import { mapAuthError } from './map-auth-error'
+import { postGatewayAuth } from './gateway-auth-http'
 import { saveAuthEmail, saveAuthToken } from './session'
 import type { OtpDelivery } from './email-client'
 
@@ -16,17 +15,11 @@ async function postAuth(
   password: string,
   baseUrl?: string,
 ): Promise<AuthTokenResponse> {
-  const base = (baseUrl ?? resolveGatewayHttpBase()).replace(/\/$/, '')
-  const res = await fetch(`${base}/auth/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), password }),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new Error(mapAuthError(text, res.status))
-  }
-  const data = (await res.json()) as AuthTokenResponse
+  const data = (await postGatewayAuth(
+    path,
+    { email: email.trim(), password },
+    baseUrl,
+  )) as AuthTokenResponse
   if (data.access_token) saveAuthToken(data.access_token)
   if (data.email) saveAuthEmail(data.email)
   return data
@@ -51,17 +44,11 @@ export async function requestRegister(
   password: string,
   baseUrl?: string,
 ): Promise<RegisterPendingResponse> {
-  const base = (baseUrl ?? resolveGatewayHttpBase()).replace(/\/$/, '')
-  const res = await fetch(`${base}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), password }),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new Error(mapAuthError(text, res.status))
-  }
-  return res.json() as Promise<RegisterPendingResponse>
+  return postGatewayAuth(
+    'register',
+    { email: email.trim(), password },
+    baseUrl,
+  ) as Promise<RegisterPendingResponse>
 }
 
 export async function verifyRegister(
@@ -69,17 +56,11 @@ export async function verifyRegister(
   code: string,
   baseUrl?: string,
 ): Promise<AuthTokenResponse> {
-  const base = (baseUrl ?? resolveGatewayHttpBase()).replace(/\/$/, '')
-  const res = await fetch(`${base}/auth/register/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), code: code.trim() }),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new Error(mapAuthError(text, res.status))
-  }
-  const data = (await res.json()) as AuthTokenResponse
+  const data = (await postGatewayAuth(
+    'register/verify',
+    { email: email.trim(), code: code.trim() },
+    baseUrl,
+  )) as AuthTokenResponse
   if (data.access_token) saveAuthToken(data.access_token)
   if (data.email) saveAuthEmail(data.email)
   return data

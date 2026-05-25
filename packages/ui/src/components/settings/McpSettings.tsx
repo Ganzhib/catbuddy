@@ -72,7 +72,12 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
       setMarketplace(marketplaceItems);
       setError(null);
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      setError(
+        message.includes("501") || message.includes("desktop app")
+          ? t("settings.mcp.desktopOnly")
+          : message,
+      );
     } finally {
       setLoading(false);
     }
@@ -301,15 +306,19 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                     </p>
                   </div>
                   {entry.docsUrl ? (
-                    <a
-                      href={entry.docsUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
                       className="text-muted-foreground hover:text-foreground"
                       aria-label={t("settings.mcp.docs")}
+                      onClick={() => {
+                        const url = entry.docsUrl!;
+                        if (typeof window !== "undefined") {
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        }
+                      }}
                     >
                       <ExternalLink className="h-4 w-4" aria-hidden />
-                    </a>
+                    </button>
                   ) : null}
                 </div>
                 <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">

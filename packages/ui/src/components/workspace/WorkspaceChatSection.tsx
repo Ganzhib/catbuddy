@@ -174,6 +174,7 @@ function FolderGroup({
   onImportFolder?: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
@@ -185,9 +186,11 @@ function FolderGroup({
     <li role="treeitem" aria-expanded={expanded}>
       <div
         className={cn(
-          "group/folder flex min-w-0 items-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors duration-200",
+          "flex min-w-0 items-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors duration-200",
           "hover:bg-[#E0F0FF]/50 dark:hover:bg-sidebar-accent/35",
         )}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <button
@@ -204,13 +207,12 @@ function FolderGroup({
             <Folder className={cn("h-4 w-4 shrink-0 stroke-[1.5]", sb.icon)} aria-hidden />
             <span className="truncate">{folder.name}</span>
           </button>
-          {hasSessions ? (
+          {hasSessions && hovered ? (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
               className={cn(
-                "hidden h-7 w-0 shrink-0 items-center justify-center overflow-hidden rounded-md",
-                "group-hover/folder:inline-flex group-hover/folder:w-7",
+                "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
                 sb.icon,
                 sb.iconButtonHover,
               )}
@@ -228,12 +230,8 @@ function FolderGroup({
           ) : null}
         </div>
 
-        <div
-          className={cn(
-            "hidden shrink-0 items-center overflow-hidden",
-            "group-hover/folder:inline-flex",
-          )}
-        >
+        {hovered ? (
+          <div className="flex shrink-0 items-center">
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger
               className={cn(
@@ -289,7 +287,8 @@ function FolderGroup({
               <Plus className="h-4 w-4" />
             </button>
           ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       {expanded && hasSessions ? (

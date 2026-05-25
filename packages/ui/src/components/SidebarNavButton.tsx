@@ -7,8 +7,6 @@ interface SidebarNavButtonProps {
   icon: LucideIcon;
   label: string;
   active?: boolean;
-  /** plain：MCP 无背景；filled：Skill 浅灰按钮 */
-  variant?: "plain" | "filled";
   onClick: () => void;
 }
 
@@ -16,7 +14,6 @@ export function SidebarNavButton({
   icon: Icon,
   label,
   active = false,
-  variant = "plain",
   onClick,
 }: SidebarNavButtonProps) {
   return (
@@ -26,15 +23,10 @@ export function SidebarNavButton({
       onClick={onClick}
       className={cn(
         sb.row,
-        "h-9 text-left text-[14px] transition-colors duration-200",
-        variant === "filled" && [
-          "rounded",
-          sb.surface,
-          sb.surfaceHover,
-          active && "ring-1 ring-[#C8DCF0]/80",
-        ],
-        variant === "plain" && cn("rounded-lg", sb.hover),
-        active ? sb.text : sb.textSecondary,
+        "h-9 w-full rounded-lg text-left text-[14px] transition-colors duration-200",
+        active
+          ? cn(sb.active, "font-medium", sb.text)
+          : cn(sb.textSecondary, sb.hover),
       )}
     >
       <Icon className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />

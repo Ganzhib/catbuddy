@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { sb, sbSectionTitle } from "@/lib/sidebar-styles";
@@ -21,13 +22,18 @@ export function SidebarSectionHeader({
   trailing,
   className,
 }: SidebarSectionHeaderProps) {
+  const [hovered, setHovered] = useState(false);
+  const showChrome = !hoverChevron || hovered;
+
   return (
     <div
       className={cn(
-        "group/section flex min-h-10 w-full items-center gap-1",
+        "flex min-h-10 w-full items-center gap-1",
         hoverChevron ? "px-3" : sb.px,
         className,
       )}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <button
         type="button"
@@ -41,22 +47,16 @@ export function SidebarSectionHeader({
       >
         <span className={cn("truncate", sbSectionTitle)}>{title}</span>
         {hoverChevron ? (
-          <span
-            className={cn(
-              "hidden w-0 shrink-0 overflow-hidden transition-[width] duration-200",
-              "group-hover/section:inline-flex group-hover/section:w-4",
-            )}
-            aria-hidden
-          >
+          showChrome ? (
             <ChevronRight
               className={cn(
-                "h-4 w-4",
+                "h-4 w-4 shrink-0 transition-transform duration-200",
                 sb.icon,
-                "transition-transform duration-200",
                 expanded && "rotate-90",
               )}
+              aria-hidden
             />
-          </span>
+          ) : null
         ) : (
           <ChevronRight
             className={cn(
@@ -68,16 +68,8 @@ export function SidebarSectionHeader({
           />
         )}
       </button>
-      {trailing ? (
-        <div
-          className={cn(
-            "hidden shrink-0 overflow-hidden transition-[width] duration-200",
-            hoverChevron && "w-0 group-hover/section:inline-flex group-hover/section:w-8",
-            !hoverChevron && "inline-flex",
-          )}
-        >
-          {trailing}
-        </div>
+      {trailing && showChrome ? (
+        <div className="flex shrink-0 items-center">{trailing}</div>
       ) : null}
     </div>
   );

@@ -169,14 +169,12 @@ export function Sidebar(props: SidebarProps) {
               icon={Plug}
               label={t("sidebar.nav.mcp")}
               active={props.activePanel === "mcp"}
-              variant="plain"
               onClick={() => props.onSelectPanel("mcp")}
             />
             <SidebarNavButton
               icon={Puzzle}
               label={t("sidebar.nav.skills")}
               active={props.activePanel === "skills"}
-              variant="filled"
               onClick={() => props.onSelectPanel("skills")}
             />
           </div>
@@ -203,7 +201,7 @@ export function Sidebar(props: SidebarProps) {
       ) : null}
 
       {/* 聊天记录 */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col ">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {showChatHistoryBlock ? (
           <>
             <SidebarSectionHeader

@@ -4,8 +4,9 @@ import {
   ChevronRight,
   Folder,
   FolderOpen,
+  FolderPlus,
   Loader2,
-  MoreHorizontal,
+  MoreVertical,
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -14,9 +15,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deriveTitle, relativeTime } from "@/lib/format";
+import { sb, sbSectionTitle } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { ChatSummary, WorkspaceFolder } from "@catbuddy/shared";
 
@@ -26,9 +29,13 @@ interface WorkspaceChatSectionProps {
   folders: WorkspaceFolder[];
   sessions: ChatSummary[];
   activeKey: string | null;
+  activeFolderId?: string | null;
   loading?: boolean;
   onSelectChat: (key: string) => void;
   onRequestDelete: (key: string, label: string) => void;
+  onImportFolder?: () => void | Promise<void>;
+  onRemoveFolder?: (folderId: string) => void | Promise<void>;
+  onSelectFolder?: (folderId: string) => void | Promise<void>;
   compact?: boolean;
 }
 
@@ -36,12 +43,17 @@ export function WorkspaceChatSection({
   folders,
   sessions,
   activeKey,
+  activeFolderId = null,
   loading = false,
   onSelectChat,
   onRequestDelete,
+  onImportFolder,
+  onRemoveFolder,
+  onSelectFolder,
   compact = false,
 }: WorkspaceChatSectionProps) {
   const { t } = useTranslation();
+  const [sectionExpanded, setSectionExpanded] = useState(true);
 
   const sessionsByFolder = useMemo(() => {
     const map = new Map<string, ChatSummary[]>();
@@ -65,40 +77,82 @@ export function WorkspaceChatSection({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 text-[12px] text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      <div className={cn("flex items-center gap-2 py-2 text-[12px]", sb.px, sb.textMuted)}>
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         {t("workspace.loading")}
       </div>
     );
   }
 
-  if (folders.length === 0) {
-    return (
-      <p className="px-3 py-2 text-[12px] leading-relaxed text-muted-foreground/80">
-        {t("workspace.emptyHint")}
-      </p>
-    );
-  }
+  const sectionHeader = compact ? (
+    <button
+      type="button"
+      onClick={() => setSectionExpanded((v) => !v)}
+      aria-expanded={sectionExpanded}
+      className={cn(
+        "flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left",
+        sbSectionTitle,
+        "transition-colors duration-200 hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+      )}
+    >
+      <ChevronRight
+        className={cn(
+          "h-4 w-4 shrink-0 transition-transform duration-300 ease-in-out",
+          sb.icon,
+          sectionExpanded && "rotate-90",
+        )}
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1 truncate">{t("sidebar.nav.workspace")}</span>
+    </button>
+  ) : (
+    <p className={cn("mb-2 px-1", sbSectionTitle)}>{t("sidebar.nav.workspace")}</p>
+  );
 
   return (
-    <div className={cn("min-w-0", compact ? "px-1" : "px-2")}>
-      {!compact ? (
-        <p className="mb-2 px-1 text-[13px] font-semibold text-sidebar-foreground/90">
-          {t("sidebar.nav.workspace")}
-        </p>
+    <div className={cn("min-w-0", compact ? "px-2 py-1" : "px-2")}>
+      {sectionHeader}
+
+      {sectionExpanded ? (
+        folders.length === 0 ? (
+          <div className={cn("space-y-2 px-3 py-2", "mt-3")}>
+            <p className={cn("text-[12px] leading-relaxed", sb.textMuted)}>
+              {t("workspace.emptyHint")}
+            </p>
+            {onImportFolder ? (
+              <button
+                type="button"
+                onClick={() => void onImportFolder()}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded px-2 py-2 text-[14px]",
+                  sb.text,
+                  "transition-colors duration-200 hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+                )}
+              >
+                <FolderPlus className={cn("h-4 w-4 shrink-0", sb.icon)} />
+                {t("workspace.importFolder")}
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <ul className="mt-3 space-y-2 pb-1" role="tree">
+            {folders.map((folder) => (
+              <FolderGroup
+                key={folder.id}
+                folder={folder}
+                sessions={sessionsByFolder.get(folder.id) ?? []}
+                activeKey={activeKey}
+                isActiveFolder={folder.id === activeFolderId}
+                onSelectChat={onSelectChat}
+                onRequestDelete={onRequestDelete}
+                onRemoveFolder={onRemoveFolder}
+                onSelectFolder={onSelectFolder}
+                onImportFolder={onImportFolder}
+              />
+            ))}
+          </ul>
+        )
       ) : null}
-      <ul className="space-y-1" role="tree">
-        {folders.map((folder) => (
-          <FolderGroup
-            key={folder.id}
-            folder={folder}
-            sessions={sessionsByFolder.get(folder.id) ?? []}
-            activeKey={activeKey}
-            onSelectChat={onSelectChat}
-            onRequestDelete={onRequestDelete}
-          />
-        ))}
-      </ul>
     </div>
   );
 }
@@ -107,14 +161,22 @@ function FolderGroup({
   folder,
   sessions,
   activeKey,
+  isActiveFolder,
   onSelectChat,
   onRequestDelete,
+  onRemoveFolder,
+  onSelectFolder,
+  onImportFolder,
 }: {
   folder: WorkspaceFolder;
   sessions: ChatSummary[];
   activeKey: string | null;
+  isActiveFolder: boolean;
   onSelectChat: (key: string) => void;
   onRequestDelete: (key: string, label: string) => void;
+  onRemoveFolder?: (folderId: string) => void | Promise<void>;
+  onSelectFolder?: (folderId: string) => void | Promise<void>;
+  onImportFolder?: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
@@ -125,28 +187,68 @@ function FolderGroup({
 
   return (
     <li role="treeitem" aria-expanded={expanded}>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full min-w-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[13px] font-medium text-sidebar-foreground/88 transition-colors hover:bg-sidebar-accent/60"
-      >
-        <ChevronRight
+      <div className="group flex min-w-0 items-center gap-1 rounded-lg pr-1 transition-colors duration-200 hover:bg-[#F5F5F5]/60 dark:hover:bg-sidebar-accent/40">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
           className={cn(
-            "h-3.5 w-3.5 shrink-0 text-muted-foreground/70 transition-transform",
-            expanded && "rotate-90",
+            "flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left text-[14px]",
+            "transition-colors",
+            isActiveFolder ? "font-semibold" : "font-normal",
+            sb.text,
           )}
-          aria-hidden
-        />
-        {expanded ? (
-          <FolderOpen className="h-4 w-4 shrink-0 text-muted-foreground/75" aria-hidden />
-        ) : (
-          <Folder className="h-4 w-4 shrink-0 text-muted-foreground/75" aria-hidden />
-        )}
-        <span className="truncate">{folder.name}</span>
-      </button>
+        >
+          {expanded ? (
+            <FolderOpen className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />
+          ) : (
+            <Folder className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />
+          )}
+          <span className="truncate">{folder.name}</span>
+        </button>
+
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            className={cn(
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors duration-200",
+              sb.iconMuted,
+              sb.iconHover,
+              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+            )}
+            aria-label={t("workspace.folderActions.menu", { name: folder.name })}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
+            {onSelectFolder ? (
+              <DropdownMenuItem onSelect={() => void onSelectFolder(folder.id)}>
+                {t("workspace.folderActions.setActive")}
+              </DropdownMenuItem>
+            ) : null}
+            {onImportFolder ? (
+              <DropdownMenuItem onSelect={() => void onImportFolder()}>
+                <FolderPlus className="mr-2 h-4 w-4" />
+                {t("workspace.importFolder")}
+              </DropdownMenuItem>
+            ) : null}
+            {(onSelectFolder || onImportFolder) && onRemoveFolder ? (
+              <DropdownMenuSeparator />
+            ) : null}
+            {onRemoveFolder ? (
+              <DropdownMenuItem
+                onSelect={() => void onRemoveFolder(folder.id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t("workspace.folderActions.remove")}
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {expanded && sessions.length > 0 ? (
-        <ul className="mt-0.5 space-y-0.5 pl-3" role="group">
+        <ul className="mt-1 space-y-1 pl-4" role="group">
           {visible.map((session) => (
             <ChatRow
               key={session.key}
@@ -161,7 +263,11 @@ function FolderGroup({
               <button
                 type="button"
                 onClick={() => setShowAll(true)}
-                className="w-full rounded-lg px-2 py-1.5 text-left text-[12px] text-muted-foreground/75 transition-colors hover:bg-sidebar-accent/45 hover:text-sidebar-foreground/85"
+                className={cn(
+                  "w-full rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors duration-200",
+                  sb.textMuted,
+                  "hover:bg-[#F5F5F5]/80 hover:text-[#666] dark:hover:bg-sidebar-accent/45",
+                )}
               >
                 {t("workspace.expandMore", { count: hiddenCount })}
               </button>
@@ -171,7 +277,7 @@ function FolderGroup({
       ) : null}
 
       {expanded && sessions.length === 0 ? (
-        <p className="px-2 py-1 text-[11px] text-muted-foreground/65">
+        <p className={cn("mt-1 px-3 text-[12px]", sb.textMuted)}>
           {t("workspace.folderEmpty")}
         </p>
       ) : null}
@@ -183,7 +289,6 @@ function ChatRow({
   session,
   active,
   onSelect,
-  onRequestDelete,
 }: {
   session: ChatSummary;
   active: boolean;
@@ -197,53 +302,23 @@ function ChatRow({
 
   return (
     <li className="min-w-0">
-      <div
+      <button
+        type="button"
+        onClick={onSelect}
+        title={label}
         className={cn(
-          "group flex min-h-8 min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] transition-colors",
+          "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[14px] transition-colors duration-200",
           active
-            ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
-            : "text-sidebar-foreground/78 hover:bg-sidebar-accent/50",
+            ? "bg-[#F0F0F0] font-medium dark:bg-sidebar-accent/70"
+            : cn(sb.text, sb.bubbleHover),
         )}
       >
-        <Check
-          className="h-3.5 w-3.5 shrink-0 text-muted-foreground/55"
-          aria-hidden
-        />
-        <button
-          type="button"
-          onClick={onSelect}
-          title={label}
-          className="min-w-0 flex-1 overflow-hidden text-left"
-        >
-          <span className="block truncate">{label}</span>
-        </button>
+        <Check className={cn("h-4 w-4 shrink-0", sb.iconMuted)} aria-hidden />
+        <span className="min-w-0 flex-1 truncate">{label}</span>
         {time ? (
-          <span className="shrink-0 text-[10px] text-muted-foreground/60">{time}</span>
+          <span className={cn("shrink-0 text-[12px]", sb.textMuted)}>{time}</span>
         ) : null}
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger
-            className={cn(
-              "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 opacity-0 transition-opacity",
-              "hover:bg-sidebar-accent hover:text-sidebar-foreground group-hover:opacity-100",
-              active && "opacity-100",
-            )}
-            aria-label={t("chat.actions", { title: label })}
-          >
-            <MoreHorizontal className="h-3.5 w-3.5" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-            <DropdownMenuItem
-              onSelect={() => {
-                window.setTimeout(() => onRequestDelete(session.key, label), 0);
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t("chat.delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      </button>
     </li>
   );
 }

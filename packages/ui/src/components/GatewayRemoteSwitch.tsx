@@ -6,6 +6,7 @@ import {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,
 } from "@catbuddy/platform";
+import { sb } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 
 type RemoteState = {
@@ -113,7 +114,7 @@ export function GatewayRemoteSwitch() {
       : friendlyRemoteHint(t, state, lastError, loginRequired);
 
   return (
-    <div className="pb-1.5">
+    <div className="space-y-1">
       <button
         type="button"
         role="switch"
@@ -121,41 +122,32 @@ export function GatewayRemoteSwitch() {
         disabled={busy}
         onClick={() => void onToggle()}
         className={cn(
-          "flex h-9 w-full items-center justify-between gap-2.5 rounded-full px-3.5 text-left text-[13px]",
-          "text-sidebar-foreground/90 hover:bg-sidebar-accent/75",
+          "flex h-10 w-full items-center justify-between gap-3 rounded-lg px-0",
+          "transition-colors duration-200 hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/40",
           "disabled:pointer-events-none disabled:opacity-50",
         )}
       >
-        <span className="flex min-w-0 flex-1 items-center gap-2.5">
-          <Radio
-            className={cn(
-              "h-4 w-4 shrink-0",
-              state?.enabled && state.connected
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-muted-foreground/80",
-            )}
-            aria-hidden
-          />
-          <span className="font-medium">{t("sidebar.remote.label")}</span>
+        <span className={cn("flex min-w-0 flex-1 items-center gap-2", sb.text)}>
+          <Radio className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />
+          <span className="text-[14px] font-normal">{t("sidebar.remote.label")}</span>
         </span>
         <span
           className={cn(
-            "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-            state?.enabled ? "bg-emerald-500/80" : "bg-muted-foreground/25",
+            "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200",
+            state?.enabled ? sb.accentGreen : "bg-[#E0E0E0] dark:bg-muted-foreground/25",
+            !busy && state?.enabled && "hover:brightness-110",
           )}
         >
           <span
             className={cn(
-              "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+              "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200",
               state?.enabled ? "translate-x-4" : "translate-x-0.5",
             )}
           />
         </span>
       </button>
       {hint ? (
-        <p className="pb-0.5 pl-10 pr-3.5 pt-1 text-[12px] leading-relaxed text-muted-foreground/80">
-          {hint}
-        </p>
+        <p className={cn("pl-6 text-[12px] leading-snug", sb.textMuted)}>{hint}</p>
       ) : null}
     </div>
   );

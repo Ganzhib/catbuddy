@@ -1,11 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 
+import { sb } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 
 interface SidebarNavButtonProps {
   icon: LucideIcon;
   label: string;
   active?: boolean;
+  /** plain：MCP 无背景；filled：Skill 浅灰按钮 */
+  variant?: "plain" | "filled";
   onClick: () => void;
 }
 
@@ -13,6 +16,7 @@ export function SidebarNavButton({
   icon: Icon,
   label,
   active = false,
+  variant = "plain",
   onClick,
 }: SidebarNavButtonProps) {
   return (
@@ -21,20 +25,20 @@ export function SidebarNavButton({
       aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={cn(
-        "flex h-9 w-full items-center gap-2.5 rounded-full px-3.5 text-left text-[13px] font-medium transition-colors",
-        active
-          ? "bg-sidebar-accent/85 text-sidebar-foreground shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]"
-          : "text-sidebar-foreground/85 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground",
+        sb.row,
+        "h-9 text-left text-[14px] transition-colors duration-200",
+        variant === "filled" && [
+          "rounded",
+          sb.surface,
+          sb.surfaceHover,
+          active && "ring-1 ring-[#E0E0E0]/80",
+        ],
+        variant === "plain" && "rounded-lg hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+        active ? sb.text : sb.textSecondary,
       )}
     >
-      <Icon
-        className={cn(
-          "h-4 w-4 shrink-0",
-          active ? "text-[#4f9de8] dark:text-[#6eb3f5]" : "text-muted-foreground/80",
-        )}
-        aria-hidden
-      />
-      <span className="truncate">{label}</span>
+      <Icon className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />
+      <span className="truncate font-normal">{label}</span>
     </button>
   );
 }

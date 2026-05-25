@@ -92,7 +92,12 @@
     "expandMore": "Show more ({{count}})",
     "chatHistoryTitle": "Chat history",
     "panelSubtitle": "Each folder is a workspace. Chats you start after uploading are grouped here — folder contents are not shown.",
-    "importFolder": "Import folder"
+    "importFolder": "Import folder",
+    "folderActions": {
+      "menu": "Actions for {{name}}",
+      "setActive": "Set as active workspace",
+      "remove": "Remove from list"
+    }
   },
   "settings": {
     "backToChat": "Back to chat",

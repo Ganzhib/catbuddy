@@ -1,25 +1,24 @@
 import { useMemo, useState } from "react";
 import {
-  FolderTree,
   Menu,
+  MessageSquarePlus,
   Plug,
   Puzzle,
   Search,
   Settings,
-  SquarePen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { BrandLogo } from "@/components/BrandLogo";
-import { ChatList } from "@/components/ChatList";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { DesktopClientDownload } from "@/components/DesktopClientDownload";
 import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { SidebarNavButton } from "@/components/SidebarNavButton";
 import { WorkspaceChatSection } from "@/components/workspace/WorkspaceChatSection";
-import { Button } from "@/components/ui/button";
+import { ChatList } from "@/components/ChatList";
 import { Separator } from "@/components/ui/separator";
 import { useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
+import { brandAssets } from "@/lib/brand";
+import { sb, sbInput, sbSectionTitle } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { SidebarPanel } from "@/lib/sidebar-panel";
 import { hasCatbuddyIpc } from "@catbuddy/platform";
@@ -42,7 +41,13 @@ export function Sidebar(props: SidebarProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const isDesktop = hasCatbuddyIpc();
-  const { store, loading: workspaceLoading } = useWorkspaceFolders();
+  const {
+    store,
+    loading: workspaceLoading,
+    importFolder,
+    selectFolder,
+    removeFolder,
+  } = useWorkspaceFolders();
   const normalizedQuery = query.trim().toLowerCase();
 
   const filteredSessions = useMemo(() => {
@@ -81,40 +86,64 @@ export function Sidebar(props: SidebarProps) {
   return (
     <nav
       aria-label={t("sidebar.navigation")}
-      className="flex h-full w-full min-w-0 flex-col border-r border-sidebar-border/60 bg-sidebar text-sidebar-foreground"
+      className={cn(
+        "flex h-full w-full min-w-0 flex-col border-r",
+        sb.shell,
+        sb.border,
+      )}
     >
-      <div className="px-4 pb-2 pt-4">
-        <BrandLogo />
-      </div>
+      {/* 顶部：头像 + 用户名 | 新建对话图标 | 菜单 */}
+      <div className={cn("flex items-center justify-between pt-4", sb.px, "pb-3")}>
+        <div className={cn("flex items-center", sb.gapSm)}>
+          <img
+            src={brandAssets.icon}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
+            draggable={false}
+          />
+          <span className={cn("whitespace-nowrap text-[16px] font-bold", sb.text)}>
+            catbuddy
+          </span>
+        </div>
 
-      <div className="space-y-2 px-3 pb-2">
-        <Button
-          onClick={props.onNewChat}
-          className="h-9 w-full justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-medium text-sidebar-foreground/92 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"
-          variant="ghost"
-        >
-          <SquarePen className="h-4 w-4 shrink-0 text-[#4f9de8] dark:text-[#6eb3f5]" />
-          {t("sidebar.newChat")}
-        </Button>
+        <div className={cn("flex shrink-0 items-center", sb.gapLg)}>
+          <button
+            type="button"
+            aria-label={t("sidebar.newChat")}
+            onClick={props.onNewChat}
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded transition-colors duration-200",
+              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+              sb.icon,
+            )}
+          >
+            <MessageSquarePlus className="h-6 w-6" aria-hidden />
+          </button>
 
-        <div className="flex justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
+            type="button"
             aria-label={t("sidebar.collapse")}
             onClick={props.onCollapse}
-            className="h-8 w-8 rounded-lg text-muted-foreground/85 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded transition-colors duration-200",
+              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+              sb.icon,
+            )}
           >
-            <Menu className="h-4 w-4" />
-          </Button>
+            <Menu className="h-6 w-6" aria-hidden />
+          </button>
         </div>
       </div>
 
-      <div className="space-y-2 px-3 pb-3">
+      {/* 搜索 + 功能区 */}
+      <div className={cn("space-y-3 pb-3", sb.px)}>
         <label className="relative block">
           <span className="sr-only">{t("sidebar.searchAria")}</span>
           <Search
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70"
+            className={cn(
+              "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
+              sb.iconMuted,
+            )}
             aria-hidden
           />
           <input
@@ -122,14 +151,7 @@ export function Sidebar(props: SidebarProps) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("sidebar.searchPlaceholder")}
             aria-label={t("sidebar.searchAria")}
-            className={cn(
-              "h-9 w-full rounded-full border border-transparent bg-sidebar-accent/45",
-              "pl-9 pr-3.5 text-[13px] text-sidebar-foreground outline-none",
-              "placeholder:text-muted-foreground/75",
-              "transition-colors hover:bg-sidebar-accent/65",
-              "focus:border-sidebar-border/80 focus:bg-sidebar-accent/70",
-              "focus:ring-1 focus:ring-sidebar-border/70",
-            )}
+            className={cn(sbInput, sb.border)}
           />
         </label>
 
@@ -137,51 +159,50 @@ export function Sidebar(props: SidebarProps) {
         <DesktopClientDownload variant="sidebar" />
 
         {isDesktop ? (
-          <div className="space-y-1 pt-0.5">
+          <div className="space-y-3">
             <SidebarNavButton
               icon={Plug}
               label={t("sidebar.nav.mcp")}
               active={props.activePanel === "mcp"}
+              variant="plain"
               onClick={() => props.onSelectPanel("mcp")}
             />
             <SidebarNavButton
               icon={Puzzle}
               label={t("sidebar.nav.skills")}
               active={props.activePanel === "skills"}
+              variant="filled"
               onClick={() => props.onSelectPanel("skills")}
-            />
-            <SidebarNavButton
-              icon={FolderTree}
-              label={t("sidebar.nav.workspace")}
-              active={props.activePanel === "workspace"}
-              onClick={() => props.onSelectPanel("workspace")}
             />
           </div>
         ) : null}
       </div>
 
+      {/* 工作空间 */}
       {isDesktop ? (
-        <div className="min-h-0 shrink overflow-y-auto border-y border-sidebar-border/40 py-2">
-          <p className="mb-1 px-3 text-[13px] font-semibold text-sidebar-foreground/90">
-            {t("sidebar.nav.workspace")}
-          </p>
+        <div className={cn("min-h-0 shrink overflow-y-auto border-y py-2", sb.border)}>
           <WorkspaceChatSection
             folders={store.folders}
             sessions={workspaceSessions}
             activeKey={props.activeKey}
+            activeFolderId={store.activeFolderId}
             loading={workspaceLoading}
             onSelectChat={selectChat}
             onRequestDelete={props.onRequestDelete}
+            onImportFolder={() => void importFolder()}
+            onRemoveFolder={(id) => removeFolder(id)}
+            onSelectFolder={(id) => selectFolder(id)}
             compact
           />
         </div>
       ) : null}
 
+      {/* 聊天记录 */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!isDesktop || ungroupedSessions.length > 0 ? (
           <>
             {isDesktop && store.folders.length > 0 ? (
-              <div className="px-4 pb-1 pt-2 text-[13px] font-medium text-muted-foreground/65">
+              <div className={cn("mb-2 mt-4", sb.px, sbSectionTitle)}>
                 {t("workspace.chatHistoryTitle")}
               </div>
             ) : null}
@@ -201,18 +222,24 @@ export function Sidebar(props: SidebarProps) {
         )}
       </div>
 
-      <Separator className="bg-sidebar-border/50" />
-      <div className="flex items-center gap-2 px-3.5 py-3.5 text-xs">
-        <Button
+      <Separator className={cn("bg-[#E0E0E0]/80 dark:bg-sidebar-border/50")} />
+      <div className={cn("py-4", sb.px)}>
+        <button
           type="button"
-          variant="ghost"
           onClick={props.onOpenSettings}
-          className="h-9 min-w-0 flex-1 justify-start gap-2.5 rounded-full px-3 text-[13px] font-medium text-sidebar-foreground/85 hover:bg-sidebar-accent/75 hover:text-sidebar-foreground"
+          className={cn(
+            "flex h-10 w-full items-center gap-2 rounded-lg px-0",
+            "text-[14px] transition-colors duration-200",
+            sb.text,
+            "hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+          )}
         >
-          <Settings className="h-4 w-4" aria-hidden />
-          {t("sidebar.settings")}
-        </Button>
-        <ConnectionBadge />
+          <Settings className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-left font-normal">
+            {t("sidebar.settings")}
+          </span>
+          <ConnectionBadge variant="dot" />
+        </button>
       </div>
     </nav>
   );

@@ -7,6 +7,7 @@ Electron 桌面客户端：本地 Agent 运行时 + React UI，与 monorepo 内 
 | 文档 | 说明 |
 |------|------|
 | [architecture.md](./architecture.md) | 三层进程架构、目录结构、消息流、依赖关系 |
+| [workspace-and-memory.md](./workspace-and-memory.md) | 工作区锚点、文件访问安全、分层记忆 |
 | [development.md](./development.md) | 开发命令、环境变量、构建产物、本地数据目录 |
 | [ipc.md](./ipc.md) | Preload API、IPC 通道清单、安全边界 |
 | [main-process.md](./main-process.md) | 主进程模块：Agent、Bus、Channels、Session、Gateway |

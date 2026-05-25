@@ -47,6 +47,8 @@
 | `providers/` | LLM Provider 工厂与实现 |
 | `command/` | 斜杠命令路由 |
 | `config/` | 默认配置与持久化 |
+| `security/` | SSRF 防护、工作区文件访问策略（PathGuard） |
+| `services/global-profile.ts` | 全局用户 profile 锚点（分层记忆） |
 | `sync/` | WebUI 线程快照、工具事件映射 |
 | `assets/` | 窗口/打包图标 |
 
@@ -110,12 +112,14 @@ Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于
 
 ## 用户数据目录
 
-首次启动在用户主目录创建：
+首次启动在用户主目录创建 `.catbuddy-desktop`。完整说明见 [workspace-and-memory.md](./workspace-and-memory.md)。
 
 | 路径 | 内容 |
 |------|------|
-| `~/.catbuddy-desktop/workspace/` | Agent 工作区 |
+| `~/.catbuddy-desktop/workspace/` | Agent 工作区；**全局** USER.md 与用户向 MEMORY |
 | `~/.catbuddy-desktop/config/config.json` | 模型、Provider、Gateway 等配置 |
+| `~/.catbuddy-desktop/workspace-folders.json` | 已注册的项目文件夹列表 |
+| `{project}/.catbuddy-desktop/workspace/` | 项目级 workspace（MEMORY、sessions、AGENTS 等） |
 
 环境变量加载顺序（`src/main/index.ts`）：
 

@@ -5,9 +5,9 @@
 | 模块 | 路径 | 目标能力 |
 |------|------|----------|
 | **Bridge** | `src/main/bridge/` | WhatsApp 等外部 IM 桥接（TypeScript 服务 + 主进程协调） |
-| **Cron** | `src/main/cron/` | 定时任务存储与触发，经 bus 或 `processDirect` 驱动 Agent |
+| **Cron** | `src/main/cron/` | ✅ Dream 定时整理（默认 120 分钟，可配置 `dreamIntervalMinutes`） |
 | **Heartbeat** | `src/main/heartbeat/` | 周期性唤醒，检查 HEARTBEAT.md、推送主动消息 |
-| **Security** | `src/main/security/` | SSRF 防护、URL 校验（供 web fetch 类工具使用） |
+| **Security** | `src/main/security/` | ✅ SSRF 防护、工作区文件访问策略（PathGuard）；详见 [workspace-and-memory.md](./workspace-and-memory.md) |
 | **CLI** | `src/main/cli/` | 无 UI 的命令行入口（调试/自动化） |
 
 ## Bridge
@@ -16,7 +16,12 @@
 
 ## Cron
 
-预期职责：持久化 cron 表达式与任务体；到期后向 bus 发布系统消息或调用 `AgentLoop.processDirect`。
+已实现（`src/main/cron/`）：
+
+- `CronScheduler` 注册 `dream` 任务，间隔 `agents.defaults.dreamIntervalMinutes`（默认 120）
+- 应用退出时 `stopAll()` 清理定时器
+
+手动：`/dream`、`/dream-log`。设计说明：[workspace-and-memory.md](./workspace-and-memory.md)
 
 ## Heartbeat
 
@@ -24,16 +29,19 @@
 
 ## Security
 
-预期职责：
+已实现（`src/main/security/`）：
 
-- 校验 HTTP(S) 目标，阻止内网/localhost SSRF
-- 供 Agent 工具中的 `web_fetch` 等调用
+- HTTP(S) 目标校验，阻止内网/localhost SSRF（`network.ts`）
+- 工作区文件访问策略与 PathGuard（`workspace-access.ts`、`path-guard.ts`）
+- 与 `templates/agent/identity.md` 提示词对齐
 
-Preload 层已有基础 bridge 键名校验（`src/preload/security/`）；网络层防护计划在 main `security/` 实现。
+Preload 层另有 bridge 键名校验（`src/preload/security/`）。
+
+设计说明：[workspace-and-memory.md](./workspace-and-memory.md) §2
 
 ## 实现优先级建议
 
-1. **Security**（工具上网前必需）
+1. ~~**Security**（工具上网与文件访问）~~ ✅
 2. **Heartbeat**（与现有 `templates/HEARTBEAT.md` 配套）
 3. **Cron**
 4. **Bridge**（依赖独立服务与打包）

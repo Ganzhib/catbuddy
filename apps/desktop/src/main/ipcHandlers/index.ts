@@ -13,6 +13,13 @@ import { SKILL_MARKETPLACE } from '../config/skill-marketplace.js'
 import { installBuiltinSkillToWorkspace } from '../agent/skill-install.js'
 import { applySkillToggle } from '../agent/skill.js'
 import { validateMcpServers } from '../config/mcp-config.js'
+import { getCatbuddyDirFromConfigFile } from '../services/workspace-project.js'
+import {
+  createWorkspaceFolderFromPath,
+  getActiveWorkspaceFolderId,
+  listWorkspaceFolders,
+  setActiveWorkspaceFolderId,
+} from '../services/workspace-folders.js'
 import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
 
@@ -36,6 +43,20 @@ export function registerIpcHandlers(
     return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
   }
 
+  const catbuddyDir = () => getCatbuddyDirFromConfigFile(configFile)
+
+  const ensureSessionWorkspaceFolder = (sessionKey: string) => {
+    sessions.getOrCreate(sessionKey)
+    const existing = sessions.getMetadataValue<string>(sessionKey, 'workspaceFolderId')
+    if (existing) return existing
+    const active = getActiveWorkspaceFolderId(catbuddyDir())
+    if (active) {
+      sessions.setMetadata(sessionKey, { workspaceFolderId: active })
+      return active
+    }
+    return null
+  }
+
   // ═══ Agent ═══
   // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → DesktopChannel → 前端
   ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
@@ -53,6 +74,7 @@ export function registerIpcHandlers(
       sessionKeyOverride: sessionKey,
     });
     sessions.getOrCreate(sessionKey);
+    ensureSessionWorkspaceFolder(sessionKey);
     getGatewayClient()?.focusSession(sessionKey);
     if (content.trim()) {
       getGatewayClient()?.publishUiEvent(sessionKey, bareChatId(sessionKey), {
@@ -115,9 +137,13 @@ export function registerIpcHandlers(
     return ok
   })
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => sessions.clear(key))
-  ipcMain.handle('session:new', async () => {
+  ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string } = {}) => {
     const key = `desktop:${Date.now()}`
     sessions.getOrCreate(key)
+    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(catbuddyDir())
+    if (folderId) {
+      sessions.setMetadata(key, { workspaceFolderId: folderId })
+    }
     getGatewayClient()?.focusSession(key)
     return { key }
   })
@@ -292,6 +318,83 @@ export function registerIpcHandlers(
       if (!err) return { ok: true as const, path: target }
       shell.showItemInFolder(target)
       return { ok: false as const, error: err, path: target }
+    },
+  )
+
+  ipcMain.handle('workspace:project-info', async () => {
+    const {
+      getWorkspaceProjectInfo,
+    } = await import('../services/workspace-project.js')
+    return getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+  })
+
+  ipcMain.handle('workspace:list-entries', async () => {
+    const {
+      getWorkspaceProjectInfo,
+      listProjectRootEntries,
+    } = await import('../services/workspace-project.js')
+    const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+    return listProjectRootEntries(info.projectRoot)
+  })
+
+  ipcMain.handle(
+    'workspace:list-children',
+    async (_event, { dirPath }: { dirPath: string }) => {
+      const {
+        getWorkspaceProjectInfo,
+        listDirectoryChildren,
+      } = await import('../services/workspace-project.js')
+      const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+      return listDirectoryChildren(path.resolve(dirPath), info.projectRoot)
+    },
+  )
+
+  ipcMain.handle('workspace:import-folder', async () => {
+    const { dialog } = await import('electron')
+    const {
+      ensureCatbuddyDir,
+      getWorkspaceProjectInfo,
+      importFolderToProjectRoot,
+      resolveProjectRootForImport,
+    } = await import('../services/workspace-project.js')
+
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Select folder to add to workspace',
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { ok: false as const, cancelled: true }
+    }
+
+    const sourcePath = result.filePaths[0]
+    const dir = catbuddyDir()
+    const { folder, created, store } = createWorkspaceFolderFromPath(dir, sourcePath)
+
+    try {
+      const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+      const projectRoot = resolveProjectRootForImport(sourcePath, info.projectRoot)
+      ensureCatbuddyDir(projectRoot)
+      importFolderToProjectRoot(sourcePath, projectRoot)
+    } catch {
+      // AI file access is best-effort; UI workspace folder is logical.
+    }
+
+    return {
+      ok: true as const,
+      folder,
+      created,
+      activeFolderId: store.activeFolderId,
+      folders: store.folders,
+    }
+  })
+
+  ipcMain.handle('workspace-folders:list', async () => listWorkspaceFolders(catbuddyDir()))
+
+  ipcMain.handle(
+    'workspace-folders:set-active',
+    async (_event, { folderId }: { folderId: string | null }) => {
+      const store = setActiveWorkspaceFolderId(catbuddyDir(), folderId)
+      return store
     },
   )
 

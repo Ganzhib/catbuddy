@@ -60,6 +60,14 @@ function createCatbuddyApi() {
         path: filePath,
         absolute_path: absolutePath,
       }),
+    getWorkspaceProjectInfo: () => ipcRenderer.invoke(IPC.WORKSPACE_PROJECT_INFO),
+    listWorkspaceEntries: () => ipcRenderer.invoke(IPC.WORKSPACE_LIST_ENTRIES),
+    listWorkspaceChildren: (dirPath) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_LIST_CHILDREN, { dirPath }),
+    importProjectFolder: () => ipcRenderer.invoke(IPC.WORKSPACE_IMPORT_FOLDER),
+    listWorkspaceFolders: () => ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_LIST),
+    setActiveWorkspaceFolder: (folderId) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_SET_ACTIVE, { folderId }),
 
     listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
     toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),

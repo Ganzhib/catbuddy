@@ -13,25 +13,31 @@ import { SKILL_MARKETPLACE } from '../config/skill-marketplace.js'
 import { installBuiltinSkillToWorkspace } from '../agent/skill-install.js'
 import { applySkillToggle } from '../agent/skill.js'
 import { validateMcpServers } from '../config/mcp-config.js'
-import { getCatbuddyDirFromConfigFile } from '../services/workspace-project.js'
+import { getCatbuddyDirFromConfigFile, getWorkspaceProjectInfo } from '../services/workspace-project.js'
+import {
+  applyProjectAnchor,
+  getHomeCatbuddyDir,
+  type DesktopRuntimeRefs,
+} from '../services/workspace-anchor.js'
 import {
   createWorkspaceFolderFromPath,
   getActiveWorkspaceFolderId,
+  getWorkspaceFolderById,
   listWorkspaceFolders,
   removeWorkspaceFolder,
   setActiveWorkspaceFolderId,
 } from '../services/workspace-folders.js'
 import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
+import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
 
 export function registerIpcHandlers(
-  agentLoop: AgentLoop,
-  sessions: SessionManager,
-  config: catbuddyConfig,
-  configFile: string,
+  runtime: DesktopRuntimeRefs,
   getGatewayClient: () => GatewayDesktopClient | null = () => null,
 ) {
-  const persistConfig = () => saveConfig(configFile, config)
+  const { agentLoop } = runtime
+  const persistConfig = () => saveConfig(runtime.configFile, runtime.config)
+  const homeCatbuddyDir = () => getHomeCatbuddyDir()
 
   const toSessionKey = (chatId?: string): string => {
     if (!chatId?.trim()) return 'desktop:main'
@@ -44,15 +50,13 @@ export function registerIpcHandlers(
     return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
   }
 
-  const catbuddyDir = () => getCatbuddyDirFromConfigFile(configFile)
-
   const ensureSessionWorkspaceFolder = (sessionKey: string) => {
-    sessions.getOrCreate(sessionKey)
-    const existing = sessions.getMetadataValue<string>(sessionKey, 'workspaceFolderId')
+    runtime.sessions.getOrCreate(sessionKey)
+    const existing = runtime.sessions.getMetadataValue<string>(sessionKey, 'workspaceFolderId')
     if (existing) return existing
-    const active = getActiveWorkspaceFolderId(catbuddyDir())
+    const active = getActiveWorkspaceFolderId(homeCatbuddyDir())
     if (active) {
-      sessions.setMetadata(sessionKey, { workspaceFolderId: active })
+      runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: active })
       return active
     }
     return null
@@ -74,7 +78,7 @@ export function registerIpcHandlers(
       metadata: {},
       sessionKeyOverride: sessionKey,
     });
-    sessions.getOrCreate(sessionKey);
+    runtime.sessions.getOrCreate(sessionKey);
     ensureSessionWorkspaceFolder(sessionKey);
     getGatewayClient()?.focusSession(sessionKey);
     if (content.trim()) {
@@ -102,13 +106,13 @@ export function registerIpcHandlers(
 
   ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
     const key = sessionKey?.trim() || toSessionKey(chatId)
-    sessions.getOrCreate(key)
+    runtime.sessions.getOrCreate(key)
     getGatewayClient()?.focusSession(key)
     return { sessionKey: key, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
   })
 
   ipcMain.handle('gateway:sync-all-sessions', async () => {
-    const list = await sessions.list()
+    const list = await runtime.sessions.list()
     const keys = list.map((row) => row.key)
     getGatewayClient()?.syncSessions(keys)
     return { keys, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
@@ -126,35 +130,35 @@ export function registerIpcHandlers(
   }))
 
   // ═══ Session ═══
-  ipcMain.handle('session:list', async () => sessions.list())
-  ipcMain.handle('session:get', async (_event, { key }: { key: string }) => sessions.getDetail(key))
+  ipcMain.handle('session:list', async () => runtime.sessions.list())
+  ipcMain.handle('session:get', async (_event, { key }: { key: string }) => runtime.sessions.getDetail(key))
   ipcMain.handle('session:delete', async (_event, { key }: { key: string }) => {
     const sessionKey = String(key || '').trim()
-    const ok = sessions.delete(sessionKey)
+    const ok = runtime.sessions.delete(sessionKey)
     getGatewayClient()?.publishSessionDelete(sessionKey)
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send('session:deleted', { sessionKey })
     }
     return ok
   })
-  ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => sessions.clear(key))
+  ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => runtime.sessions.clear(key))
   ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string } = {}) => {
     const key = `desktop:${Date.now()}`
-    sessions.getOrCreate(key)
-    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(catbuddyDir())
+    runtime.sessions.getOrCreate(key)
+    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(homeCatbuddyDir())
     if (folderId) {
-      sessions.setMetadata(key, { workspaceFolderId: folderId })
+      runtime.sessions.setMetadata(key, { workspaceFolderId: folderId })
     }
     getGatewayClient()?.focusSession(key)
     return { key }
   })
 
   // ═══ Config ═══
-  ipcMain.handle('config:get', async () => config)
-  ipcMain.handle('settings:get', async () => buildSettingsPayload(config))
+  ipcMain.handle('config:get', async () => runtime.config)
+  ipcMain.handle('settings:get', async () => buildSettingsPayload(runtime.config))
   ipcMain.handle('config:update', async (_event, { path, value }: { path: string; value: unknown }) => {
     const keys = path.split('.')
-    let obj: any = config
+    let obj: any = runtime.config
     for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]]
     obj[keys[keys.length - 1]] = value
 
@@ -177,7 +181,7 @@ export function registerIpcHandlers(
     if (path.startsWith('providers.') && path.endsWith('.apiKey')) {
       try {
         const { createProvider } = await import('../providers/factory.js')
-        const newProvider = createProvider(config)
+        const newProvider = createProvider(runtime.config)
         agentLoop.setProvider(newProvider)
         const agentLoop2: any = agentLoop
         if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
@@ -196,7 +200,7 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle('config:list-models', async () => {
-    const presets = config.modelPresets ?? {}
+    const presets = runtime.config.modelPresets ?? {}
     return Object.values(presets)
   })
 
@@ -224,13 +228,13 @@ export function registerIpcHandlers(
   }
 
   ipcMain.handle('mcp:get', async () => ({
-    servers: mapMcpServersForUi(config.tools?.mcpServers ?? {}),
+    servers: mapMcpServersForUi(runtime.config.tools?.mcpServers ?? {}),
   }))
 
   ipcMain.handle('mcp:update-and-reload', async (_event, { servers }: { servers: unknown }) => {
     const validated = validateMcpServers(servers)
-    if (!config.tools) {
-      config.tools = {
+    if (!runtime.config.tools) {
+      runtime.config.tools = {
         restrictToWorkspace: false,
         exec: { enable: true },
         web: { enable: true },
@@ -238,12 +242,12 @@ export function registerIpcHandlers(
         imageGeneration: { enable: false },
       }
     }
-    config.tools.mcpServers = Object.keys(validated).length > 0 ? validated : undefined
-    const message = await agentLoop.setMcpServers(config.tools.mcpServers)
+    runtime.config.tools.mcpServers = Object.keys(validated).length > 0 ? validated : undefined
+    const message = await agentLoop.setMcpServers(runtime.config.tools.mcpServers)
     persistConfig()
     return {
       message,
-      servers: mapMcpServersForUi(config.tools.mcpServers ?? {}),
+      servers: mapMcpServersForUi(runtime.config.tools.mcpServers ?? {}),
     }
   })
 
@@ -262,10 +266,10 @@ export function registerIpcHandlers(
       throw new Error('No installable config for this marketplace entry.')
     }
     const resolved = resolveMarketplaceConfig(entry.config)
-    const existing = config.tools?.mcpServers ?? {}
+    const existing = runtime.config.tools?.mcpServers ?? {}
     const merged = { ...existing, ...resolved }
-    if (!config.tools) {
-      config.tools = {
+    if (!runtime.config.tools) {
+      runtime.config.tools = {
         restrictToWorkspace: false,
         exec: { enable: true },
         web: { enable: true },
@@ -273,7 +277,7 @@ export function registerIpcHandlers(
         imageGeneration: { enable: false },
       }
     }
-    config.tools.mcpServers = merged
+    runtime.config.tools.mcpServers = merged
     const message = await agentLoop.setMcpServers(merged)
     persistConfig()
     return {
@@ -326,7 +330,7 @@ export function registerIpcHandlers(
     const {
       getWorkspaceProjectInfo,
     } = await import('../services/workspace-project.js')
-    return getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+    return getWorkspaceProjectInfo(runtime.configFile, agentLoop.workspace)
   })
 
   ipcMain.handle('workspace:list-entries', async () => {
@@ -334,7 +338,7 @@ export function registerIpcHandlers(
       getWorkspaceProjectInfo,
       listProjectRootEntries,
     } = await import('../services/workspace-project.js')
-    const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+    const info = getWorkspaceProjectInfo(runtime.configFile, agentLoop.workspace)
     return listProjectRootEntries(info.projectRoot)
   })
 
@@ -345,19 +349,13 @@ export function registerIpcHandlers(
         getWorkspaceProjectInfo,
         listDirectoryChildren,
       } = await import('../services/workspace-project.js')
-      const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
+      const info = getWorkspaceProjectInfo(runtime.configFile, agentLoop.workspace)
       return listDirectoryChildren(path.resolve(dirPath), info.projectRoot)
     },
   )
 
   ipcMain.handle('workspace:import-folder', async () => {
     const { dialog } = await import('electron')
-    const {
-      ensureCatbuddyDir,
-      getWorkspaceProjectInfo,
-      importFolderToProjectRoot,
-      resolveProjectRootForImport,
-    } = await import('../services/workspace-project.js')
 
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
@@ -368,17 +366,9 @@ export function registerIpcHandlers(
     }
 
     const sourcePath = result.filePaths[0]
-    const dir = catbuddyDir()
-    const { folder, created, store } = createWorkspaceFolderFromPath(dir, sourcePath)
-
-    try {
-      const info = getWorkspaceProjectInfo(configFile, agentLoop.workspace)
-      const projectRoot = resolveProjectRootForImport(sourcePath, info.projectRoot)
-      ensureCatbuddyDir(projectRoot)
-      importFolderToProjectRoot(sourcePath, projectRoot)
-    } catch {
-      // AI file access is best-effort; UI workspace folder is logical.
-    }
+    const home = homeCatbuddyDir()
+    const { folder, created, store } = createWorkspaceFolderFromPath(home, sourcePath)
+    applyProjectAnchor(runtime, folder)
 
     return {
       ok: true as const,
@@ -386,15 +376,22 @@ export function registerIpcHandlers(
       created,
       activeFolderId: store.activeFolderId,
       folders: store.folders,
+      anchor: {
+        projectRoot: folder.projectRoot,
+        catbuddyDir: folder.catbuddyDir,
+      },
     }
   })
 
-  ipcMain.handle('workspace-folders:list', async () => listWorkspaceFolders(catbuddyDir()))
+  ipcMain.handle('workspace-folders:list', async () => listWorkspaceFolders(homeCatbuddyDir()))
 
   ipcMain.handle(
     'workspace-folders:set-active',
     async (_event, { folderId }: { folderId: string | null }) => {
-      const store = setActiveWorkspaceFolderId(catbuddyDir(), folderId)
+      const home = homeCatbuddyDir()
+      const store = setActiveWorkspaceFolderId(home, folderId)
+      const folder = folderId ? getWorkspaceFolderById(home, folderId) : null
+      applyProjectAnchor(runtime, folder)
       return store
     },
   )
@@ -402,7 +399,7 @@ export function registerIpcHandlers(
   ipcMain.handle(
     'workspace-folders:remove',
     async (_event, { folderId }: { folderId: string }) => {
-      return removeWorkspaceFolder(catbuddyDir(), folderId)
+      return removeWorkspaceFolder(homeCatbuddyDir(), folderId)
     },
   )
 
@@ -410,7 +407,7 @@ export function registerIpcHandlers(
   ipcMain.handle('skills:list', async () => agentLoop.listSkills())
   ipcMain.handle('skills:toggle', async (_event, { name, enabled }: { name: string; enabled: boolean }) => {
     const disabled = agentLoop.toggleSkill(name, enabled)
-    config.agents.defaults.disabledSkills = disabled
+    runtime.config.agents.defaults.disabledSkills = disabled
     persistConfig()
   })
 
@@ -423,10 +420,10 @@ export function registerIpcHandlers(
     const workspace = agentLoop.workspace
     const { alreadyInstalled } = installBuiltinSkillToWorkspace(entry.skillName, workspace)
 
-    let disabled = config.agents.defaults.disabledSkills ?? []
+    let disabled = runtime.config.agents.defaults.disabledSkills ?? []
     if (disabled.includes(entry.skillName)) {
       disabled = applySkillToggle(disabled, entry.skillName, true)
-      config.agents.defaults.disabledSkills = disabled
+      runtime.config.agents.defaults.disabledSkills = disabled
       agentLoop.setDisabledSkills(disabled)
       persistConfig()
     }
@@ -438,6 +435,9 @@ export function registerIpcHandlers(
 
     return { message, skills, hotReload: true }
   })
+
+  // ═══ Slash commands (composer palette) ═══
+  ipcMain.handle('commands:list', async () => DESKTOP_BUILTIN_SLASH_COMMANDS)
 
   // ═══ Restart ═══
   ipcMain.handle('app:restart', async () => {

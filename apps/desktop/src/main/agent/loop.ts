@@ -3,13 +3,15 @@
  * 对应原版 catbuddy/agent/loop.py
  */
 import { nanoid } from "nanoid";
+import * as path from "node:path";
 import { ContextBuilder } from "./context";
 import { AgentRunner } from "./runner";
 import { ToolRegistry } from "./tools";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./memory";
-import { MemoryStore } from "./memory-store";
+import { LayeredMemoryStore } from "./layered-memory.js";
 import { Dream } from "./dream";
+import { getGlobalProfileWorkspace } from "../services/global-profile.js";
 import { AutoCompact } from "./autocompact";
 import { SubagentManager } from "./subagent";
 import {
@@ -137,7 +139,7 @@ export class AgentLoop implements RuntimeState {
 
   readonly bus: MessageBus | null;
   readonly fileStateStore = new FileStateStore();
-  memoryStore: MemoryStore | null = null;
+  memoryStore: LayeredMemoryStore | null = null;
   dream: Dream | null = null;
   autoCompact: AutoCompact | null = null;
   subagents: SubagentManager | null = null;
@@ -158,6 +160,8 @@ export class AgentLoop implements RuntimeState {
   constructor(opts: {
     provider: LLMProvider;
     workspace: string;
+    projectRoot?: string;
+    catbuddyDir?: string;
     model?: string;
     maxIterations?: number;
     contextWindowTokens?: number;
@@ -181,15 +185,27 @@ export class AgentLoop implements RuntimeState {
     this.maxMessages = opts.maxMessages ?? 120;
     this.providerRetryMode = "standard";
 
+    const projectRoot =
+      opts.projectRoot ?? path.dirname(path.dirname(path.resolve(opts.workspace)));
+    const catbuddyDir =
+      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy-desktop");
+
+    const restrict = opts.restrictToWorkspace ?? false;
+
     this.sessions = opts.sessionManager ?? new SessionManager(opts.workspace);
+    const globalWorkspace = getGlobalProfileWorkspace();
     this.context = new ContextBuilder(opts.workspace, {
       timezone: opts.timezone,
       disabledSkills: opts.disabledSkills,
+      workRoot: restrict ? opts.workspace : projectRoot,
+      fileAccessMode: restrict ? 'internal' : 'project',
+      globalWorkspace,
     });
     // 首次运行时创建 workspace 引导文件
     this.context.ensureBootstrapFiles();
     this.tools = new ToolRegistry();
-    this.tools.setWorkspace(opts.workspace, opts.restrictToWorkspace ?? false);
+    this.tools.setWorkspace(opts.workspace, restrict);
+    this.tools.setProjectRoot(projectRoot, catbuddyDir);
     this.tools.registerBuiltinTools();
     this.runner = new AgentRunner(opts.provider);
 
@@ -198,13 +214,14 @@ export class AgentLoop implements RuntimeState {
       model: this.model,
       sessions: this.sessions,
       workspace: opts.workspace,
+      globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.consolidationRatio ?? 0.5,
     });
 
     if (opts.config) {
       this._config = opts.config;
-      this.memoryStore = new MemoryStore(opts.workspace);
+      this.memoryStore = new LayeredMemoryStore(opts.workspace, globalWorkspace);
       this.autoCompact = new AutoCompact(
         this.sessions,
         this.consolidator,
@@ -219,7 +236,9 @@ export class AgentLoop implements RuntimeState {
           this.model,
           this.maxToolResultChars,
           this.maxIterations,
-          opts.restrictToWorkspace ?? false,
+          restrict,
+          projectRoot,
+          catbuddyDir,
         );
       }
       this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
@@ -237,6 +256,63 @@ export class AgentLoop implements RuntimeState {
 
     this.commands = new CommandRouter();
     registerBuiltinCommands(this.commands);
+  }
+
+  /** Switch agent workspace + file-tool project root (e.g. after uploading folder A). */
+  reanchorProject(opts: {
+    workspace: string;
+    projectRoot: string;
+    catbuddyDir: string;
+    config?: catbuddyConfig;
+  }): void {
+    const workspace = path.resolve(opts.workspace);
+    const projectRoot = path.resolve(opts.projectRoot);
+    const catbuddyDir = path.resolve(opts.catbuddyDir);
+    const restrict = opts.config?.tools?.restrictToWorkspace ?? false;
+
+    (this as { workspace: string }).workspace = workspace;
+    (this as { sessions: SessionManager }).sessions = new SessionManager(workspace);
+
+    const globalWorkspace = getGlobalProfileWorkspace();
+    this.context = new ContextBuilder(workspace, {
+      timezone: opts.config?.agents?.defaults?.timezone ?? this._config?.agents?.defaults?.timezone,
+      disabledSkills: opts.config?.agents?.defaults?.disabledSkills ?? this._config?.agents?.defaults?.disabledSkills,
+      workRoot: restrict ? workspace : projectRoot,
+      fileAccessMode: restrict ? 'internal' : 'project',
+      globalWorkspace,
+    });
+    this.context.ensureBootstrapFiles();
+
+    this.tools.setWorkspace(workspace, restrict);
+    this.tools.setProjectRoot(projectRoot, catbuddyDir);
+
+    this.subagents?.setWorkArea({
+      workspace,
+      projectRoot,
+      catbuddyDir,
+      restrictToWorkspace: restrict,
+    });
+
+    if (opts.config) {
+      this._config = opts.config;
+      this.memoryStore = new LayeredMemoryStore(workspace, globalWorkspace);
+      if (this.provider) {
+        this.dream = new Dream(this.memoryStore, this.provider, this.model);
+      }
+      if (this.mcpManager) {
+        this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
+      }
+    }
+
+    (this as { consolidator: Consolidator }).consolidator = new Consolidator({
+      provider: this.provider,
+      model: this.model,
+      sessions: this.sessions,
+      workspace,
+      globalWorkspace,
+      contextWindowTokens: this.contextWindowTokens,
+      consolidationRatio: opts.config?.agents?.defaults?.consolidationRatio ?? 0.5,
+    });
   }
 
   /** Connect MCP servers from config (call after construction). */
@@ -635,9 +711,6 @@ export class AgentLoop implements RuntimeState {
 
     if (result !== null) {
       ctx.outbound = result;
-      if (result.content) {
-        await ctx.onAssistantMessage?.(result.content);
-      }
       return "shortcut";
     }
 
@@ -773,7 +846,27 @@ export class AgentLoop implements RuntimeState {
       });
     }
 
+    this._appendTurnHistory(ctx);
+
     return "ok";
+  }
+
+  /** Feed Dream: append completed turn to project history.jsonl. */
+  private _appendTurnHistory(ctx: TurnCtx): void {
+    if (!this.memoryStore) return;
+    const slice = ctx.allMessages.slice(ctx.persistFromIndex);
+    const lines: string[] = [];
+    for (const msg of slice) {
+      if (msg.role !== "user" && msg.role !== "assistant") continue;
+      const text =
+        typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content);
+      if (!text.trim()) continue;
+      lines.push(`[${msg.role}] ${text.slice(0, 2000)}`);
+    }
+    if (lines.length === 0) return;
+    this.memoryStore.project.appendHistory(lines.join("\n"));
   }
 
   private async _state_respond(ctx: TurnCtx): Promise<string> {

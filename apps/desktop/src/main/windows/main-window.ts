@@ -1,4 +1,4 @@
-import { BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setupApplicationMenu } from "../menu/index.js";
@@ -33,7 +33,18 @@ export function createMainWindow(): BrowserWindow {
     show: false,
   });
 
+
   win.on("ready-to-show", () => win.show());
+
+  if(!app.isPackaged) {
+    win.webContents.on("before-input-event", (_event, input) => {
+      if (input.type !== "keyDown") return;
+      const toggle =
+        input.key === "F12" ||
+        (input.control && input.shift && input.key.toLowerCase() === "i");
+      if (toggle) win.webContents.toggleDevTools();
+    });
+  }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     try {

@@ -115,7 +115,7 @@
     "skills": {
       "loading": "Loading skills…",
       "installedTitle": "Installed in workspace",
-      "installedHelp": "Toggle takes effect immediately — the next message rebuilds agent context (hot reload).",
+      "installedHelp": "Toggle takes effect immediately — the next message rebuilds agent context; unchanged system prompt sections are served from cache.",
       "enabled": "Enabled",
       "disabled": "Disabled",
       "enable": "Enable {{name}}",
@@ -208,7 +208,7 @@
       "provider": "Select the provider that should serve new model requests.",
       "model": "Set the default model name used by catbuddy.",
       "configPath": "The gateway configuration file currently in use.",
-      "compactionEnable": "Automatically compress old conversations to save tokens.",
+      "compactionEnable": "Automatically compress old conversations to save tokens (Agent COMPACT step).",
       "compactionThreshold": "Compress when the number of messages exceeds this count."
     },
     "values": {
@@ -504,7 +504,10 @@
     "openFileShort": "Open in default app",
     "copyReply": "Copy reply",
     "copiedReply": "Copied reply",
-    "turnLatencyTitle": "Response time (end-to-end)"
+    "turnLatencyTitle": "Response time (end-to-end)",
+    "turnTokensCompact": "↓{{in}} ↑{{out}}",
+    "turnTokensTitle": "Token usage: {{in}} input · {{out}} output",
+    "turnFooterSeparator": "·"
   },
   "lightbox": {
     "title": "Image preview",

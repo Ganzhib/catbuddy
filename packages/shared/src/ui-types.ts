@@ -1,4 +1,4 @@
-import type { McpServerConfig } from './agent-types.js'
+import type { McpServerConfig, TokenUsage } from './agent-types.js'
 
 export type Role = "user" | "assistant" | "tool" | "system";
 
@@ -61,6 +61,8 @@ export interface UIMessage {
   reasoningStreaming?: boolean;
   /** End-to-end wall time for this assistant turn (persisted ``latency_ms`` / ``turn_end``). */
   latencyMs?: number;
+  /** Aggregated LLM token usage for this assistant turn (``turn_end``). */
+  tokenUsage?: TokenUsage;
 }
 
 /** Structured UI blob on ``progress`` WS frames; channels may add more ``kind`` values later. */
@@ -321,6 +323,8 @@ export type InboundEvent =
       event: "turn_end";
       chat_id: string;
       latency_ms?: number;
+      /** Aggregated LLM token usage for the completed turn (desktop IPC). */
+      usage?: TokenUsage;
       /** Tools invoked during this turn (desktop IPC). */
       tools_used?: string[];
       /** Authoritative sustained-goal snapshot for this chat (same shape as ``goal_state`` events). */

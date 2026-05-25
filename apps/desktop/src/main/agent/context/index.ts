@@ -62,6 +62,11 @@ export class ContextBuilder {
   setDisabledSkills(names: string[]): void {
     this.disabledSkills.clear()
     for (const name of names) this.disabledSkills.add(name)
+    this.promptBuilder.invalidateCache()
+  }
+
+  invalidateSystemPromptCache(): void {
+    this.promptBuilder.invalidateCache()
   }
 
   readWorkspaceFile(name: string, workspaceDir?: string): string {

@@ -45,4 +45,31 @@ export class SkillLoader {
 
     return skills.map((s) => `- **${s.name}**: ${s.description}`).join('\n')
   }
+
+  /** Cheap mtime fingerprint for system-prompt cache invalidation. */
+  fingerprint(): string {
+    const ws = skillDirFingerprint(path.join(this.workspace, 'skills'))
+    const builtin = skillDirFingerprint(resolveBuiltinSkillsDir())
+    const disabled = [...this.disabledSkills].sort().join(',')
+    return `${ws}|${builtin}|${disabled}`
+  }
+}
+
+function skillDirFingerprint(root: string): string {
+  try {
+    return fs.readdirSync(root)
+      .sort()
+      .map((dir) => {
+        const skillMd = path.join(root, dir, 'SKILL.md')
+        try {
+          return `${dir}:${fs.statSync(skillMd).mtimeMs}`
+        } catch {
+          return ''
+        }
+      })
+      .filter(Boolean)
+      .join(',')
+  } catch {
+    return ''
+  }
 }

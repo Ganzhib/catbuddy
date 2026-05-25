@@ -90,6 +90,7 @@ export class IpcTransport implements AgentTransport {
           event: "turn_end",
           chat_id,
           latency_ms: turn.latencyMs,
+          usage: turn.usage,
           tools_used: turn.toolsUsed?.length
             ? ([...new Set(turn.toolsUsed)] as string[])
             : undefined,

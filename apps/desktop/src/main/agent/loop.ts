@@ -109,6 +109,7 @@ interface TurnCtx {
   finalContent: string | null;
   toolsUsed: string[];
   context: Context | null;
+  usage: TokenUsage | null;
   allMessages: LLMMessage[];
   /** Index into ``allMessages`` where this turn's new rows start (for SAVE). */
   persistFromIndex: number;
@@ -581,6 +582,7 @@ export class AgentLoop implements RuntimeState {
       finalContent: null,
       toolsUsed: [],
       context: null,
+      usage: null,
       allMessages: [],
       persistFromIndex: 0,
       stopReason: "",
@@ -602,6 +604,8 @@ export class AgentLoop implements RuntimeState {
     }
 
     const trace = newTrace(`sm:${turn.turnId.slice(0, 6)}`);
+
+    this._lastUsage = null;
 
     while (turn.state !== State.DONE) {
       const fromState = turn.state;
@@ -656,10 +660,14 @@ export class AgentLoop implements RuntimeState {
       isHeartbeatMessage(turn.msg) &&
       shouldSuppressHeartbeatOutbound(turn.finalContent);
     if (!suppressComplete) {
+      const usage =
+        turn.usage
+        ?? this._lastUsage
+        ?? { inputTokens: 0, outputTokens: 0 };
       streamCallbacks?.onTurnComplete?.({
         content: turn.finalContent ?? "",
         toolsUsed: turn.toolsUsed,
-        usage: { inputTokens: 0, outputTokens: 0 },
+        usage,
         latencyMs: Math.round(performance.now() - turn.startedAt),
       });
     }
@@ -825,7 +833,6 @@ export class AgentLoop implements RuntimeState {
           onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
         });
       });
-      this._lastUsage = result.usage;
     } finally {
       this.tools.setFileEditCallback(undefined);
     }
@@ -833,8 +840,10 @@ export class AgentLoop implements RuntimeState {
     ctx.finalContent = result.finalContent;
     ctx.toolsUsed = result.toolsUsed;
     ctx.allMessages = result.messages;
+    ctx.usage = result.usage;
     ctx.persistFromIndex = persistFromIndex;
     ctx.stopReason = result.stopReason;
+    this._lastUsage = result.usage;
 
     // 通知流结束
     cbs?.onStreamEnd?.(streamId, false);

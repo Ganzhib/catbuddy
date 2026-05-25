@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { MarkdownText, preloadMarkdownText } from "@/components/MarkdownText";
 import { cn } from "@/lib/utils";
-import { formatTurnLatency } from "@/lib/format";
+import { formatTokenCount, formatTurnLatency } from "@/lib/format";
 import { ProgressTraceLines, ToolCallCards } from "@/components/thread/ToolCallCards";
 import type { UIImage, UIMediaAttachment, UIMessage } from "@catbuddy/shared";
 
@@ -105,12 +105,22 @@ export function MessageBubble({
   const showAssistantActions = message.role === "assistant" && !message.isStreaming && !empty;
   const showCopyButton = showAssistantCopyAction && showAssistantActions;
   const latencyMs = message.latencyMs;
+  const tokenUsage = message.tokenUsage;
+  const hasTokenUsage =
+    !!tokenUsage
+    && (tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0);
   const showLatencyFooter =
     message.role === "assistant"
     && latencyMs != null
     && !message.isStreaming
     && (!empty || hasReasoning || media.length > 0);
-  const showAssistantFooterRow = showCopyButton || showLatencyFooter;
+  const showTokenFooter =
+    message.role === "assistant"
+    && hasTokenUsage
+    && !message.isStreaming
+    && (!empty || hasReasoning || media.length > 0);
+  const showTurnFooter = showCopyButton || showLatencyFooter || showTokenFooter;
+  const showAssistantFooterRow = showTurnFooter;
   return (
     <div className={cn("w-full text-[15px]", baseAnim)} style={{ lineHeight: "var(--cjk-line-height)" }}>
       {hasReasoning ? (
@@ -143,12 +153,31 @@ export function MessageBubble({
                   )}
                 </button>
               ) : null}
+              {showTokenFooter && tokenUsage ? (
+                <span
+                  className="text-[11px] leading-none text-muted-foreground/70 tabular-nums"
+                  title={t("message.turnTokensTitle", {
+                    in: tokenUsage.inputTokens.toLocaleString(),
+                    out: tokenUsage.outputTokens.toLocaleString(),
+                  })}
+                >
+                  {t("message.turnTokensCompact", {
+                    in: formatTokenCount(tokenUsage.inputTokens),
+                    out: formatTokenCount(tokenUsage.outputTokens),
+                  })}
+                </span>
+              ) : null}
+              {showLatencyFooter && showTokenFooter ? (
+                <span className="text-[11px] text-muted-foreground/45" aria-hidden>
+                  {t("message.turnFooterSeparator")}
+                </span>
+              ) : null}
               {showLatencyFooter ? (
                 <span
                   className="text-[11px] leading-none text-muted-foreground/70 tabular-nums"
                   title={t("message.turnLatencyTitle")}
                 >
-                  {formatTurnLatency(latencyMs)}
+                  {formatTurnLatency(latencyMs!)}
                 </span>
               ) : null}
             </div>

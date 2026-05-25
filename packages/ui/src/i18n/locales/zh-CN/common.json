@@ -103,7 +103,7 @@
     "skills": {
       "loading": "正在加载 Skills…",
       "installedTitle": "工作区已安装",
-      "installedHelp": "切换启用状态会立即生效，下一条消息即更新 Agent 上下文（热启动）。",
+      "installedHelp": "切换启用状态会立即生效；下一条消息会重新组装 Agent 上下文，未改动的系统提示词会使用缓存。",
       "enabled": "已启用",
       "disabled": "已禁用",
       "enable": "启用 {{name}}",
@@ -196,7 +196,7 @@
       "provider": "选择新模型请求使用的服务提供商。",
       "model": "设置 catbuddy 默认使用的模型名称。",
       "configPath": "当前网关正在使用的配置文件。",
-      "compactionEnable": "自动压缩旧对话以节省 token。",
+      "compactionEnable": "自动压缩旧对话以节省 token（Agent 状态机 COMPACT 步骤）。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
     },
     "values": {
@@ -490,7 +490,10 @@
     "imageAttachment": "图片附件",
     "copyReply": "复制回复",
     "copiedReply": "已复制回复",
-    "turnLatencyTitle": "本轮耗时（端到端）"
+    "turnLatencyTitle": "本轮耗时（端到端）",
+    "turnTokensCompact": "↓{{in}} ↑{{out}}",
+    "turnTokensTitle": "Token 用量：输入 {{in}} · 输出 {{out}}",
+    "turnFooterSeparator": "·"
   },
   "lightbox": {
     "title": "图片预览",

@@ -1,11 +1,16 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import type { FileAccessMode } from '../../security/index.js'
 import type { FileSystem } from './file-system.js'
+import { SystemPromptCache } from './prompt-cache.js'
 import type { SkillLoader } from './skill-loader.js'
 import type { TemplateLoader } from './template-loader.js'
 import type { BuildSystemPromptOptions } from './types.js'
 import { BOOTSTRAP_FILES } from './types.js'
 
 export class PromptBuilder {
+  private cache = new SystemPromptCache()
+
   constructor(
     private fs: FileSystem,
     private templates: TemplateLoader,
@@ -17,9 +22,61 @@ export class PromptBuilder {
     private usesGlobalProfile: () => boolean,
   ) {}
 
+  invalidateCache(): void {
+    this.cache.clear()
+  }
+
   buildSystemPrompt(opts?: BuildSystemPromptOptions): string {
-    const parts: string[] = []
     const channel = opts?.channel ?? 'desktop'
+    const key = `${channel}:${this._fingerprint()}`
+    const cached = this.cache.get(key)
+    if (cached !== undefined) return cached
+
+    const prompt = this._assembleSystemPrompt(channel)
+    this.cache.set(key, prompt)
+    return prompt
+  }
+
+  buildRuntimeContext(channel?: string, chatId?: string, senderId?: string, timezone?: string): string {
+    const now = new Date().toISOString()
+    const parts = [`Time: ${now} (${timezone ?? 'UTC'})`]
+    if (channel) parts.push(`Channel: ${channel}`)
+    if (chatId) parts.push(`Chat ID: ${chatId}`)
+    if (senderId) parts.push(`Sender: ${senderId}`)
+    return parts.length > 1 ? parts.join(' | ') : ''
+  }
+
+  private _fingerprint(): string {
+    const parts = [
+      this.workspace,
+      this.globalWorkspace,
+      this.workRoot,
+      this.fileAccessMode,
+    ]
+    for (const name of BOOTSTRAP_FILES) {
+      const root = name === 'USER.md' && this.usesGlobalProfile()
+        ? this.globalWorkspace
+        : this.workspace
+      parts.push(`${name}:${this._mtime(path.join(root, name))}`)
+    }
+    parts.push(`global-memory:${this._mtime(path.join(this.globalWorkspace, 'memory/MEMORY.md'))}`)
+    if (this.usesGlobalProfile()) {
+      parts.push(`project-memory:${this._mtime(path.join(this.workspace, 'memory/MEMORY.md'))}`)
+    }
+    parts.push(`skills:${this.skills.fingerprint()}`)
+    return parts.join('\0')
+  }
+
+  private _mtime(filePath: string): string {
+    try {
+      return String(fs.statSync(filePath).mtimeMs)
+    } catch {
+      return '0'
+    }
+  }
+
+  private _assembleSystemPrompt(channel: string): string {
+    const parts: string[] = []
 
     const identity = this.templates.renderIdentity(
       channel,
@@ -64,14 +121,5 @@ export class PromptBuilder {
     }
 
     return parts.join('\n\n---\n\n')
-  }
-
-  buildRuntimeContext(channel?: string, chatId?: string, senderId?: string, timezone?: string): string {
-    const now = new Date().toISOString()
-    const parts = [`Time: ${now} (${timezone ?? 'UTC'})`]
-    if (channel) parts.push(`Channel: ${channel}`)
-    if (chatId) parts.push(`Chat ID: ${chatId}`)
-    if (senderId) parts.push(`Sender: ${senderId}`)
-    return parts.length > 1 ? parts.join(' | ') : ''
   }
 }

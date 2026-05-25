@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useClient } from "@/providers/ClientProvider";
 import { toMediaAttachment } from "@/lib/media";
 import { linesFromToolProgress, upsertToolProgress } from "@catbuddy/client";
-import type { ToolProgressEvent } from "@catbuddy/shared";
+import type { ToolProgressEvent, TokenUsage } from "@catbuddy/shared";
 import type { StreamError } from "@catbuddy/client";
 import type {
   InboundEvent,
@@ -177,15 +177,27 @@ function pruneReasoningOnlyPlaceholders(prev: UIMessage[]): UIMessage[] {
   });
 }
 
-function stampLastAssistantLatency(prev: UIMessage[], latencyMs: number): UIMessage[] {
+function stampLastAssistantTurnStats(
+  prev: UIMessage[],
+  stats: { latencyMs?: number; tokenUsage?: TokenUsage },
+): UIMessage[] {
   for (let i = prev.length - 1; i >= 0; i -= 1) {
     const m = prev[i];
     if (m.role === "assistant" && m.kind !== "trace") {
-      const merged: UIMessage = { ...m, latencyMs, isStreaming: false };
+      const merged: UIMessage = {
+        ...m,
+        isStreaming: false,
+        ...(stats.latencyMs !== undefined ? { latencyMs: stats.latencyMs } : {}),
+        ...(stats.tokenUsage ? { tokenUsage: stats.tokenUsage } : {}),
+      };
       return [...prev.slice(0, i), merged, ...prev.slice(i + 1)];
     }
   }
   return prev;
+}
+
+function stampLastAssistantLatency(prev: UIMessage[], latencyMs: number): UIMessage[] {
+  return stampLastAssistantTurnStats(prev, { latencyMs });
 }
 
 function appendToolsUsedSummary(
@@ -800,7 +812,12 @@ export function useCatbuddyStream(
             finalized = appendToolsUsedSummary(finalized, ev.tools_used);
           }
           if (typeof ev.latency_ms === "number" && ev.latency_ms >= 0) {
-            finalized = stampLastAssistantLatency(finalized, Math.round(ev.latency_ms));
+            finalized = stampLastAssistantTurnStats(finalized, {
+              latencyMs: Math.round(ev.latency_ms),
+              ...(ev.usage ? { tokenUsage: ev.usage } : {}),
+            });
+          } else if (ev.usage) {
+            finalized = stampLastAssistantTurnStats(finalized, { tokenUsage: ev.usage });
           }
           buffer.current = null;
           activeAssistantRef.current = null;

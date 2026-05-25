@@ -101,6 +101,15 @@ export function fmtDateTime(
   return date ? dateTimeFormatter(activeLocale(locale)).format(date) : "";
 }
 
+/** Compact token count for turn footers (e.g. 12800 → 12.8k). */
+export function formatTokenCount(n: number): string {
+  if (n <= 0) return "0";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 10_000) return `${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
 /** Human-readable turn duration (wall-clock), locale-aware via ``Intl`` (seconds/minutes). */
 export function formatTurnLatency(ms: number, locale?: string): string {
   const loc = activeLocale(locale);

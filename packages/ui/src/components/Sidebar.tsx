@@ -13,12 +13,13 @@ import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { DesktopClientDownload } from "@/components/DesktopClientDownload";
 import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { SidebarNavButton } from "@/components/SidebarNavButton";
+import { SidebarSectionHeader } from "@/components/SidebarSectionHeader";
 import { WorkspaceChatSection } from "@/components/workspace/WorkspaceChatSection";
 import { ChatList } from "@/components/ChatList";
 import { Separator } from "@/components/ui/separator";
 import { useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
 import { brandAssets } from "@/lib/brand";
-import { sb, sbInput, sbSectionTitle } from "@/lib/sidebar-styles";
+import { sb, sbInput } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { SidebarPanel } from "@/lib/sidebar-panel";
 import { hasCatbuddyIpc } from "@catbuddy/platform";
@@ -40,6 +41,7 @@ interface SidebarProps {
 export function Sidebar(props: SidebarProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
+  const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true);
   const isDesktop = hasCatbuddyIpc();
   const {
     store,
@@ -82,6 +84,9 @@ export function Sidebar(props: SidebarProps) {
     props.onSelectPanel("chat");
     props.onSelect(key);
   };
+
+  const chatHistorySessions = isDesktop ? ungroupedSessions : filteredSessions;
+  const showChatHistoryBlock = !isDesktop || ungroupedSessions.length > 0 || props.loading;
 
   return (
     <nav
@@ -198,24 +203,27 @@ export function Sidebar(props: SidebarProps) {
       ) : null}
 
       {/* 聊天记录 */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        {!isDesktop || ungroupedSessions.length > 0 ? (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col ">
+        {showChatHistoryBlock ? (
           <>
-            {isDesktop && store.folders.length > 0 ? (
-              <div className={cn("mb-2 mt-4", sb.px, sbSectionTitle)}>
-                {t("workspace.chatHistoryTitle")}
-              </div>
-            ) : null}
-            <ChatList
-              sessions={isDesktop ? ungroupedSessions : filteredSessions}
-              activeKey={props.activeKey}
-              loading={props.loading}
-              emptyLabel={
-                normalizedQuery ? t("sidebar.noSearchResults") : t("chat.noSessions")
-              }
-              onSelect={selectChat}
-              onRequestDelete={props.onRequestDelete}
+            <SidebarSectionHeader
+              title={t("workspace.chatHistoryTitle")}
+              expanded={chatHistoryExpanded}
+              onToggle={() => setChatHistoryExpanded((v) => !v)}
+              className={cn(isDesktop && store.folders.length > 0 ? "mt-2" : "mt-1")}
             />
+            {chatHistoryExpanded ? (
+              <ChatList
+                sessions={chatHistorySessions}
+                activeKey={props.activeKey}
+                loading={props.loading}
+                emptyLabel={
+                  normalizedQuery ? t("sidebar.noSearchResults") : t("chat.noSessions")
+                }
+                onSelect={selectChat}
+                onRequestDelete={props.onRequestDelete}
+              />
+            ) : null}
           </>
         ) : (
           <div className="flex-1" aria-hidden />

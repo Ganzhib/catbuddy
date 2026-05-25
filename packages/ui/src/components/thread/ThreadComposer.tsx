@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleHelp,
+  Folder,
   FolderUp,
   History,
   ImageIcon,
@@ -45,7 +46,7 @@ import type { SendImage, SendOptions } from "@/hooks/useCatbuddyStream";
 import type { SlashCommand, GoalStateWsPayload } from "@catbuddy/shared";
 import { cn } from "@/lib/utils";
 import { hasCatbuddyIpc, importProjectFolder } from "@catbuddy/platform";
-import { notifyWorkspaceChanged } from "@/hooks/useWorkspaceFolders";
+import { notifyWorkspaceChanged, useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
 
 /** ``<input accept>``: aligned with the server's MIME whitelist. SVG is
  * deliberately excluded to avoid an embedded-script XSS surface. */
@@ -413,6 +414,12 @@ export function ThreadComposer({
 
   const { images, enqueue, remove, clear, encoding, full } =
     useAttachedImages();
+
+  const { store: workspaceStore, selectFolder } = useWorkspaceFolders();
+  const activeWorkspaceFolder = useMemo(
+    () => workspaceStore.folders.find((f) => f.id === workspaceStore.activeFolderId) ?? null,
+    [workspaceStore.activeFolderId, workspaceStore.folders],
+  );
 
   const formatRejection = useCallback(
     (reason: AttachmentError): string => {
@@ -878,26 +885,53 @@ export function ThreadComposer({
               <Plus className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
             </Button>
             {showFolderUpload ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                disabled={disabled || importingFolder}
-                aria-label={t("thread.composer.uploadFolder")}
-                onClick={() => void handleImportFolder()}
-                className={cn(
-                  "rounded-full text-muted-foreground hover:text-foreground",
-                  isHero
-                    ? "h-9 w-9 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card"
-                    : "h-7.5 w-7.5 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card",
-                )}
-              >
-                {importingFolder ? (
-                  <Loader2 className={cn(isHero ? "h-5 w-5" : "h-4 w-4", "animate-spin")} />
-                ) : (
-                  <FolderUp className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
-                )}
-              </Button>
+              activeWorkspaceFolder ? (
+                <div
+                  className={cn(
+                    "flex max-w-[11rem] shrink-0 items-center gap-1 rounded-full border border-border/55 bg-card px-2 shadow-[0_2px_8px_rgba(15,23,42,0.05)] sm:max-w-[14rem]",
+                    isHero ? "h-9 text-[12px]" : "h-7.5 text-[11px]",
+                  )}
+                  title={activeWorkspaceFolder.name}
+                >
+                  <Folder className={cn("shrink-0 stroke-[1.5]", isHero ? "h-4 w-4" : "h-3.5 w-3.5")} />
+                  <span className="min-w-0 flex-1 truncate font-medium text-foreground/85">
+                    {activeWorkspaceFolder.name}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    aria-label={t("thread.composer.clearFolder")}
+                    onClick={() => void selectFolder(null)}
+                    className={cn(
+                      "inline-flex shrink-0 items-center justify-center rounded-full text-muted-foreground/75 transition-colors hover:bg-muted/60 hover:text-foreground",
+                      isHero ? "h-6 w-6" : "h-5 w-5",
+                    )}
+                  >
+                    <X className={cn(isHero ? "h-3.5 w-3.5" : "h-3 w-3")} aria-hidden />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={disabled || importingFolder}
+                  aria-label={t("thread.composer.uploadFolder")}
+                  onClick={() => void handleImportFolder()}
+                  className={cn(
+                    "rounded-full text-muted-foreground hover:text-foreground",
+                    isHero
+                      ? "h-9 w-9 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card"
+                      : "h-7.5 w-7.5 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card",
+                  )}
+                >
+                  {importingFolder ? (
+                    <Loader2 className={cn(isHero ? "h-5 w-5" : "h-4 w-4", "animate-spin")} />
+                  ) : (
+                    <FolderUp className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
+                  )}
+                </Button>
+              )
             ) : null}
             <div ref={aspectControlRef} className="relative flex items-center gap-1">
               <Button

@@ -87,7 +87,7 @@ function MarketplaceCard({
   );
 }
 
-export function SkillSettings() {
+export function SkillSettings({ variant = "settings" }: { variant?: "settings" | "panel" }) {
   const { t } = useTranslation();
   const { token } = useClient();
   const [skills, setSkills] = useState<SkillInfo[]>([]);
@@ -189,6 +189,12 @@ export function SkillSettings() {
     }
   };
 
+  const isPanel = variant === "panel";
+  const sectionClass = isPanel
+    ? "rounded-[20px] border border-border/40 bg-card/60 shadow-[0_8px_32px_rgba(15,23,42,0.05)]"
+    : "rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
+  const gridClass = isPanel ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2";
+
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center rounded-[24px] border border-border/50 bg-card/75 text-sm text-muted-foreground shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
@@ -214,7 +220,7 @@ export function SkillSettings() {
         </div>
       ) : null}
 
-      <section className="rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <section className={sectionClass}>
         <div className="border-b border-border/45 px-4 py-4 sm:px-5">
           <div className="flex items-center gap-2 text-[15px] font-medium">
             <Store className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -231,7 +237,7 @@ export function SkillSettings() {
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               {t("settings.skills.featuredTitle")}
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={cn("grid gap-3", gridClass)}>
               {featured.map((entry) => (
                 <MarketplaceCard
                   key={entry.id}
@@ -251,7 +257,7 @@ export function SkillSettings() {
             <p className="mb-3 text-[12px] font-medium text-muted-foreground">
               {t("settings.skills.moreTitle")}
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={cn("grid gap-3", gridClass)}>
               {more.map((entry) => (
                 <MarketplaceCard
                   key={entry.id}
@@ -268,7 +274,7 @@ export function SkillSettings() {
       </section>
 
       {workspaceSkills.length > 0 ? (
-        <section className="rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+        <section className={sectionClass}>
           <div className="border-b border-border/45 px-4 py-4 sm:px-5">
             <div className="flex items-center gap-2 text-[15px] font-medium">
               <Puzzle className="h-4 w-4 text-muted-foreground" aria-hidden />

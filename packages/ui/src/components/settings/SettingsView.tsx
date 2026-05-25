@@ -20,8 +20,6 @@ import {
   Layers,
   Moon,
   Orbit,
-  Plug,
-  Puzzle,
   RotateCcw,
   Settings,
   Sparkles,
@@ -43,18 +41,15 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   fetchSettings,
-  hasCatbuddyIpc,
   updateProviderSettings,
   updateSettings,
   updateWebSearchSettings,
 } from "@catbuddy/platform";
-import { McpSettings } from "@/components/settings/McpSettings";
-import { SkillSettings } from "@/components/settings/SkillSettings";
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
 import type { SettingsPayload, WebSearchSettingsUpdate } from "@catbuddy/shared";
 
-type SettingsSectionKey = "general" | "byok" | "mcp" | "skills";
+type SettingsSectionKey = "general" | "byok";
 type ByokPaneKey = "llm" | "web-search";
 
 const LOCAL_UNCONFIGURED_PROVIDER_ORDER = new Map(
@@ -107,21 +102,13 @@ export function SettingsView({
     model: "",
     provider: "",
   });
-  const isDesktop = hasCatbuddyIpc();
   const settingsNavItems = useMemo(
     () =>
-      isDesktop
-        ? ([
-            { key: "general" as const, icon: Settings },
-            { key: "byok" as const, icon: KeyRound },
-            { key: "skills" as const, icon: Puzzle },
-            { key: "mcp" as const, icon: Plug },
-          ] as const)
-        : ([
-            { key: "general" as const, icon: Settings },
-            { key: "byok" as const, icon: KeyRound },
-          ] as const),
-    [isDesktop],
+      ([
+        { key: "general" as const, icon: Settings },
+        { key: "byok" as const, icon: KeyRound },
+      ] as const),
+    [],
   );
 
   const applyPayload = useCallback((payload: SettingsPayload) => {
@@ -399,10 +386,6 @@ export function SettingsView({
                   isRestarting={isRestarting}
                   onOpenByok={() => setActiveSection("byok")}
                 />
-              ) : activeSection === "mcp" ? (
-                <McpSettings />
-              ) : activeSection === "skills" ? (
-                <SkillSettings />
               ) : (
                 <ByokSettings
                   settings={settings}

@@ -47,7 +47,7 @@ function parsePaste(raw: string): Record<string, McpServerConfig> {
   return parsed as Record<string, McpServerConfig>;
 }
 
-export function McpSettings() {
+export function McpSettings({ variant = "settings" }: { variant?: "settings" | "panel" }) {
   const { t } = useTranslation();
   const { token } = useClient();
   const [servers, setServers] = useState<McpSettingsServer[]>([]);
@@ -169,6 +169,11 @@ export function McpSettings() {
     }
   };
 
+  const isPanel = variant === "panel";
+  const sectionClass = isPanel
+    ? "rounded-[20px] border border-border/40 bg-card/60 shadow-[0_8px_32px_rgba(15,23,42,0.05)]"
+    : "rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
+
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center rounded-[24px] border border-border/50 bg-card/75 text-sm text-muted-foreground shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
@@ -191,7 +196,7 @@ export function McpSettings() {
         </div>
       ) : null}
 
-      <section className="rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <section className={sectionClass}>
         <div className="border-b border-border/45 px-4 py-4 sm:px-5">
           <div className="flex items-center gap-2 text-[15px] font-medium">
             <Plug className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -270,7 +275,7 @@ export function McpSettings() {
         ) : null}
       </section>
 
-      <section className="rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <section className={sectionClass}>
         <div className="border-b border-border/45 px-4 py-4 sm:px-5">
           <div className="flex items-center gap-2 text-[15px] font-medium">
             <Store className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -358,7 +363,7 @@ export function McpSettings() {
         </div>
       </section>
 
-      <section className="rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <section className={sectionClass}>
         <div className="border-b border-border/45 px-4 py-4 sm:px-5">
           <h2 className="text-[15px] font-medium">{t("settings.mcp.pasteTitle")}</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">

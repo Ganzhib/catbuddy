@@ -117,6 +117,14 @@ export interface ChatSummary {
   updatedAt: string | null;
   title?: string;
   preview: string;
+  /** Logical workspace folder id grouping this chat history. */
+  workspaceFolderId?: string | null;
+}
+
+export interface WorkspaceFolder {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export type GatewayMode = 'nanobot' | 'gateway'
@@ -369,3 +377,18 @@ export type Outbound =
        * generic websocket protocol for other clients. */
       webui?: true;
     };
+
+export interface WorkspaceProjectInfo {
+  projectRoot: string;
+  catbuddyDir: string;
+  workspace: string;
+}
+
+export interface WorkspaceTreeNode {
+  name: string;
+  path: string;
+  relativePath: string;
+  isDirectory: boolean;
+  isCatbuddyDir: boolean;
+  children?: WorkspaceTreeNode[];
+}

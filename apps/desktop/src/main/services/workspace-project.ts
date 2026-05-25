@@ -3,6 +3,8 @@ import path from "node:path";
 
 const CATBUDDY_DIR_NAME = ".catbuddy-desktop";
 
+export { CATBUDDY_DIR_NAME };
+
 export function getCatbuddyDirFromConfigFile(configFile: string): string {
   return path.dirname(path.dirname(configFile));
 }
@@ -127,12 +129,7 @@ export function ensureCatbuddyDir(projectRoot: string): string {
 
 export function resolveProjectRootForImport(
   selectedPath: string,
-  currentProjectRoot: string,
+  _currentProjectRoot: string,
 ): string {
-  const resolved = path.resolve(selectedPath);
-  const parent = path.dirname(resolved);
-  if (parent.startsWith(currentProjectRoot) || currentProjectRoot.startsWith(parent)) {
-    return currentProjectRoot;
-  }
-  return parent;
+  return path.resolve(selectedPath);
 }

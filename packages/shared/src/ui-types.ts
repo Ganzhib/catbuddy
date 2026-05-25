@@ -125,6 +125,10 @@ export interface WorkspaceFolder {
   id: string;
   name: string;
   createdAt: string;
+  /** Project root directory (e.g. selected folder A). */
+  projectRoot: string;
+  /** `.catbuddy-desktop` inside project root. */
+  catbuddyDir: string;
 }
 
 export type GatewayMode = 'nanobot' | 'gateway'

@@ -2,6 +2,7 @@
  * Subagent manager for background task execution.
  * 对应 example/agent/subagent.py
  */
+import * as path from 'node:path'
 import { nanoid } from 'nanoid'
 import type { LLMProvider } from '../providers/base-provider'
 import type { MessageBus } from '../bus'
@@ -51,16 +52,45 @@ export class SubagentManager {
   private readonly _sessionTasks = new Map<string, Set<string>>()
   maxConcurrentSubagents = 3
 
+  private _workspace: string
+  private _projectRoot: string
+  private _catbuddyDir: string
+  private _restrictToWorkspace: boolean
+
   constructor(
     private provider: LLMProvider,
-    readonly workspace: string,
+    workspace: string,
     private readonly bus: MessageBus,
     private model: string,
     private readonly maxToolResultChars: number,
     private readonly maxIterations: number,
-    private readonly restrictToWorkspace: boolean,
+    restrictToWorkspace: boolean,
+    projectRoot?: string,
+    catbuddyDir?: string,
   ) {
+    this._workspace = workspace
+    this._projectRoot =
+      projectRoot ?? path.dirname(path.dirname(path.resolve(workspace)))
+    this._catbuddyDir =
+      catbuddyDir ?? path.join(this._projectRoot, '.catbuddy-desktop')
+    this._restrictToWorkspace = restrictToWorkspace
     this.runner = new AgentRunner(provider)
+  }
+
+  get workspace(): string {
+    return this._workspace
+  }
+
+  setWorkArea(opts: {
+    workspace: string
+    projectRoot: string
+    catbuddyDir: string
+    restrictToWorkspace: boolean
+  }): void {
+    this._workspace = opts.workspace
+    this._projectRoot = opts.projectRoot
+    this._catbuddyDir = opts.catbuddyDir
+    this._restrictToWorkspace = opts.restrictToWorkspace
   }
 
   setProvider(provider: LLMProvider, model: string): void {
@@ -71,7 +101,8 @@ export class SubagentManager {
 
   private _buildTools(): ToolRegistry {
     const registry = new ToolRegistry()
-    registry.setWorkspace(this.workspace, this.restrictToWorkspace)
+    registry.setWorkspace(this._workspace, this._restrictToWorkspace)
+    registry.setProjectRoot(this._projectRoot, this._catbuddyDir)
     const ctx = registry.createToolContext()
     for (const factory of builtinToolFactories) {
       const tool = factory(ctx)
@@ -158,7 +189,7 @@ export class SubagentManager {
       const messages = [
         {
           role: 'system' as const,
-          content: `You are a subagent working in ${this.workspace}. Complete the task and return a concise final answer.`,
+          content: `You are a subagent working in project root ${this._projectRoot}. Complete the task and return a concise final answer.`,
         },
         { role: 'user' as const, content: task },
       ]

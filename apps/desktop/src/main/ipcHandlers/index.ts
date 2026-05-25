@@ -9,6 +9,9 @@ import { SessionManager } from '../session/session-manager'
 import { saveConfig } from '../config/persist'
 import { buildSettingsPayload } from '../config/env-provider-fallback'
 import { MCP_MARKETPLACE, resolveMarketplaceConfig } from '../config/mcp-marketplace.js'
+import { SKILL_MARKETPLACE } from '../config/skill-marketplace.js'
+import { installBuiltinSkillToWorkspace } from '../agent/skill-install.js'
+import { applySkillToggle } from '../agent/skill.js'
 import { validateMcpServers } from '../config/mcp-config.js'
 import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
@@ -298,6 +301,31 @@ export function registerIpcHandlers(
     const disabled = agentLoop.toggleSkill(name, enabled)
     config.agents.defaults.disabledSkills = disabled
     persistConfig()
+  })
+
+  ipcMain.handle('skills:marketplace-list', async () => SKILL_MARKETPLACE)
+
+  ipcMain.handle('skills:marketplace-install', async (_event, { id }: { id: string }) => {
+    const entry = SKILL_MARKETPLACE.find((item) => item.id === id)
+    if (!entry) throw new Error(`Unknown marketplace entry: ${id}`)
+
+    const workspace = agentLoop.workspace
+    const { alreadyInstalled } = installBuiltinSkillToWorkspace(entry.skillName, workspace)
+
+    let disabled = config.agents.defaults.disabledSkills ?? []
+    if (disabled.includes(entry.skillName)) {
+      disabled = applySkillToggle(disabled, entry.skillName, true)
+      config.agents.defaults.disabledSkills = disabled
+      agentLoop.setDisabledSkills(disabled)
+      persistConfig()
+    }
+
+    const skills = agentLoop.listSkills()
+    const message = alreadyInstalled
+      ? `「${entry.name}」已在工作区。已启用，发送下一条消息即可使用（无需新开对话或重启）。`
+      : `已安装「${entry.name}」并启用。发送下一条消息即可加载到 Agent 上下文（热启动，无需新开对话或重启）。`
+
+    return { message, skills, hotReload: true }
   })
 
   // ═══ Restart ═══

@@ -31,6 +31,8 @@ module.exports = {
   WORKSPACE_OPEN_FILE: 'workspace:open-file',
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
+  SKILLS_MARKETPLACE_LIST: 'skills:marketplace-list',
+  SKILLS_MARKETPLACE_INSTALL: 'skills:marketplace-install',
   CHANNELS_STATUS: 'channels:status',
   GATEWAY_STATUS: 'gateway:status',
   GATEWAY_SUBSCRIBE: 'gateway:subscribe-session',

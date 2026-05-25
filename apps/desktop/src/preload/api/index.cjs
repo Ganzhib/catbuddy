@@ -63,6 +63,9 @@ function createCatbuddyApi() {
 
     listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
     toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),
+    listSkillMarketplace: () => ipcRenderer.invoke(IPC.SKILLS_MARKETPLACE_LIST),
+    installSkillFromMarketplace: (id) =>
+      ipcRenderer.invoke(IPC.SKILLS_MARKETPLACE_INSTALL, { id }),
 
     restartApp: () => ipcRenderer.invoke('app:restart'),
 

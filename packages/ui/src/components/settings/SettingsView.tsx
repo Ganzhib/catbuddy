@@ -21,6 +21,7 @@ import {
   Moon,
   Orbit,
   Plug,
+  Puzzle,
   RotateCcw,
   Settings,
   Sparkles,
@@ -48,11 +49,12 @@ import {
   updateWebSearchSettings,
 } from "@catbuddy/platform";
 import { McpSettings } from "@/components/settings/McpSettings";
+import { SkillSettings } from "@/components/settings/SkillSettings";
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
 import type { SettingsPayload, WebSearchSettingsUpdate } from "@catbuddy/shared";
 
-type SettingsSectionKey = "general" | "byok" | "mcp";
+type SettingsSectionKey = "general" | "byok" | "mcp" | "skills";
 type ByokPaneKey = "llm" | "web-search";
 
 const LOCAL_UNCONFIGURED_PROVIDER_ORDER = new Map(
@@ -112,6 +114,7 @@ export function SettingsView({
         ? ([
             { key: "general" as const, icon: Settings },
             { key: "byok" as const, icon: KeyRound },
+            { key: "skills" as const, icon: Puzzle },
             { key: "mcp" as const, icon: Plug },
           ] as const)
         : ([
@@ -398,6 +401,8 @@ export function SettingsView({
                 />
               ) : activeSection === "mcp" ? (
                 <McpSettings />
+              ) : activeSection === "skills" ? (
+                <SkillSettings />
               ) : (
                 <ByokSettings
                   settings={settings}
@@ -492,7 +497,11 @@ function SettingsMobileNav({
         aria-label={t("settings.sidebar.ariaLabel")}
         className={cn(
           "grid gap-1 rounded-[14px] bg-muted/45 p-1",
-          navItems.length >= 3 ? "grid-cols-3" : "grid-cols-2",
+          navItems.length >= 4
+            ? "grid-cols-2 sm:grid-cols-4"
+            : navItems.length >= 3
+              ? "grid-cols-3"
+              : "grid-cols-2",
         )}
       >
         {navItems.map(({ key, icon: Icon }) => {

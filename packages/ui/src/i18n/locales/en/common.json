@@ -80,7 +80,28 @@
     "nav": {
       "general": "General",
       "byok": "BYOK",
+      "skills": "Skills",
       "mcp": "MCP Tools"
+    },
+    "skills": {
+      "loading": "Loading skills…",
+      "installedTitle": "Installed in workspace",
+      "installedHelp": "Toggle takes effect immediately — the next message rebuilds agent context (hot reload).",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "enable": "Enable {{name}}",
+      "disable": "Disable {{name}}",
+      "marketplaceTitle": "Skill marketplace",
+      "marketplaceHelp": "Practical built-in skills, one-click install and auto-enable. No app restart or new chat — send your next message to use them.",
+      "featuredTitle": "Recommended",
+      "moreTitle": "More",
+      "oneClickInstall": "Install",
+      "install": "Install",
+      "installed": "Installed",
+      "installing": "Installing…",
+      "hotReloadHint": "Return to chat and keep going.",
+      "enabledHotReload": "Enabled {{name}} — effective on your next message.",
+      "disabledHotReload": "Disabled {{name}} — effective on your next message."
     },
     "mcp": {
       "loading": "Loading MCP settings…",

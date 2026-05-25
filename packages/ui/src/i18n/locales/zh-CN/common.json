@@ -68,7 +68,28 @@
     "nav": {
       "general": "通用",
       "byok": "BYOK",
+      "skills": "Skills",
       "mcp": "MCP 工具"
+    },
+    "skills": {
+      "loading": "正在加载 Skills…",
+      "installedTitle": "工作区已安装",
+      "installedHelp": "切换启用状态会立即生效，下一条消息即更新 Agent 上下文（热启动）。",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "enable": "启用 {{name}}",
+      "disable": "禁用 {{name}}",
+      "marketplaceTitle": "Skill 市场",
+      "marketplaceHelp": "精选实用能力，一键安装到工作区并自动启用。无需重启应用或新开对话，回到聊天发送下一条消息即可使用。",
+      "featuredTitle": "推荐",
+      "moreTitle": "更多",
+      "oneClickInstall": "一键安装",
+      "install": "安装",
+      "installed": "已安装",
+      "installing": "安装中…",
+      "hotReloadHint": "回到对话直接继续即可。",
+      "enabledHotReload": "已启用 {{name}}，下一条消息生效。",
+      "disabledHotReload": "已禁用 {{name}}，下一条消息生效。"
     },
     "mcp": {
       "loading": "正在加载 MCP 设置…",

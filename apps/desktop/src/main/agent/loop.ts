@@ -4,7 +4,7 @@
  */
 import { nanoid } from "nanoid";
 import * as path from "node:path";
-import { ContextBuilder } from "./context";
+import { ContextBuilder, type Context } from "./context";
 import { AgentRunner } from "./runner";
 import { ToolRegistry } from "./tools";
 import { SessionManager } from "../session/session-manager";
@@ -108,6 +108,7 @@ interface TurnCtx {
   turnId: string;
   finalContent: string | null;
   toolsUsed: string[];
+  context: Context | null;
   allMessages: LLMMessage[];
   /** Index into ``allMessages`` where this turn's new rows start (for SAVE). */
   persistFromIndex: number;
@@ -579,6 +580,7 @@ export class AgentLoop implements RuntimeState {
       turnId: nanoid(),
       finalContent: null,
       toolsUsed: [],
+      context: null,
       allMessages: [],
       persistFromIndex: 0,
       stopReason: "",
@@ -758,7 +760,7 @@ export class AgentLoop implements RuntimeState {
       }):\n${lastSummary.text}`;
     }
 
-    ctx.allMessages = this.context.buildMessages({
+    ctx.context = this.context.build({
       history,
       currentMessage: ctx.msg.content,
       media: ctx.msg.media,
@@ -796,14 +798,18 @@ export class AgentLoop implements RuntimeState {
         ? async (edit) => { await cbs.onFileEdit!(edit) }
         : undefined,
     );
-    const persistFromIndex = ctx.allMessages.length
+    if (!ctx.context) {
+      throw new Error("RUN called without BUILD context");
+    }
+    const persistFromIndex =
+      (ctx.context.system ? 1 : 0) + ctx.context.messages.length;
     const fileStates = this.fileStateStore.forSession(ctx.sessionKey);
     let result;
     try {
       result = await runWithFileStates(fileStates, async () => {
         this.currentIteration = 0;
         return this.runner.run({
-          initialMessages: ctx.allMessages,
+          context: ctx.context!,
           tools: this.tools,
           model: this.model,
           maxIterations: this.maxIterations,

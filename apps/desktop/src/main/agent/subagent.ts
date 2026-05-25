@@ -8,6 +8,7 @@ import type { LLMProvider } from '../providers/base-provider'
 import type { MessageBus } from '../bus'
 import type { InboundMessage, ToolEvent } from '@catbuddy/shared'
 import { AgentRunner, type RunSpec } from './runner'
+import type { Context } from './context'
 import { AgentHook, type AgentHookContext } from './hook'
 import { ToolRegistry } from './tools'
 import { builtinToolFactories } from './tools/builtin'
@@ -186,17 +187,15 @@ export class SubagentManager {
     try {
       const tools = this._buildTools()
       const fileStates = new FileStates()
-      const messages = [
-        {
-          role: 'system' as const,
-          content: `You are a subagent working in project root ${this._projectRoot}. Complete the task and return a concise final answer.`,
-        },
-        { role: 'user' as const, content: task },
-      ]
+      const context: Context = {
+        system: `You are a subagent working in project root ${this._projectRoot}. Complete the task and return a concise final answer.`,
+        messages: [{ role: 'user', content: task }],
+        metadata: {},
+      }
 
       const result = await runWithFileStates(fileStates, () =>
         this.runner.run({
-          initialMessages: messages,
+          context,
           tools,
           model: this.model,
           maxIterations: this.maxIterations,

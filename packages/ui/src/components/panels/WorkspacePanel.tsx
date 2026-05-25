@@ -6,6 +6,8 @@ import { PanelShell } from "@/components/panels/PanelShell";
 import { WorkspaceChatSection } from "@/components/workspace/WorkspaceChatSection";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
+import { panelBtnPrimary, panelSection } from "@/lib/panel-styles";
+import { cn } from "@/lib/utils";
 import type { ChatSummary } from "@catbuddy/shared";
 
 interface WorkspacePanelProps {
@@ -24,7 +26,7 @@ export function WorkspacePanel({
   onBackToChat,
 }: WorkspacePanelProps) {
   const { t } = useTranslation();
-  const { store, loading, error, importFolder } = useWorkspaceFolders();
+  const { store, loading, error, importFolder, selectFolder, removeFolder } = useWorkspaceFolders();
   const [importing, setImporting] = useState(false);
 
   const workspaceSessions = sessions.filter((s) => !!s.workspaceFolderId);
@@ -55,7 +57,7 @@ export function WorkspacePanel({
           <Button
             type="button"
             size="sm"
-            className="rounded-full"
+            className={panelBtnPrimary}
             disabled={importing}
             onClick={() => void handleImport()}
           >
@@ -68,14 +70,18 @@ export function WorkspacePanel({
           </Button>
         </div>
 
-        <section className="rounded-[20px] border border-border/40 bg-card/60 p-3 shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
+        <section className={cn(panelSection, "p-3")}>
           <WorkspaceChatSection
             folders={store.folders}
             sessions={workspaceSessions}
             activeKey={activeKey}
+            activeFolderId={store.activeFolderId}
             loading={loading}
             onSelectChat={onSelectChat}
             onRequestDelete={onRequestDelete}
+            onImportFolder={() => void importFolder()}
+            onRemoveFolder={(id) => removeFolder(id)}
+            onSelectFolder={(id) => selectFolder(id)}
           />
         </section>
       </div>

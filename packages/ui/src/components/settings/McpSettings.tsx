@@ -14,6 +14,8 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { panelBtnPrimary, panelCard, panelSection } from "@/lib/panel-styles";
+import { cn } from "@/lib/utils";
 import {
   addMcpFromMarketplace,
   fetchMcpMarketplace,
@@ -171,12 +173,13 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
 
   const isPanel = variant === "panel";
   const sectionClass = isPanel
-    ? "rounded-[20px] border border-border/40 bg-card/60 shadow-[0_8px_32px_rgba(15,23,42,0.05)]"
-    : "rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
+    ? panelSection
+    : "rounded-[24px] border border-border/50 bg-card shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
+  const innerCardClass = cn(panelCard, "p-4");
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-[24px] border border-border/50 bg-card/75 text-sm text-muted-foreground shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <div className={cn("flex h-48 items-center justify-center text-sm text-muted-foreground", sectionClass)}>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t("settings.mcp.loading")}
       </div>
@@ -258,7 +261,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
           <div className="flex justify-end border-t border-border/45 px-4 py-3 sm:px-5">
             <Button
               size="sm"
-              className="rounded-full"
+              className={panelBtnPrimary}
               onClick={handleSaveAndConnect}
               disabled={saving}
             >
@@ -289,10 +292,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
           {marketplace.map((entry) => {
             const installed = installedIds.has(entry.id);
             return (
-              <article
-                key={entry.id}
-                className="rounded-[18px] border border-border/55 bg-background/60 p-4"
-              >
+              <article key={entry.id} className={innerCardClass}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-[14px] font-medium">{entry.name}</h3>
@@ -330,7 +330,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="mt-3 rounded-full"
+                    className={cn("mt-3", panelBtnPrimary)}
                     onClick={() => void handleCopyTemplate(entry)}
                   >
                     <Copy className="mr-1 h-4 w-4" aria-hidden />
@@ -341,7 +341,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                     type="button"
                     size="sm"
                     variant={installed ? "outline" : "default"}
-                    className="mt-3 rounded-full"
+                    className={cn("mt-3", panelBtnPrimary)}
                     disabled={installed || addingId === entry.id || saving}
                     onClick={() => void handleMarketplaceAdd(entry)}
                   >
@@ -382,7 +382,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
               type="button"
               size="sm"
               variant="outline"
-              className="rounded-full"
+              className={panelBtnPrimary}
               disabled={!pasteText.trim() || saving}
               onClick={handlePasteMerge}
             >

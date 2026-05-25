@@ -5,31 +5,31 @@
 /* Design tokens — HSL form; light mode uses cool blue-gray (呼应登录页冷色调). */
 @layer base {
   :root {
-    --background: 210 38% 97%;
+    --background: 214 100% 97%;
     --foreground: 220 28% 18%;
-    --card: 210 32% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 220 28% 18%;
-    --popover: 210 32% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 220 28% 18%;
-    --primary: 220 38% 28%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 215 28% 93%;
+    --primary: 221 30% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 60% 95%;
     --secondary-foreground: 220 25% 16%;
-    --muted: 215 26% 92%;
+    --muted: 214 60% 95%;
     --muted-foreground: 220 12% 42%;
-    --accent: 214 30% 90%;
+    --accent: 214 70% 93%;
     --accent-foreground: 220 25% 16%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 215 22% 84%;
-    --input: 215 22% 84%;
-    --ring: 220 35% 32%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 221 30% 25%;
     --radius: 0.4375rem;
-    --sidebar: 212 34% 95%;
-    --sidebar-foreground: 220 25% 16%;
-    --sidebar-accent: 215 28% 89%;
-    --sidebar-accent-foreground: 220 25% 14%;
-    --sidebar-border: 215 20% 82%;
+    --sidebar: 210 20% 98%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 88%;
   }
 
   .dark {
@@ -294,6 +294,24 @@
     display: none;
     height: 0;
     width: 0;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* 右侧面板画布 — 与聊天区 body 渐变一致 */
+  .panel-canvas {
+    background-image:
+      radial-gradient(ellipse 85% 60% at 80% 10%, hsl(210 100% 96% / 0.7), transparent 55%),
+      radial-gradient(ellipse 75% 55% at 15% 90%, hsl(214 95% 94% / 0.5), transparent 50%),
+      linear-gradient(160deg, #eff6ff 0%, #e8f2fc 42%, #dbeafe 100%);
   }
 
   /* Frosted glass login card — saturation boost for richer blur on soft gradients */

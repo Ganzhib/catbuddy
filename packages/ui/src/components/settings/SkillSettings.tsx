@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { panelBtnPrimary, panelCard, panelSection } from "@/lib/panel-styles";
 import {
   fetchSkillMarketplace,
   installSkillFromMarketplace,
@@ -38,7 +39,9 @@ function MarketplaceCard({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-[18px] border border-border/50 bg-background/60 p-4 shadow-sm transition-colors",
+        "flex flex-col",
+        panelCard,
+        "p-4 shadow-sm transition-colors",
         entry.featured && "ring-1 ring-primary/15",
       )}
     >
@@ -70,7 +73,7 @@ function MarketplaceCard({
         variant={installed ? "secondary" : "default"}
         disabled={installing}
         onClick={onInstall}
-        className="mt-3 w-full"
+        className={cn("mt-3 w-full", panelBtnPrimary)}
       >
         {installing ? (
           <>
@@ -191,13 +194,13 @@ export function SkillSettings({ variant = "settings" }: { variant?: "settings" |
 
   const isPanel = variant === "panel";
   const sectionClass = isPanel
-    ? "rounded-[20px] border border-border/40 bg-card/60 shadow-[0_8px_32px_rgba(15,23,42,0.05)]"
-    : "rounded-[24px] border border-border/50 bg-card/75 shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
+    ? panelSection
+    : "rounded-[24px] border border-border/50 bg-card shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
   const gridClass = isPanel ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2";
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-[24px] border border-border/50 bg-card/75 text-sm text-muted-foreground shadow-[0_20px_70px_rgba(15,23,42,0.07)]">
+      <div className={cn("flex h-48 items-center justify-center text-sm text-muted-foreground", sectionClass)}>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t("settings.skills.loading")}
       </div>

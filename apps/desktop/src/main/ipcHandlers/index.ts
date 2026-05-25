@@ -18,6 +18,7 @@ import {
   createWorkspaceFolderFromPath,
   getActiveWorkspaceFolderId,
   listWorkspaceFolders,
+  removeWorkspaceFolder,
   setActiveWorkspaceFolderId,
 } from '../services/workspace-folders.js'
 import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
@@ -395,6 +396,13 @@ export function registerIpcHandlers(
     async (_event, { folderId }: { folderId: string | null }) => {
       const store = setActiveWorkspaceFolderId(catbuddyDir(), folderId)
       return store
+    },
+  )
+
+  ipcMain.handle(
+    'workspace-folders:remove',
+    async (_event, { folderId }: { folderId: string }) => {
+      return removeWorkspaceFolder(catbuddyDir(), folderId)
     },
   )
 

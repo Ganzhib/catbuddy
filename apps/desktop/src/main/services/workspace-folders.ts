@@ -106,3 +106,16 @@ export function getWorkspaceFolderById(
 ): WorkspaceFolder | null {
   return readStore(catbuddyDir).folders.find((f) => f.id === folderId) ?? null;
 }
+
+export function removeWorkspaceFolder(
+  catbuddyDir: string,
+  folderId: string,
+): WorkspaceFolderStore {
+  const store = readStore(catbuddyDir);
+  store.folders = store.folders.filter((f) => f.id !== folderId);
+  if (store.activeFolderId === folderId) {
+    store.activeFolderId = store.folders[0]?.id ?? null;
+  }
+  writeStore(catbuddyDir, store);
+  return store;
+}

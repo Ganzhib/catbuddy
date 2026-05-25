@@ -19,6 +19,7 @@ export { openWorkspaceFile } from './workspace-file'
 export {
   fetchWorkspaceFolders,
   setActiveWorkspaceFolder,
+  removeWorkspaceFolder,
   importProjectFolder,
   type WorkspaceFolderStore,
   type WorkspaceImportResult,

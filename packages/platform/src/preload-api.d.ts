@@ -78,6 +78,10 @@ export interface CatbuddyPreloadApi {
     activeFolderId: string | null
     folders: import('@catbuddy/shared').WorkspaceFolder[]
   }>
+  removeWorkspaceFolder?(folderId: string): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
 
   listSkills(): Promise<SkillInfo[]>
   toggleSkill(name: string, enabled: boolean): Promise<void>

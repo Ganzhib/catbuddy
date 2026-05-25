@@ -28,6 +28,13 @@ export async function setActiveWorkspaceFolder(
   return window.catbuddy.setActiveWorkspaceFolder(folderId);
 }
 
+export async function removeWorkspaceFolder(
+  folderId: string,
+): Promise<WorkspaceFolderStore | null> {
+  if (!hasCatbuddyIpc() || !window.catbuddy?.removeWorkspaceFolder) return null;
+  return window.catbuddy.removeWorkspaceFolder(folderId);
+}
+
 export async function importProjectFolder(): Promise<WorkspaceImportResult> {
   if (!hasCatbuddyIpc() || !window.catbuddy?.importProjectFolder) {
     return { ok: false, error: "desktop_only" };

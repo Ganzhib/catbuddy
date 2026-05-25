@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchWorkspaceFolders,
   importProjectFolder,
+  removeWorkspaceFolder,
   setActiveWorkspaceFolder,
   type WorkspaceFolderStore,
 } from "@catbuddy/platform";
@@ -63,5 +64,13 @@ export function useWorkspaceFolders() {
     }
   }, []);
 
-  return { store, loading, error, refresh, importFolder, selectFolder };
+  const removeFolder = useCallback(async (folderId: string) => {
+    const next = await removeWorkspaceFolder(folderId);
+    if (next) {
+      setStore(next);
+      notifyWorkspaceChanged();
+    }
+  }, []);
+
+  return { store, loading, error, refresh, importFolder, selectFolder, removeFolder };
 }

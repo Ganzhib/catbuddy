@@ -35,6 +35,7 @@ module.exports = {
   WORKSPACE_IMPORT_FOLDER: 'workspace:import-folder',
   WORKSPACE_FOLDERS_LIST: 'workspace-folders:list',
   WORKSPACE_FOLDERS_SET_ACTIVE: 'workspace-folders:set-active',
+  WORKSPACE_FOLDERS_REMOVE: 'workspace-folders:remove',
   SKILLS_LIST: 'skills:list',
   SKILLS_TOGGLE: 'skills:toggle',
   SKILLS_MARKETPLACE_LIST: 'skills:marketplace-list',

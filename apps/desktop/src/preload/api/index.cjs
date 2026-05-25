@@ -68,6 +68,8 @@ function createCatbuddyApi() {
     listWorkspaceFolders: () => ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_LIST),
     setActiveWorkspaceFolder: (folderId) =>
       ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_SET_ACTIVE, { folderId }),
+    removeWorkspaceFolder: (folderId) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_REMOVE, { folderId }),
 
     listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
     toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),

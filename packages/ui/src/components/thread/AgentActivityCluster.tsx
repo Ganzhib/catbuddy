@@ -280,6 +280,7 @@ export function AgentActivityCluster({
                   path={singleFilePath}
                   tooltipPath={singleFileTooltipPath}
                   active={hasLiveEditingFiles}
+                  openOnClick={false}
                   className="min-w-0"
                   textClassName="text-xs"
                   testId="activity-header-file-reference"

@@ -566,6 +566,7 @@ interface TraceGroupProps {
  */
 export function TraceGroup({ message, animClass }: TraceGroupProps) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const toolCount = message.toolProgress
     ? Object.keys(message.toolProgress).length
     : 0;
@@ -593,7 +594,6 @@ export function TraceGroup({ message, animClass }: TraceGroupProps) {
   const lines = progressOnly;
   const count = lines.length;
   if (count === 0) return null;
-  const [open, setOpen] = useState(false);
   return (
     <div className={cn("w-full", animClass)}>
       <button

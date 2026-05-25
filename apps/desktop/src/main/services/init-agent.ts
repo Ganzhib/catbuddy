@@ -16,6 +16,7 @@ import {
   type DesktopRuntimeRefs,
 } from "./workspace-anchor.js";
 import { startDesktopCron } from "../cron/index.js";
+import { startDesktopHeartbeat } from "../heartbeat/index.js";
 import {
   getActiveWorkspaceFolderId,
   getWorkspaceFolderById,
@@ -122,7 +123,11 @@ export async function initAgent(): Promise<AgentRuntime> {
   registerIpcHandlers(runtime, () => gatewayState.gatewayWsClient);
 
   const cron = startDesktopCron(runtime);
-  app.on("will-quit", () => cron.stopAll());
+  const heartbeat = startDesktopHeartbeat(runtime);
+  app.on("will-quit", () => {
+    cron.stopAll();
+    heartbeat.stopAll();
+  });
 
   channelManager.start();
   agentLoop.run().catch((err) =>

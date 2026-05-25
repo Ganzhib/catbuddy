@@ -24,6 +24,14 @@ import { FileStateStore, runWithFileStates } from "./tools/file_state";
 import { createMyTool } from "./tools/self";
 import { createSpawnTool, type SpawnContext } from "./tools/spawn";
 import { McpManager } from "./tools/mcp";
+import {
+  isHeartbeatMessage,
+  shouldSuppressHeartbeatOutbound,
+} from "../heartbeat/prompt.js";
+import {
+  runHeartbeatOnce,
+  type HeartbeatRunResult,
+} from "../heartbeat/index.js";
 import type { RuntimeState } from "./tools/runtime_state";
 import { LLMProvider } from "../providers";
 import type { catbuddyConfig, TokenUsage } from "@catbuddy/shared";
@@ -412,7 +420,8 @@ export class AgentLoop implements RuntimeState {
     /** 本 turn 是否已通过 delta 推送过正文（跨 stream segment 累计，不在 segment 结束时清零） */
     let hadStreamedContent = false;
 
-    const cbs: StreamCallbacks = {
+    const heartbeatTurn = isHeartbeatMessage(msg);
+    const cbs: StreamCallbacks = heartbeatTurn ? {} : {
       onStreamDelta: (delta) => {
         hadStreamedContent = true;
         streamChunks++;
@@ -496,6 +505,13 @@ export class AgentLoop implements RuntimeState {
     try {
       turnLog.step("process");
       const response = await this.process(msg, cbs);
+      if (
+        heartbeatTurn &&
+        shouldSuppressHeartbeatOutbound(response?.content)
+      ) {
+        turnLog.debug("heartbeat suppressed (nothing to notify)");
+        return;
+      }
       if (response?.content?.trim()) {
         if (hadStreamedContent) {
           turnLog.debug("skip duplicate outbound (already streamed)");
@@ -634,12 +650,17 @@ export class AgentLoop implements RuntimeState {
       turn.state = toState;
     }
 
-    streamCallbacks?.onTurnComplete?.({
-      content: turn.finalContent ?? "",
-      toolsUsed: turn.toolsUsed,
-      usage: { inputTokens: 0, outputTokens: 0 },
-      latencyMs: Math.round(performance.now() - turn.startedAt),
-    });
+    const suppressComplete =
+      isHeartbeatMessage(turn.msg) &&
+      shouldSuppressHeartbeatOutbound(turn.finalContent);
+    if (!suppressComplete) {
+      streamCallbacks?.onTurnComplete?.({
+        content: turn.finalContent ?? "",
+        toolsUsed: turn.toolsUsed,
+        usage: { inputTokens: 0, outputTokens: 0 },
+        latencyMs: Math.round(performance.now() - turn.startedAt),
+      });
+    }
 
     return turn.outbound;
   }
@@ -652,6 +673,8 @@ export class AgentLoop implements RuntimeState {
   }
 
   private async _state_compact(ctx: TurnCtx): Promise<string> {
+    if (isHeartbeatMessage(ctx.msg)) return "ok";
+
     const allMessages = this.sessions.getHistory(ctx.sessionKey, {
       maxMessages: 9999,
     });
@@ -752,13 +775,14 @@ export class AgentLoop implements RuntimeState {
     ctx: TurnCtx,
     cbs?: StreamCallbacks,
   ): Promise<string> {
-    // 持久化用户消息
-    this.sessions.addMessage(ctx.sessionKey, {
-      role: "user",
-      content: ctx.msg.content,
-      media: ctx.msg.media,
-      timestamp: new Date().toISOString(),
-    });
+    if (!isHeartbeatMessage(ctx.msg)) {
+      this.sessions.addMessage(ctx.sessionKey, {
+        role: "user",
+        content: ctx.msg.content,
+        media: ctx.msg.media,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     const streamId = `${ctx.sessionKey}:${Date.now()}`;
 
@@ -813,6 +837,8 @@ export class AgentLoop implements RuntimeState {
   }
 
   private async _state_save(ctx: TurnCtx): Promise<string> {
+    if (isHeartbeatMessage(ctx.msg)) return "ok";
+
     const now = new Date().toISOString()
 
     for (const msg of ctx.allMessages.slice(ctx.persistFromIndex)) {
@@ -1017,6 +1043,20 @@ export class AgentLoop implements RuntimeState {
   /** Background Dream cycle (optional cron). */
   async runDreamOnce(): Promise<string | null> {
     return this.dream?.runOnce() ?? null;
+  }
+
+  /** Dispatch a heartbeat check (cron or /heartbeat). */
+  runHeartbeatOnce(opts?: { force?: boolean }): HeartbeatRunResult {
+    if (!this._config || !this.bus) return "skipped";
+    return runHeartbeatOnce(
+      {
+        agentLoop: this,
+        sessions: this.sessions,
+        config: this._config,
+        configFile: "",
+      },
+      opts,
+    );
   }
 
   listSkills(): SkillInfo[] {

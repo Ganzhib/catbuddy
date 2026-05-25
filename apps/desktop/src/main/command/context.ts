@@ -45,6 +45,8 @@ export interface CommandLoopAPI {
 
   runDreamOnce(): Promise<string | null>;
 
+  runHeartbeatOnce?(opts?: { force?: boolean }): "skipped" | "no-tasks" | "dispatched";
+
   readonly tools: {
     readonly toolNames: string[];
   };

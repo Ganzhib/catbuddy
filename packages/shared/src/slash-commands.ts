@@ -53,6 +53,12 @@ export const DESKTOP_BUILTIN_SLASH_COMMANDS: SlashCommand[] = [
     icon: 'scroll-text',
   },
   {
+    command: '/heartbeat',
+    title: 'Heartbeat 检查',
+    description: '立即检查 HEARTBEAT.md 中的周期性任务',
+    icon: 'heart-pulse',
+  },
+  {
     command: '/help',
     title: '帮助',
     description: '列出所有可用命令',

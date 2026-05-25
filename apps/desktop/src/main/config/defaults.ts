@@ -24,6 +24,8 @@ export function getDefaultConfig(): catbuddyConfig {
         timezone: 'Asia/Shanghai',
         sessionTtlMinutes: 0,
         dreamIntervalMinutes: 120,
+        heartbeatIntervalMinutes: 30,
+        heartbeatEnabled: true,
         consolidationRatio: 0.5,
         disabledSkills: [],
         unifiedSession: false,

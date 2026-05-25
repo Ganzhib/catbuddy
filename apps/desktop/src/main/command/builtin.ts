@@ -13,6 +13,7 @@ import { cmdHistory } from "./handlers/history";
 import { cmdModel } from "./handlers/model";
 import { cmdCompact } from "./handlers/compact";
 import { cmdDream, cmdDreamLog } from "./handlers/dream";
+import { cmdHeartbeat } from "./handlers/heartbeat";
 import { cmdHelp } from "./handlers/help";
 
 export const COMMAND_SPECS: CommandSpec[] = DESKTOP_BUILTIN_SLASH_COMMANDS;
@@ -28,6 +29,7 @@ export function registerBuiltinCommands(router: CommandRouter): void {
   router.exact("/compact", cmdCompact);
   router.exact("/dream", cmdDream);
   router.exact("/dream-log", cmdDreamLog);
+  router.exact("/heartbeat", cmdHeartbeat);
 
   // Prefix：带参数的命令（例如 /model gpt-4）
   router.prefix("/model ", cmdModel);

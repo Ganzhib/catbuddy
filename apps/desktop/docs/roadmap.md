@@ -6,7 +6,7 @@
 |------|------|----------|
 | **Bridge** | `src/main/bridge/` | WhatsApp 等外部 IM 桥接（TypeScript 服务 + 主进程协调） |
 | **Cron** | `src/main/cron/` | ✅ Dream 定时整理（默认 120 分钟，可配置 `dreamIntervalMinutes`） |
-| **Heartbeat** | `src/main/heartbeat/` | 周期性唤醒，检查 HEARTBEAT.md、推送主动消息 |
+| **Heartbeat** | `src/main/heartbeat/` | ✅ 周期性检查 HEARTBEAT.md、主动推送（默认 30 分钟） |
 | **Security** | `src/main/security/` | ✅ SSRF 防护、工作区文件访问策略（PathGuard）；详见 [workspace-and-memory.md](./workspace-and-memory.md) |
 | **CLI** | `src/main/cli/` | 无 UI 的命令行入口（调试/自动化） |
 
@@ -25,7 +25,13 @@
 
 ## Heartbeat
 
-预期职责：后台定时器读取 `templates/HEARTBEAT.md` 等上下文，决定是否向用户通道发送提醒（经 bus.outbound）。
+已实现（`src/main/heartbeat/`）：
+
+- `CronScheduler` 注册 `heartbeat` 任务，间隔 `agents.defaults.heartbeatIntervalMinutes`（默认 30）
+- 无 Active Tasks 时跳过 LLM；有任务或 `/heartbeat` 强制时经 `bus.publishInbound` → `AgentLoop`
+- 回复 `HEARTBEAT_OK` 时不推送 UI、不写入会话历史
+
+手动：`/heartbeat`。配置：`heartbeatEnabled`、`heartbeatIntervalMinutes`。
 
 ## Security
 
@@ -42,8 +48,8 @@ Preload 层另有 bridge 键名校验（`src/preload/security/`）。
 ## 实现优先级建议
 
 1. ~~**Security**（工具上网与文件访问）~~ ✅
-2. **Heartbeat**（与现有 `templates/HEARTBEAT.md` 配套）
-3. **Cron**
+2. ~~**Heartbeat**（与现有 `templates/HEARTBEAT.md` 配套）~~ ✅
+3. ~~**Cron**~~ ✅
 4. **Bridge**（依赖独立服务与打包）
 
 更新实现状态时请同步修改本文件与对应目录 README。

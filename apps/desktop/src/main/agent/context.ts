@@ -115,6 +115,12 @@ export class ContextBuilder {
       const src = path.join(TEMPLATES_DIR, 'memory', 'MEMORY.md')
       if (fs.existsSync(src)) fs.copyFileSync(src, memDest)
     }
+    // HEARTBEAT.md — periodic tasks for background heartbeat
+    const heartbeatDest = path.join(this.workspace, 'HEARTBEAT.md')
+    if (!fs.existsSync(heartbeatDest)) {
+      const src = path.join(TEMPLATES_DIR, 'HEARTBEAT.md')
+      if (fs.existsSync(src)) fs.copyFileSync(src, heartbeatDest)
+    }
   }
 
   /** 构建系统提示词 */

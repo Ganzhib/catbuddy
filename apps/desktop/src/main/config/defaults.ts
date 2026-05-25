@@ -23,6 +23,7 @@ export function getDefaultConfig(): catbuddyConfig {
         maxTokens: 8192,
         timezone: 'Asia/Shanghai',
         sessionTtlMinutes: 0,
+        dreamIntervalMinutes: 120,
         consolidationRatio: 0.5,
         disabledSkills: [],
         unifiedSession: false,
@@ -52,7 +53,7 @@ export function getDefaultConfig(): catbuddyConfig {
       remoteEnabled: false,
     },
     tools: {
-      restrictToWorkspace: false,
+      restrictToWorkspace: true,
       exec: { enable: true },
       web: { enable: true },
       my: { enable: false, allowSet: false },

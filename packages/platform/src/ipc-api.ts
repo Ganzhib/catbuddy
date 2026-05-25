@@ -8,6 +8,7 @@ import type {
   ProviderSettingsUpdate,
   WebSearchSettingsUpdate,
 } from '@catbuddy/shared'
+import { DESKTOP_BUILTIN_SLASH_COMMANDS } from '@catbuddy/shared'
 import { requireIpcBridge } from './ipc-bridge'
 
 export class ApiError extends Error {
@@ -249,9 +250,16 @@ export async function listSlashCommandsIpc(
   _token: string,
   _base: string = '',
 ): Promise<SlashCommand[]> {
-  return [
-    { command: '/new', title: 'New Chat', description: 'Start a fresh conversation', icon: '✨', argHint: '' },
-    { command: '/history', title: 'History', description: 'Show conversation history', icon: '📜', argHint: '' },
-    { command: '/model', title: 'Switch Model', description: 'Switch the AI model for this session', icon: '🧠', argHint: '[model]' },
-  ]
+  try {
+    const api = requireIpcBridge()
+    if (typeof api.listSlashCommands === 'function') {
+      const commands = await api.listSlashCommands()
+      if (Array.isArray(commands) && commands.length > 0) {
+        return commands
+      }
+    }
+  } catch {
+    /* fall through to bundled list */
+  }
+  return DESKTOP_BUILTIN_SLASH_COMMANDS
 }

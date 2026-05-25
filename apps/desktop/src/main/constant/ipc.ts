@@ -35,4 +35,5 @@ export const IPC = {
   SYSTEM_MESSAGE: 'agent:system-message',
   ASSISTANT_MESSAGE: 'agent:assistant-message',
   APP_RESTART: 'app:restart',
+  COMMANDS_LIST: 'commands:list',
 } as const

@@ -46,4 +46,5 @@ module.exports = {
   GATEWAY_SYNC_ALL: 'gateway:sync-all-sessions',
   GATEWAY_SET_ACCOUNT_EMAIL: 'gateway:set-account-email',
   GATEWAY_AUTH_POST: 'gateway:auth-post',
+  COMMANDS_LIST: 'commands:list',
 }

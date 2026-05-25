@@ -119,6 +119,27 @@ export class SessionManager {
     this._cache.set(key, info)
   }
 
+  setMetadata(key: string, patch: Record<string, unknown>) {
+    const fp = this._filePath(key)
+    if (!fs.existsSync(fp)) {
+      const info = this.getOrCreate(key)
+      info.metadata = { ...info.metadata, ...patch }
+      this._cache.set(key, info)
+      return info
+    }
+    const { info, messages } = this._load(fp)
+    info.metadata = { ...info.metadata, ...patch }
+    this._save(info, messages)
+    this._cache.set(key, info)
+    return info
+  }
+
+  getMetadataValue<T>(key: string, field: string): T | undefined {
+    const info = this.get(key) ?? this._cache.get(key)
+    if (!info) return undefined
+    return info.metadata[field] as T | undefined
+  }
+
   delete(key: string): boolean {
     const fp = this._filePath(key)
     this._cache.delete(key)

@@ -17,6 +17,14 @@ export {
 } from './desktop-download'
 export { openWorkspaceFile } from './workspace-file'
 export {
+  fetchWorkspaceFolders,
+  setActiveWorkspaceFolder,
+  importProjectFolder,
+  type WorkspaceFolderStore,
+  type WorkspaceImportResult,
+} from './workspace-folders'
+export { fetchWorkspaceProjectInfo } from './workspace-project-legacy'
+export {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,
 } from './gateway-account-sync'

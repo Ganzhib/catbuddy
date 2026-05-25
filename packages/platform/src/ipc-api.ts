@@ -37,6 +37,10 @@ export async function listSessionsIpc(
     updatedAt: s.updatedAt,
     title: s.title ?? '',
     preview: s.preview ?? '',
+    workspaceFolderId:
+      typeof s.metadata?.workspaceFolderId === 'string'
+        ? s.metadata.workspaceFolderId
+        : null,
   }))
 }
 

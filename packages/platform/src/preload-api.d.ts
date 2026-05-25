@@ -58,6 +58,26 @@ export interface CatbuddyPreloadApi {
     path: string,
     absolutePath?: string,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
+  getWorkspaceProjectInfo?(): Promise<import('@catbuddy/shared').WorkspaceProjectInfo>
+  listWorkspaceEntries?(): Promise<import('@catbuddy/shared').WorkspaceTreeNode[]>
+  listWorkspaceChildren?(dirPath: string): Promise<import('@catbuddy/shared').WorkspaceTreeNode[]>
+  importProjectFolder?(): Promise<{
+    ok: boolean
+    cancelled?: boolean
+    folder?: import('@catbuddy/shared').WorkspaceFolder
+    created?: boolean
+    activeFolderId?: string | null
+    folders?: import('@catbuddy/shared').WorkspaceFolder[]
+    error?: string
+  }>
+  listWorkspaceFolders?(): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
+  setActiveWorkspaceFolder?(folderId: string | null): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
 
   listSkills(): Promise<SkillInfo[]>
   toggleSkill(name: string, enabled: boolean): Promise<void>

@@ -74,9 +74,7 @@ export function ChatList({
                     <div
                       className={cn(
                         "group flex min-w-0 max-w-full items-stretch rounded-lg text-[14px] transition-colors duration-200",
-                        active
-                          ? "bg-[#F0F0F0] dark:bg-sidebar-accent/70"
-                          : cn(sb.surface, sb.bubbleHover),
+                        active ? sb.active : cn(sb.surface, sb.bubbleHover),
                       )}
                     >
                       <button
@@ -97,7 +95,7 @@ export function ChatList({
                               "inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200",
                               sb.iconMuted,
                               sb.iconHover,
-                              "hover:bg-[#EEEEEE] dark:hover:bg-sidebar-accent/55",
+                              sb.iconButtonHover,
                             )}
                             aria-label={t("chat.actions", { title })}
                           >

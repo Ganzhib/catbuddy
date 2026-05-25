@@ -31,9 +31,9 @@ export function SidebarNavButton({
           "rounded",
           sb.surface,
           sb.surfaceHover,
-          active && "ring-1 ring-[#E0E0E0]/80",
+          active && "ring-1 ring-[#C8DCF0]/80",
         ],
-        variant === "plain" && "rounded-lg hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+        variant === "plain" && cn("rounded-lg", sb.hover),
         active ? sb.text : sb.textSecondary,
       )}
     >

@@ -25,11 +25,12 @@
     --input: 214 32% 88%;
     --ring: 221 30% 25%;
     --radius: 0.4375rem;
-    --sidebar: 210 20% 98%;
+  /* #F0F8FF shell · #E0F0FF accent · #C8DCF0 border — 浅蓝灰渐变 */
+    --sidebar: 208 100% 97%;
     --sidebar-foreground: 0 0% 20%;
-    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent: 210 100% 94%;
     --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 0 0% 88%;
+    --sidebar-border: 210 45% 86%;
   }
 
   .dark {

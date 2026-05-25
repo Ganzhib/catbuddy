@@ -113,7 +113,7 @@ export function Sidebar(props: SidebarProps) {
             onClick={props.onNewChat}
             className={cn(
               "inline-flex h-6 w-6 items-center justify-center rounded transition-colors duration-200",
-              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+              sb.iconButtonHover,
               sb.icon,
             )}
           >
@@ -126,7 +126,7 @@ export function Sidebar(props: SidebarProps) {
             onClick={props.onCollapse}
             className={cn(
               "inline-flex h-6 w-6 items-center justify-center rounded transition-colors duration-200",
-              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+              sb.iconButtonHover,
               sb.icon,
             )}
           >
@@ -222,7 +222,7 @@ export function Sidebar(props: SidebarProps) {
         )}
       </div>
 
-      <Separator className={cn("bg-[#E0E0E0]/80 dark:bg-sidebar-border/50")} />
+      <Separator className={cn("bg-[#C8DCF0]/80 dark:bg-sidebar-border/50")} />
       <div className={cn("py-4", sb.px)}>
         <button
           type="button"
@@ -231,7 +231,7 @@ export function Sidebar(props: SidebarProps) {
             "flex h-10 w-full items-center gap-2 rounded-lg px-0",
             "text-[14px] transition-colors duration-200",
             sb.text,
-            "hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+            sb.hover,
           )}
         >
           <Settings className={cn("h-4 w-4 shrink-0", sb.icon)} aria-hidden />

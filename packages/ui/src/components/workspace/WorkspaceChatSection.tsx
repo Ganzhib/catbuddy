@@ -92,7 +92,7 @@ export function WorkspaceChatSection({
       className={cn(
         "flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left",
         sbSectionTitle,
-        "transition-colors duration-200 hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+        sb.hover,
       )}
     >
       <ChevronRight
@@ -126,7 +126,7 @@ export function WorkspaceChatSection({
                 className={cn(
                   "flex w-full items-center gap-2 rounded px-2 py-2 text-[14px]",
                   sb.text,
-                  "transition-colors duration-200 hover:bg-[#F5F5F5]/80 dark:hover:bg-sidebar-accent/45",
+                  sb.hover,
                 )}
               >
                 <FolderPlus className={cn("h-4 w-4 shrink-0", sb.icon)} />
@@ -187,7 +187,7 @@ function FolderGroup({
 
   return (
     <li role="treeitem" aria-expanded={expanded}>
-      <div className="group flex min-w-0 items-center gap-1 rounded-lg pr-1 transition-colors duration-200 hover:bg-[#F5F5F5]/60 dark:hover:bg-sidebar-accent/40">
+      <div className={cn("group flex min-w-0 items-center gap-1 rounded-lg pr-1 transition-colors duration-200", "hover:bg-[#E0F0FF]/60 dark:hover:bg-sidebar-accent/40")}>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -212,7 +212,7 @@ function FolderGroup({
               "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors duration-200",
               sb.iconMuted,
               sb.iconHover,
-              "hover:bg-[#F5F5F5] dark:hover:bg-sidebar-accent/55",
+              sb.iconButtonHover,
             )}
             aria-label={t("workspace.folderActions.menu", { name: folder.name })}
             onClick={(e) => e.stopPropagation()}
@@ -266,7 +266,7 @@ function FolderGroup({
                 className={cn(
                   "w-full rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors duration-200",
                   sb.textMuted,
-                  "hover:bg-[#F5F5F5]/80 hover:text-[#666] dark:hover:bg-sidebar-accent/45",
+                  cn(sb.hover, "hover:text-[#666]"),
                 )}
               >
                 {t("workspace.expandMore", { count: hiddenCount })}
@@ -308,9 +308,7 @@ function ChatRow({
         title={label}
         className={cn(
           "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[14px] transition-colors duration-200",
-          active
-            ? "bg-[#F0F0F0] font-medium dark:bg-sidebar-accent/70"
-            : cn(sb.text, sb.bubbleHover),
+          active ? cn(sb.active, "font-medium") : cn(sb.text, sb.bubbleHover),
         )}
       >
         <Check className={cn("h-4 w-4 shrink-0", sb.iconMuted)} aria-hidden />

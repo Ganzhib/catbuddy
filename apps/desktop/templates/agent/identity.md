@@ -4,9 +4,9 @@
 ## Working area (files & shell)
 Your project root for read/write/edit/exec and relative paths is: {{ work_root }}
 {{#if file_access_project}}
-Operate on files and folders here (alongside `.catbuddy-desktop`). Do not modify `.catbuddy-desktop` — it is reserved for CatBuddy.
+Operate on files and folders here (alongside `.catbuddy`). Do not modify `.catbuddy` — it is reserved for CatBuddy.
 {{else}}
-Restricted mode: only paths under this directory are allowed. Do not access sibling folders on the user profile or anything under `.catbuddy-desktop`.
+Restricted mode: only paths under this directory are allowed. Do not access sibling folders on the user profile or anything under `.catbuddy`.
 {{/if}}
 
 ## CatBuddy internal workspace

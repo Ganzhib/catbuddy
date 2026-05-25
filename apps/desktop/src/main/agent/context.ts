@@ -44,11 +44,11 @@ function loadTemplate(relativePath: string): HandlebarsTemplateDelegate {
 interface ContextBuilderOpts {
   timezone?: string
   disabledSkills?: string[]
-  /** User project root (file tools / exec cwd). Defaults to parent of `.catbuddy-desktop`. */
+  /** User project root (file tools / exec cwd). Defaults to parent of `.catbuddy`. */
   workRoot?: string
   /** Mirrors PathGuard mode — drives identity.md file-access wording. */
   fileAccessMode?: FileAccessMode
-  /** Global user profile workspace (`~/.catbuddy-desktop/workspace`). */
+  /** Global user profile workspace (`~/.catbuddy/workspace`). */
   globalWorkspace?: string
 }
 

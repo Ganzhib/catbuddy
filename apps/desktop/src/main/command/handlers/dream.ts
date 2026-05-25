@@ -46,7 +46,7 @@ export async function cmdDreamLog(ctx: CommandContext): Promise<OutboundMessage>
     path.join(globalWs, "memory", "MEMORY.md"),
   );
   if (globalExcerpt) {
-    parts.push(`### 全局记忆 (~/.catbuddy-desktop)\n${globalExcerpt}`);
+    parts.push(`### 全局记忆 (~/.catbuddy)\n${globalExcerpt}`);
   }
 
   if (isLayeredWorkspace(ws)) {

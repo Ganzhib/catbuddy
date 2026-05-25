@@ -79,7 +79,7 @@
     "folderEmpty": "该工作空间还没有对话。",
     "expandMore": "展开更多 ({{count}})",
     "chatHistoryTitle": "聊天记录",
-    "panelSubtitle": "上传文件夹 A 后，会在 A 下创建 .catbuddy-desktop；AI 可操作 A 内与其同级的所有子文件夹。未上传时默认使用用户目录下的 .catbuddy-desktop。",
+    "panelSubtitle": "上传文件夹 A 后，会在 A 下创建 .catbuddy；AI 可操作 A 内与其同级的所有子文件夹。未上传时默认使用用户目录下的 .catbuddy。",
     "toggleFolderChats": "展开 {{name}} 的对话",
     "importFolder": "导入文件夹",
     "folderActions": {

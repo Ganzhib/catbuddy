@@ -26,7 +26,7 @@ export function fileAccessMode(policy: WorkspaceFileAccessPolicy): FileAccessMod
 /**
  * Default home anchor lives under the user profile; sibling folders there are sensitive.
  * An explicitly imported folder (e.g. D:/Projects/foo) is not sensitive — tools may use
- * the full project root (all paths alongside `.catbuddy-desktop`).
+ * the full project root (all paths alongside `.catbuddy`).
  */
 export function isSensitiveProjectRoot(projectRoot: string): boolean {
   const root = path.resolve(projectRoot);

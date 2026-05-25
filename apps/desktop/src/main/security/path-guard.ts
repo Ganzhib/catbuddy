@@ -12,11 +12,11 @@ import {
 } from "./workspace-access.js";
 
 export interface PathGuardRoots {
-  /** CatBuddy internal agent dir (`…/.catbuddy-desktop/workspace`). */
+  /** CatBuddy internal agent dir (`…/.catbuddy/workspace`). */
   workspace: string;
-  /** User project root (parent of `.catbuddy-desktop`). */
+  /** User project root (parent of `.catbuddy`). */
   projectRoot: string;
-  /** Reserved metadata dir (`…/.catbuddy-desktop`). */
+  /** Reserved metadata dir (`…/.catbuddy`). */
   catbuddyDir: string;
 }
 

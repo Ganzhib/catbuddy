@@ -10,7 +10,7 @@ import {
 export function getDefaultConfig(): catbuddyConfig {
   const home = process.env.HOME || process.env.USERPROFILE || '.'
   return {
-    workspace: `${home}/.catbuddy-desktop/workspace`,
+    workspace: `${home}/.catbuddy/workspace`,
     agents: {
       defaults: {
         model: 'deepseek-v4-flash',

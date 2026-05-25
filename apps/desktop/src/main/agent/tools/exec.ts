@@ -10,7 +10,7 @@ export function createExecTool(ctx: ToolContext): Tool {
       function: {
         name: 'exec',
         description:
-          'Execute a shell command with timeout. Working directory defaults to the project root (alongside .catbuddy-desktop). Output is truncated.',
+          'Execute a shell command with timeout. Working directory defaults to the project root (alongside .catbuddy). Output is truncated.',
         parameters: {
           type: 'object',
           properties: {

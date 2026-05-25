@@ -13,7 +13,7 @@
 
 ## 配置
 
-`~/.catbuddy-desktop/config/config.json`（或项目内 `config/config.json`）：
+`~/.catbuddy/config/config.json`（或项目内 `config/config.json`）：
 
 ```json
 {

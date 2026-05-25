@@ -1,16 +1,16 @@
 # 工作区、安全边界与分层记忆
 
-本文档描述 CatBuddy Desktop 的 **项目锚点**（`.catbuddy-desktop`）、**文件访问安全策略**、**系统提示词对齐**，以及 **全局用户记忆 + 项目记忆** 的分层设计。
+本文档描述 CatBuddy Desktop 的 **项目锚点**（`.catbuddy`）、**文件访问安全策略**、**系统提示词对齐**，以及 **全局用户记忆 + 项目记忆** 的分层设计。
 
-## 1. 为什么需要 `.catbuddy-desktop`
+## 1. 为什么需要 `.catbuddy`
 
-`.catbuddy-desktop` 是嵌入在用户项目根目录下的 **CatBuddy 元数据目录**（类似 `.git`、`.vscode`），用于把「CatBuddy 自身运行时数据」与「用户要操作的文件」分开。
+`.catbuddy` 是嵌入在用户项目根目录下的 **CatBuddy 元数据目录**（类似 `.git`、`.vscode`），用于把「CatBuddy 自身运行时数据」与「用户要操作的文件」分开。
 
 ```
 projectRoot/                    ← 用户项目根（AI 文件/exec 的工作范围）
 ├── my-app/                     ← 用户代码、文档
 ├── docs/
-└── .catbuddy-desktop/          ← CatBuddy 保留区（工具层禁止写入）
+└── .catbuddy/          ← CatBuddy 保留区（工具层禁止写入）
     ├── config/config.json      ← 模型、Provider、MCP 等
     ├── workspace/              ← Agent 内部工作区
     │   ├── AGENTS.md, SOUL.md, USER.md, TOOLS.md
@@ -22,10 +22,10 @@ projectRoot/                    ← 用户项目根（AI 文件/exec 的工作�
 
 ### 1.1 两种锚点模式
 
-| 场景 | `projectRoot` | `.catbuddy-desktop` 位置 |
+| 场景 | `projectRoot` | `.catbuddy` 位置 |
 |------|---------------|---------------------------|
-| 未上传/选择文件夹（默认） | 用户主目录 `~` | `~/.catbuddy-desktop/` |
-| 上传或选择文件夹 `A` | `A/` | `A/.catbuddy-desktop/` |
+| 未上传/选择文件夹（默认） | 用户主目录 `~` | `~/.catbuddy/` |
+| 上传或选择文件夹 `A` | `A/` | `A/.catbuddy/` |
 
 切换工作空间时，`applyProjectAnchor()`（`services/workspace-anchor.ts`）会：
 
@@ -36,7 +36,7 @@ projectRoot/                    ← 用户项目根（AI 文件/exec 的工作�
 工作空间列表注册表 **始终** 存放在主目录：
 
 ```
-~/.catbuddy-desktop/workspace-folders.json
+~/.catbuddy/workspace-folders.json
 ```
 
 ---
@@ -60,7 +60,7 @@ projectRoot + catbuddyDir + workspace ◄───────┘
 | 模块 | 文件 | 职责 |
 |------|------|------|
 | 策略 | `workspace-access.ts` | 判定敏感地区、计算 `restrictToWorkspace` |
-| 执行 | `path-guard.ts` | 路径解析、边界校验、禁止 `.catbuddy-desktop` |
+| 执行 | `path-guard.ts` | 路径解析、边界校验、禁止 `.catbuddy` |
 | 网络 | `network.ts` | SSRF / URL 校验（`web_fetch` 等） |
 
 统一从 `security/index.ts` 导出。
@@ -78,7 +78,7 @@ isSensitiveProjectRoot(projectRoot)  // projectRoot === app.getPath('home')
 | 选了文件夹且 **非** 主目录 | `false` | 整个 `projectRoot` | projectRoot |
 | 选了文件夹但 **是** 主目录 | `true` | 仅 `…/workspace/` | 内部 workspace |
 
-无论哪种模式，**始终禁止**访问 `.catbuddy-desktop` 目录本身。
+无论哪种模式，**始终禁止**访问 `.catbuddy` 目录本身。
 
 ### 2.3 PathGuard
 
@@ -87,7 +87,7 @@ isSensitiveProjectRoot(projectRoot)  // projectRoot === app.getPath('home')
 - `workRoot`：相对路径默认基准
 - `boundary`：允许访问的最大目录
 - `resolve()`：解析 + 校验
-- `assertAllowed()`：拦截越界与 `.catbuddy-desktop`
+- `assertAllowed()`：拦截越界与 `.catbuddy`
 
 ### 2.4 与系统提示词对齐
 
@@ -96,7 +96,7 @@ isSensitiveProjectRoot(projectRoot)  // projectRoot === app.getPath('home')
 | 变量 | 含义 |
 |------|------|
 | `work_root` | 当前 `PathGuard.workRoot` |
-| `file_access_project` | 项目根模式（可操作 `.catbuddy-desktop` 同级目录） |
+| `file_access_project` | 项目根模式（可操作 `.catbuddy` 同级目录） |
 | `file_access_internal` | 受限模式（仅内部 workspace） |
 
 `ContextBuilder._renderIdentity()` 注入上述变量；**提示词描述必须与 PathGuard 实际行为一致**，避免 Agent 认知与工具拦截脱节。
@@ -107,18 +107,18 @@ isSensitiveProjectRoot(projectRoot)  // projectRoot === app.getPath('home')
 
 ### 3.1 问题背景
 
-每个 `.catbuddy-desktop/workspace` 原本完全独立：切换项目后，`USER.md`、`MEMORY.md`、`sessions/` 互不共享，Agent 无法「越聊越懂你」。
+每个 `.catbuddy/workspace` 原本完全独立：切换项目后，`USER.md`、`MEMORY.md`、`sessions/` 互不共享，Agent 无法「越聊越懂你」。
 
 ### 3.2 解决方案
 
 引入 **两层记忆**：
 
 ```
-~/.catbuddy-desktop/workspace/              ← 全局用户层（始终加载）
+~/.catbuddy/workspace/              ← 全局用户层（始终加载）
 ├── USER.md                                 ← 用户画像（跨项目共享）
 └── memory/MEMORY.md                        ← 关于「你」的长期记忆
 
-D:/Projects/foo/.catbuddy-desktop/workspace/   ← 项目层（切换项目时）
+D:/Projects/foo/.catbuddy/workspace/   ← 项目层（切换项目时）
 ├── memory/MEMORY.md                        ← 仅 foo 项目上下文
 ├── sessions/                               ← 该项目聊天记录
 └── AGENTS.md / SOUL.md / TOOLS.md          ← 项目级 Agent 配置
@@ -129,7 +129,7 @@ D:/Projects/foo/.catbuddy-desktop/workspace/   ← 项目层（切换项目时�
 ```typescript
 // services/global-profile.ts
 isLayeredWorkspace(projectWorkspace)
-// true 当 projectWorkspace !== ~/.catbuddy-desktop/workspace
+// true 当 projectWorkspace !== ~/.catbuddy/workspace
 ```
 
 ### 3.3 系统提示词组装
@@ -138,7 +138,7 @@ isLayeredWorkspace(projectWorkspace)
 
 | 内容 | 默认主目录 | 项目 workspace |
 |------|------------|----------------|
-| `USER.md` | 本地 workspace | **全局** `~/.catbuddy-desktop/workspace/USER.md` |
+| `USER.md` | 本地 workspace | **全局** `~/.catbuddy/workspace/USER.md` |
 | `AGENTS/SOUL/TOOLS` | 本地 | 项目 workspace |
 | 长期记忆 | `Long-Term Memory` | `Long-Term Memory (You)` + `Project Memory` |
 
@@ -167,8 +167,8 @@ isLayeredWorkspace(projectWorkspace)
 
 | 段落 | 写入位置 |
 |------|----------|
-| `User Profile` | `~/.catbuddy-desktop/workspace/memory/MEMORY.md` |
-| `Project Context` | `{project}/.catbuddy-desktop/workspace/memory/MEMORY.md` |
+| `User Profile` | `~/.catbuddy/workspace/memory/MEMORY.md` |
+| `Project Context` | `{project}/.catbuddy/workspace/memory/MEMORY.md` |
 
 非分层模式（默认主目录）时，整段摘要写入全局 MEMORY。
 
@@ -181,7 +181,7 @@ isLayeredWorkspace(projectWorkspace)
 | `USER.md`、用户向 MEMORY | **全局**（主目录 workspace） |
 | 项目向 MEMORY | **项目** workspace |
 | `sessions/`、`history.jsonl` | **项目** workspace |
-| `config/config.json` | **各** `.catbuddy-desktop` 独立 |
+| `config/config.json` | **各** `.catbuddy` 独立 |
 | `workspace-folders.json` | **全局**（主目录） |
 
 ---
@@ -224,7 +224,7 @@ sequenceDiagram
   Anchor->>Anchor: computeWorkspaceFileAccess()
   Anchor->>Loop: reanchorProject()
   Loop->>PG: setWorkspace + setProjectRoot
-  Loop->>Ctx: new ContextBuilder(globalWorkspace=~/.catbuddy-desktop/workspace)
+  Loop->>Ctx: new ContextBuilder(globalWorkspace=~/.catbuddy/workspace)
   Ctx->>Ctx: buildSystemPrompt() 合并全局 USER + 双层 MEMORY
 ```
 
@@ -243,7 +243,7 @@ flowchart LR
     Parser[splitMemorySections]
   end
   subgraph storage [存储]
-    GlobalMem["~/.catbuddy-desktop/.../MEMORY.md"]
+    GlobalMem["~/.catbuddy/.../MEMORY.md"]
     ProjectMem["project/.../MEMORY.md"]
   end
 
@@ -259,10 +259,10 @@ flowchart LR
 
 ## 6. 使用建议
 
-1. **日常闲聊、建立用户画像**：使用默认主目录锚点，或直接编辑 `~/.catbuddy-desktop/workspace/USER.md`。
+1. **日常闲聊、建立用户画像**：使用默认主目录锚点，或直接编辑 `~/.catbuddy/workspace/USER.md`。
 2. **在具体项目里写代码**：切换到对应项目 workspace；猫猫仍加载全局 USER 与用户向 MEMORY。
 3. **迁移旧数据**：若某项目 MEMORY 里已有「关于你」的内容，可手动复制到全局 `MEMORY.md`；之后 Dream / Consolidator 会自动分层写入。
-4. **安全预期**：主目录锚点下 Agent **不能**随意读写 `Documents/`、`Desktop/` 等同级目录；非主目录项目则可操作项目根下与 `.catbuddy-desktop` 同级的文件夹。
+4. **安全预期**：主目录锚点下 Agent **不能**随意读写 `Documents/`、`Desktop/` 等同级目录；非主目录项目则可操作项目根下与 `.catbuddy` 同级的文件夹。
 
 ---
 

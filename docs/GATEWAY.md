@@ -132,7 +132,7 @@ Web 侧「新建对话」会 `POST /api/sessions`，Gateway 经 WS 向桌面端�
 | 位置 | 说明 |
 |------|------|
 | Gateway | **MySQL**（会话元数据、消息、用户/OTP） |
-| 桌面 | `~/.catbuddy-desktop/workspace/sessions/*.jsonl`（Agent 本地会话） |
+| 桌面 | `~/.catbuddy/workspace/sessions/*.jsonl`（Agent 本地会话） |
 
 - Web 的 `GET /api/sessions`、`GET /api/webui-thread` 经 Gateway 向在线 Desktop RPC；离线时读 Gateway MySQL 缓存。
 - 用户发消息写入 Gateway，再转发 Desktop；**Desktop 离线**时 Gateway 经 WS 返回系统提示（不 503）。

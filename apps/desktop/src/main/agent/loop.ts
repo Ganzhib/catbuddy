@@ -196,7 +196,7 @@ export class AgentLoop implements RuntimeState {
     const projectRoot =
       opts.projectRoot ?? path.dirname(path.dirname(path.resolve(opts.workspace)));
     const catbuddyDir =
-      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy-desktop");
+      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy");
 
     const restrict = opts.restrictToWorkspace ?? false;
 

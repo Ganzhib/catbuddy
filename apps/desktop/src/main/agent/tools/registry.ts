@@ -30,7 +30,7 @@ export class ToolRegistry {
     this._rebuildPathGuard()
   }
 
-  /** File tools resolve relative paths against project root (siblings of `.catbuddy-desktop`). */
+  /** File tools resolve relative paths against project root (siblings of `.catbuddy`). */
   setProjectRoot(root: string, catbuddyDir?: string): void {
     this._projectRoot = path.resolve(root)
     this._catbuddyDir = catbuddyDir

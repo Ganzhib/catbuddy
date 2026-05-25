@@ -127,7 +127,7 @@ export interface WorkspaceFolder {
   createdAt: string;
   /** Project root directory (e.g. selected folder A). */
   projectRoot: string;
-  /** `.catbuddy-desktop` inside project root. */
+  /** `.catbuddy` inside project root. */
   catbuddyDir: string;
 }
 

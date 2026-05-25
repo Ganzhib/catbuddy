@@ -1,5 +1,5 @@
 /**
- * Global user profile anchor — always `~/.catbuddy-desktop/workspace`.
+ * Global user profile anchor — always `~/.catbuddy/workspace`.
  * USER.md and user-level MEMORY persist here across project workspaces.
  */
 import fs from "node:fs";

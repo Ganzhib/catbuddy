@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const CATBUDDY_DIR_NAME = ".catbuddy-desktop";
+const CATBUDDY_DIR_NAME = ".catbuddy";
 
 export { CATBUDDY_DIR_NAME };
 

@@ -33,7 +33,7 @@ function readStore(homeCatbuddyDir: string): WorkspaceFolderStore {
           name: f.name,
           createdAt: f.createdAt,
           projectRoot: f.projectRoot,
-          catbuddyDir: f.catbuddyDir ?? path.join(f.projectRoot, ".catbuddy-desktop"),
+          catbuddyDir: f.catbuddyDir ?? path.join(f.projectRoot, ".catbuddy"),
         })),
     };
   } catch {
@@ -103,7 +103,7 @@ export function removeWorkspaceFolder(
   return store;
 }
 
-/** Register a workspace folder at `sourcePath` and create `.catbuddy-desktop` inside it. */
+/** Register a workspace folder at `sourcePath` and create `.catbuddy` inside it. */
 export function createWorkspaceFolderFromPath(
   homeCatbuddyDir: string,
   sourcePath: string,

@@ -23,7 +23,7 @@ projectRoot + catbuddyDir + workspace ◄─────────────
 ```
 
 - **策略与 enforcement 分离**：`workspace-access` 只回答「允许多大范围」；`PathGuard` 统一解析与拦截路径。
-- **敏感地区**：`projectRoot === 用户主目录` 时仅允许内部 `workspace`；用户导入的非主目录项目则允许 `.catbuddy-desktop` 同级文件夹。
+- **敏感地区**：`projectRoot === 用户主目录` 时仅允许内部 `workspace`；用户导入的非主目录项目则允许 `.catbuddy` 同级文件夹。
 - **network** 与 **filesystem** 并列，均从 `security/index.ts` 导出。
 
-完整设计文档（含分层记忆、`.catbuddy-desktop` 目录说明）：[`docs/workspace-and-memory.md`](../../../docs/workspace-and-memory.md)
+完整设计文档（含分层记忆、`.catbuddy` 目录说明）：[`docs/workspace-and-memory.md`](../../../docs/workspace-and-memory.md)

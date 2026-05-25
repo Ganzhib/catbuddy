@@ -72,7 +72,7 @@ export class SubagentManager {
     this._projectRoot =
       projectRoot ?? path.dirname(path.dirname(path.resolve(workspace)))
     this._catbuddyDir =
-      catbuddyDir ?? path.join(this._projectRoot, '.catbuddy-desktop')
+      catbuddyDir ?? path.join(this._projectRoot, '.catbuddy')
     this._restrictToWorkspace = restrictToWorkspace
     this.runner = new AgentRunner(provider)
   }

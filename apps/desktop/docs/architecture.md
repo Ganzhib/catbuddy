@@ -112,14 +112,14 @@ Vite 在 `vite.config.ts` 中将上述包 alias 到 `packages/*` 源码，便于
 
 ## 用户数据目录
 
-首次启动在用户主目录创建 `.catbuddy-desktop`。完整说明见 [workspace-and-memory.md](./workspace-and-memory.md)。
+首次启动在用户主目录创建 `.catbuddy`。完整说明见 [workspace-and-memory.md](./workspace-and-memory.md)。
 
 | 路径 | 内容 |
 |------|------|
-| `~/.catbuddy-desktop/workspace/` | Agent 工作区；**全局** USER.md 与用户向 MEMORY |
-| `~/.catbuddy-desktop/config/config.json` | 模型、Provider、Gateway 等配置 |
-| `~/.catbuddy-desktop/workspace-folders.json` | 已注册的项目文件夹列表 |
-| `{project}/.catbuddy-desktop/workspace/` | 项目级 workspace（MEMORY、sessions、AGENTS 等） |
+| `~/.catbuddy/workspace/` | Agent 工作区；**全局** USER.md 与用户向 MEMORY |
+| `~/.catbuddy/config/config.json` | 模型、Provider、Gateway 等配置 |
+| `~/.catbuddy/workspace-folders.json` | 已注册的项目文件夹列表 |
+| `{project}/.catbuddy/workspace/` | 项目级 workspace（MEMORY、sessions、AGENTS 等） |
 
 环境变量加载顺序（`src/main/index.ts`）：
 

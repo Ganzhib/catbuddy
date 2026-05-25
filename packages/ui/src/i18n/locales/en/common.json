@@ -91,7 +91,7 @@
     "folderEmpty": "No chats in this workspace yet.",
     "expandMore": "Show more ({{count}})",
     "chatHistoryTitle": "Chat history",
-    "panelSubtitle": "Upload folder A to create A/.catbuddy-desktop. The AI can access all folders alongside it under A. Without upload, use home/.catbuddy-desktop.",
+    "panelSubtitle": "Upload folder A to create A/.catbuddy. The AI can access all folders alongside it under A. Without upload, use home/.catbuddy.",
     "toggleFolderChats": "Expand chats in {{name}}",
     "importFolder": "Import folder",
     "folderActions": {

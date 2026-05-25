@@ -2,6 +2,8 @@
 
 This file stores important information that should persist across sessions.
 
+When you use a **project workspace** (not the default home anchor), facts about **you** live in `~/.catbuddy-desktop/workspace/memory/MEMORY.md`; this file holds **project-specific** context only.
+
 ## User Information
 
 (Important facts about the user)

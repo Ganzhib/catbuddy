@@ -7,6 +7,8 @@ import * as path from 'path'
 import Handlebars from 'handlebars'
 import { fileURLToPath } from 'url'
 import type { LLMMessage, MessageRecord } from "@catbuddy/shared"
+import type { FileAccessMode } from '../security/index.js'
+import { ensureGlobalProfileBootstrap, getGlobalProfileWorkspace, isLayeredWorkspace } from '../services/global-profile.js'
 import { ALWAYS_ON_SKILLS, listDiscoverableSkills } from './skill.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -42,16 +44,31 @@ function loadTemplate(relativePath: string): HandlebarsTemplateDelegate {
 interface ContextBuilderOpts {
   timezone?: string
   disabledSkills?: string[]
+  /** User project root (file tools / exec cwd). Defaults to parent of `.catbuddy-desktop`. */
+  workRoot?: string
+  /** Mirrors PathGuard mode — drives identity.md file-access wording. */
+  fileAccessMode?: FileAccessMode
+  /** Global user profile workspace (`~/.catbuddy-desktop/workspace`). */
+  globalWorkspace?: string
 }
 
 export class ContextBuilder {
   readonly workspace: string
+  readonly globalWorkspace: string
+  readonly workRoot: string
+  readonly fileAccessMode: FileAccessMode
   readonly timezone: string
   readonly disabledSkills: Set<string>
   private _templates: Record<string, HandlebarsTemplateDelegate> = {}
 
   constructor(workspace: string, opts: ContextBuilderOpts = {}) {
     this.workspace = workspace
+    this.globalWorkspace = opts.globalWorkspace ?? getGlobalProfileWorkspace()
+    this.workRoot =
+      opts.workRoot ?? path.dirname(path.dirname(path.resolve(workspace)))
+    this.fileAccessMode =
+      opts.fileAccessMode ??
+      (this.workRoot === path.resolve(workspace) ? 'internal' : 'project')
     this.timezone = opts.timezone ?? 'UTC'
     this.disabledSkills = new Set(opts.disabledSkills ?? [])
 
@@ -71,14 +88,17 @@ export class ContextBuilder {
   }
 
   /** 读取 workspace 中的文件 */
-  readWorkspaceFile(name: string): string {
-    try { return fs.readFileSync(path.join(this.workspace, name), 'utf-8') } catch { return '' }
+  readWorkspaceFile(name: string, workspaceDir?: string): string {
+    const root = workspaceDir ?? this.workspace
+    try { return fs.readFileSync(path.join(root, name), 'utf-8') } catch { return '' }
   }
 
   /** 确保 workspace 中存在引导文件（首次运行时创建） */
   ensureBootstrapFiles() {
+    ensureGlobalProfileBootstrap()
     fs.mkdirSync(this.workspace, { recursive: true })
     for (const name of BOOTSTRAP_FILES) {
+      if (name === 'USER.md' && this._usesGlobalProfile()) continue
       const dest = path.join(this.workspace, name)
       if (!fs.existsSync(dest)) {
         const src = path.join(TEMPLATES_DIR, name)
@@ -110,16 +130,30 @@ export class ContextBuilder {
     const identity = this._renderIdentity(channel)
     if (identity) parts.push(identity)
 
-    // 2. Bootstrap Files: AGENTS.md / SOUL.md / USER.md / TOOLS.md
+    // 2. Bootstrap Files — USER.md from global profile when layered
     for (const name of BOOTSTRAP_FILES) {
+      if (name === 'USER.md' && this._usesGlobalProfile()) {
+        const content = this.readWorkspaceFile('USER.md', this.globalWorkspace)
+        if (content) parts.push(`## ${name}\n\n${content}`)
+        continue
+      }
       const content = this.readWorkspaceFile(name)
       if (content) parts.push(`## ${name}\n\n${content}`)
     }
 
-    // 3. Memory
-    const memory = this.readWorkspaceFile('memory/MEMORY.md')
-    if (memory && !this._isDefaultMemory(memory)) {
-      parts.push(`## Long-Term Memory\n\n${memory}`)
+    // 3. Memory — global user memory + project memory
+    const globalMemory = this.readWorkspaceFile('memory/MEMORY.md', this.globalWorkspace)
+    if (globalMemory && !this._isDefaultMemory(globalMemory)) {
+      const title = this._usesGlobalProfile()
+        ? 'Long-Term Memory (You)'
+        : 'Long-Term Memory'
+      parts.push(`## ${title}\n\n${globalMemory}`)
+    }
+    if (this._usesGlobalProfile()) {
+      const projectMemory = this.readWorkspaceFile('memory/MEMORY.md')
+      if (projectMemory && !this._isDefaultMemory(projectMemory)) {
+        parts.push(`## Project Memory\n\n${projectMemory}`)
+      }
     }
 
     // 4. Always Skills (memory + my)
@@ -229,11 +263,18 @@ export class ContextBuilder {
 
     return this._templates.identity({
       runtime,
-      workspace_path: this.workspace,
+      work_root: this.workRoot.replace(/\\/g, '/'),
+      workspace_path: this.workspace.replace(/\\/g, '/'),
+      file_access_project: this.fileAccessMode === 'project',
+      file_access_internal: this.fileAccessMode === 'internal',
       platform_policy: platformPolicy,
       channel,
       ...this._channelFlags(channel),
     })
+  }
+
+  private _usesGlobalProfile(): boolean {
+    return isLayeredWorkspace(this.workspace)
   }
 
   private _isDefaultMemory(content: string): boolean {

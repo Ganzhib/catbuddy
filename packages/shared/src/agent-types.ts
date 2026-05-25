@@ -181,6 +181,8 @@ export interface catbuddyConfig {
       maxTokens: number
       timezone: string
       sessionTtlMinutes: number
+      /** Background Dream interval (minutes). Default 120 when omitted. */
+      dreamIntervalMinutes?: number
       consolidationRatio: number
       disabledSkills: string[]
       unifiedSession: boolean

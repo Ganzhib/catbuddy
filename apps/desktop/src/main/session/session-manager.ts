@@ -99,6 +99,20 @@ export class SessionManager {
     this._cache.set(sessionKey, info)
   }
 
+  /** Full persisted transcript (for compact / dream / history command). */
+  getAllMessages(sessionKey: string, opts?: { maxMessages?: number }): MessageRecord[] {
+    const fp = this._filePath(sessionKey)
+    if (!fs.existsSync(fp)) return []
+
+    const { messages } = this._load(fp)
+    const limit = opts?.maxMessages ?? MAX_MESSAGES
+    return messages.slice(-limit)
+  }
+
+  /**
+   * Messages for the current turn (from last user message onward).
+   * Used when building LLM context so prior turns stay summarized separately.
+   */
   getHistory(sessionKey: string, opts?: { maxMessages?: number; maxTokens?: number }): MessageRecord[] {
     const fp = this._filePath(sessionKey)
     if (!fs.existsSync(fp)) return []

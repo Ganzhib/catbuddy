@@ -2,17 +2,21 @@
  * Consolidator — 对话压缩 + 记忆持久化
  * 对应原版 catbuddy/agent/memory.py 中的 Consolidator + MemoryStore
  */
-import * as fs from 'fs'
-import * as path from 'path'
 import { LLMProvider } from '../providers'
 import { SessionManager } from '../session/session-manager'
 import type { MessageRecord, LLMMessage } from "@catbuddy/shared"
+import {
+  appendLayeredMemory,
+  memoryExtractionPrompt,
+} from './layered-memory.js'
+import { getGlobalProfileWorkspace } from '../services/global-profile.js'
 
 export interface ConsolidatorOpts {
   provider: LLMProvider
   model: string
   sessions: SessionManager
   workspace: string
+  globalWorkspace?: string
   contextWindowTokens: number
   consolidationRatio?: number
   maxCompletionTokens?: number
@@ -23,6 +27,7 @@ export class Consolidator {
   private model: string
   private sessions: SessionManager
   private workspace: string
+  private globalWorkspace: string
   private contextWindowTokens: number
   private consolidationRatio: number
   private maxCompletionTokens: number
@@ -33,6 +38,7 @@ export class Consolidator {
     this.model = opts.model
     this.sessions = opts.sessions
     this.workspace = opts.workspace
+    this.globalWorkspace = opts.globalWorkspace ?? getGlobalProfileWorkspace()
     this.contextWindowTokens = opts.contextWindowTokens
     this.consolidationRatio = opts.consolidationRatio ?? 0.5
     this.maxCompletionTokens = opts.maxCompletionTokens ?? 2048
@@ -50,7 +56,7 @@ export class Consolidator {
     this._compacting.add(sessionKey)
 
     try {
-      const allMessages = this.sessions.getHistory(sessionKey, { maxMessages: 9999 })
+      const allMessages = this.sessions.getAllMessages(sessionKey, { maxMessages: 9999 })
       process.stderr.write(`[consolidator] STEP1: session=${sessionKey} totalMsgs=${allMessages.length} keepRecent=${keepRecent}\n`)
       
       if (allMessages.length <= keepRecent) {
@@ -71,7 +77,7 @@ export class Consolidator {
         .map(m => `[${m.role}] ${(m.content || '').slice(0, 300)}`)
         .join('\n')
 
-      const compactPrompt = `Extract key facts from this conversation. Return ONLY a compact bullet list of:
+      const compactPrompt = memoryExtractionPrompt(`Extract key facts from this conversation. Return ONLY a compact bullet list covering:
 - Important decisions made
 - User preferences discovered
 - Facts / information learned
@@ -79,7 +85,7 @@ export class Consolidator {
 - Pending / unresolved items
 
 Conversation:
-${conversationText}`
+${conversationText}`)
 
       process.stderr.write(`[consolidator] STEP3: calling LLM...\n`)
       const response = await this.provider.chat({
@@ -97,17 +103,15 @@ ${conversationText}`
         return null
       }
 
-      const memDir = path.join(this.workspace, 'memory')
-      fs.mkdirSync(memDir, { recursive: true })
-      const memPath = path.join(memDir, 'MEMORY.md')
+      appendLayeredMemory({
+        summary,
+        projectWorkspace: this.workspace,
+        globalWorkspace: this.globalWorkspace,
+        label: 'Archived',
+      })
+      process.stderr.write(`[consolidator] DONE: layered memory write (${Buffer.byteLength(summary)} bytes)\n`)
+
       const now = new Date().toISOString().slice(0, 10)
-
-      let existing = ''
-      try { existing = fs.readFileSync(memPath, 'utf-8') } catch {}
-
-      const entry = `\n\n## Archived — ${now}\n${summary}\n`
-      fs.writeFileSync(memPath, existing + entry, 'utf-8')
-      process.stderr.write(`[consolidator] DONE: wrote to ${memPath} (${Buffer.byteLength(entry)} bytes)\n`)
 
       const session = this.sessions.getOrCreate(sessionKey)
       session.lastConsolidated = (session.lastConsolidated || 0) + toArchive.length

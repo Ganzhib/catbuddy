@@ -7,6 +7,7 @@ import * as path from 'path'
 import Handlebars from 'handlebars'
 import { fileURLToPath } from 'url'
 import type { LLMMessage, MessageRecord } from "@catbuddy/shared"
+import { ALWAYS_ON_SKILLS, listDiscoverableSkills } from './skill.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -275,47 +276,19 @@ export class ContextBuilder {
   }
 
   private _buildSkillsSummary(): string {
-    const skills: { name: string; description: string; available: boolean }[] = []
-    const alwaysSkills = new Set(['memory', 'my'])
-
-    // 扫描内置 skills
-    try {
-      for (const dir of fs.readdirSync(SKILLS_DIR)) {
-        if (alwaysSkills.has(dir)) continue
-        if (this.disabledSkills.has(dir)) continue
-        const skillPath = path.join(SKILLS_DIR, dir, 'SKILL.md')
-        if (!fs.existsSync(skillPath)) continue
-        const raw = fs.readFileSync(skillPath, 'utf-8')
-        const frontmatter = this._parseFrontmatter(raw)
-        skills.push({
-          name: dir,
-          description: frontmatter.description ?? '',
-          available: true,
-        })
-      }
-    } catch {}
+    const skills = listDiscoverableSkills(this.workspace, this.disabledSkills)
+      .filter((s) => !ALWAYS_ON_SKILLS.has(s.name) && s.enabled)
 
     if (skills.length === 0) return ''
 
     const skillsSummary = skills
-      .map(s => `- **${s.name}**: ${s.description}` + (!s.available ? ' *(unavailable)*' : ''))
+      .map((s) => `- **${s.name}**: ${s.description}`)
       .join('\n')
 
     if (this._templates.skillsSection) {
       return this._templates.skillsSection({ skills_summary: skillsSummary })
     }
     return `# Skills\n\n${skillsSummary}`
-  }
-
-  private _parseFrontmatter(md: string): Record<string, string> {
-    const match = md.match(/^---\n([\s\S]*?)\n---/)
-    if (!match) return {}
-    const result: Record<string, string> = {}
-    for (const line of match[1].split('\n')) {
-      const kv = line.match(/^(\w[\w\s]*?):\s*(.+)$/)
-      if (kv) result[kv[1].trim()] = kv[2].trim()
-    }
-    return result
   }
 
   private _buildRuntimeContext(channel?: string, chatId?: string, senderId?: string): string {

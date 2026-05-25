@@ -215,6 +215,27 @@ export interface McpMarketplaceEntry {
   pasteTemplate?: string;
 }
 
+/** Built-in skill curated for one-click install into workspace/skills/. */
+export interface SkillMarketplaceEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  /** Directory name under apps/desktop/skills and workspace/skills. */
+  skillName: string;
+  emoji?: string;
+  /** Shown in the featured row at the top of the marketplace. */
+  featured?: boolean;
+  setupNote?: string;
+}
+
+export interface SkillInstallResult {
+  message: string;
+  skills: import('./agent-types.js').SkillInfo[];
+  /** Skill is enabled; next agent turn rebuilds system prompt (no restart / new chat). */
+  hotReload: boolean;
+}
+
 export interface SlashCommand {
   command: string;
   title: string;

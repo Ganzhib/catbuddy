@@ -74,5 +74,11 @@ export const fetchMcpMarketplace = (...args: Parameters<ReturnType<typeof create
   platform().fetchMcpMarketplace(...args)
 export const addMcpFromMarketplace = (...args: Parameters<ReturnType<typeof createPlatformApi>['addMcpFromMarketplace']>) =>
   platform().addMcpFromMarketplace(...args)
+export {
+  fetchSkillMarketplaceIpc as fetchSkillMarketplace,
+  installSkillFromMarketplaceIpc as installSkillFromMarketplace,
+  listSkillsIpc as listSkills,
+  toggleSkillIpc as toggleSkill,
+} from './ipc-api'
 export const listSlashCommands = (...args: Parameters<ReturnType<typeof createPlatformApi>['listSlashCommands']>) =>
   platform().listSlashCommands(...args)

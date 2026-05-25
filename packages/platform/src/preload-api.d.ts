@@ -61,6 +61,10 @@ export interface CatbuddyPreloadApi {
 
   listSkills(): Promise<SkillInfo[]>
   toggleSkill(name: string, enabled: boolean): Promise<void>
+  listSkillMarketplace?(): Promise<import('@catbuddy/shared').SkillMarketplaceEntry[]>
+  installSkillFromMarketplace?(
+    id: string,
+  ): Promise<import('@catbuddy/shared').SkillInstallResult>
 
   restartApp(): Promise<void>
 

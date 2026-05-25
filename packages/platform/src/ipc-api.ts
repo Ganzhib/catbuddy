@@ -194,6 +194,53 @@ export async function addMcpFromMarketplaceIpc(
   return api.addMcpFromMarketplace(id)
 }
 
+export async function fetchSkillMarketplaceIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillMarketplaceEntry[]> {
+  const api = requireIpcBridge()
+  if (!api.listSkillMarketplace) {
+    throw new ApiError(501, 'Skill marketplace is only available in the desktop app.')
+  }
+  return api.listSkillMarketplace()
+}
+
+export async function installSkillFromMarketplaceIpc(
+  _token: string,
+  id: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillInstallResult> {
+  const api = requireIpcBridge()
+  if (!api.installSkillFromMarketplace) {
+    throw new ApiError(501, 'Skill marketplace is only available in the desktop app.')
+  }
+  return api.installSkillFromMarketplace(id)
+}
+
+export async function listSkillsIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillInfo[]> {
+  const api = requireIpcBridge()
+  if (!api.listSkills) {
+    throw new ApiError(501, 'Skills are only available in the desktop app.')
+  }
+  return api.listSkills()
+}
+
+export async function toggleSkillIpc(
+  _token: string,
+  name: string,
+  enabled: boolean,
+  _base: string = '',
+): Promise<void> {
+  const api = requireIpcBridge()
+  if (!api.toggleSkill) {
+    throw new ApiError(501, 'Skills are only available in the desktop app.')
+  }
+  await api.toggleSkill(name, enabled)
+}
+
 export async function listSlashCommandsIpc(
   _token: string,
   _base: string = '',

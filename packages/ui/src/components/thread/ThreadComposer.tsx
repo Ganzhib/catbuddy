@@ -13,17 +13,21 @@ import {
   Activity,
   ArrowUp,
   BookOpen,
+  Brain,
   Check,
   ChevronDown,
   ChevronUp,
   CircleHelp,
   Folder,
+  FolderDown,
   FolderUp,
   History,
   ImageIcon,
   Loader2,
+  Moon,
   Plus,
   RotateCw,
+  ScrollText,
   Sparkles,
   Square,
   SquarePen,
@@ -78,9 +82,13 @@ interface ThreadComposerProps {
 const COMMAND_ICONS: Record<string, LucideIcon> = {
   activity: Activity,
   "book-open": BookOpen,
+  brain: Brain,
   "circle-help": CircleHelp,
+  "folder-down": FolderDown,
   history: History,
+  moon: Moon,
   "rotate-cw": RotateCw,
+  "scroll-text": ScrollText,
   sparkles: Sparkles,
   square: Square,
   "square-pen": SquarePen,
@@ -386,6 +394,9 @@ export function ThreadComposer({
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [slashMenuDismissed, setSlashMenuDismissed] = useState(false);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const selectedCommandIndexRef = useRef(0);
+  const filteredSlashCommandsRef = useRef<SlashCommand[]>([]);
+  const chooseSlashCommandRef = useRef<(command: SlashCommand) => void>(() => {});
   const [uncontrolledImageMode, setUncontrolledImageMode] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>("auto");
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
@@ -481,9 +492,12 @@ export function ThreadComposer({
   }, [disabled, slashMenuDismissed, value]);
 
   const filteredSlashCommands = useMemo(() => {
-    if (slashQuery === null) return [];
+    if (slashQuery === null || slashCommands.length === 0) return [];
+    if (slashQuery === "") return slashCommands.slice(0, 8);
     return slashCommands
       .filter((command) => {
+        const name = command.command.slice(1).toLowerCase();
+        if (name.startsWith(slashQuery)) return true;
         const haystack = [
           command.command,
           command.title,
@@ -502,6 +516,8 @@ export function ThreadComposer({
   }, [slashCommands, slashQuery, t]);
 
   const showSlashMenu = filteredSlashCommands.length > 0;
+  filteredSlashCommandsRef.current = filteredSlashCommands;
+  selectedCommandIndexRef.current = selectedCommandIndex;
   const [slashPaletteLayout, setSlashPaletteLayout] = useState<SlashPaletteLayout>({
     placement: "above",
     maxHeight: SLASH_PALETTE_MAX_HEIGHT_PX,
@@ -516,6 +532,52 @@ export function ThreadComposer({
       setSelectedCommandIndex(0);
     }
   }, [filteredSlashCommands.length, selectedCommandIndex]);
+
+  useEffect(() => {
+    if (!showSlashMenu) return;
+
+    const onDocKeyDown = (e: KeyboardEvent) => {
+      const commands = filteredSlashCommandsRef.current;
+      const len = commands.length;
+      if (len === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedCommandIndex((idx) => {
+          const next = (idx + 1) % len;
+          selectedCommandIndexRef.current = next;
+          return next;
+        });
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedCommandIndex((idx) => {
+          const next = (idx - 1 + len) % len;
+          selectedCommandIndexRef.current = next;
+          return next;
+        });
+        return;
+      }
+      if (e.key === "Tab" || e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const picked = commands[selectedCommandIndexRef.current];
+        if (picked) chooseSlashCommandRef.current(picked);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setSlashMenuDismissed(true);
+      }
+    };
+
+    document.addEventListener("keydown", onDocKeyDown, true);
+    return () => document.removeEventListener("keydown", onDocKeyDown, true);
+  }, [showSlashMenu]);
 
   useEffect(() => {
     if (!showSlashMenu) return;
@@ -549,7 +611,13 @@ export function ThreadComposer({
           ? "above"
           : "below";
       const available = placement === "above" ? spaceAbove : spaceBelow;
-      const maxHeight = Math.min(SLASH_PALETTE_MAX_HEIGHT_PX, available);
+      const maxHeight = Math.max(
+        SLASH_PALETTE_MIN_HEIGHT_PX,
+        Math.min(
+          SLASH_PALETTE_MAX_HEIGHT_PX,
+          available > 0 ? available : SLASH_PALETTE_MAX_HEIGHT_PX,
+        ),
+      );
 
       setSlashPaletteLayout((current) =>
         current.placement === placement && current.maxHeight === maxHeight
@@ -618,6 +686,7 @@ export function ThreadComposer({
     },
     [resizeTextarea],
   );
+  chooseSlashCommandRef.current = chooseSlashCommand;
 
   const submit = useCallback(() => {
     if (!canSend) return;
@@ -656,26 +725,14 @@ export function ThreadComposer({
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (showSlashMenu) {
-      if (e.key === "ArrowDown") {
+      if (
+        e.key === "ArrowDown"
+        || e.key === "ArrowUp"
+        || e.key === "Tab"
+        || e.key === "Escape"
+        || (e.key === "Enter" && !e.shiftKey)
+      ) {
         e.preventDefault();
-        setSelectedCommandIndex((idx) => (idx + 1) % filteredSlashCommands.length);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedCommandIndex(
-          (idx) => (idx - 1 + filteredSlashCommands.length) % filteredSlashCommands.length,
-        );
-        return;
-      }
-      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
-        e.preventDefault();
-        chooseSlashCommand(filteredSlashCommands[selectedCommandIndex]);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setSlashMenuDismissed(true);
         return;
       }
     }
@@ -1113,10 +1170,16 @@ function SlashCommandPalette({
   onChoose,
 }: SlashCommandPaletteProps) {
   const { t } = useTranslation();
+  const optionRefs = useRef(new Map<number, HTMLButtonElement>());
   const listMaxHeight = Math.max(
     0,
     layout.maxHeight - SLASH_PALETTE_CHROME_PX,
   );
+
+  useEffect(() => {
+    optionRefs.current.get(selectedIndex)?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex, commands]);
+
   return (
     <div
       role="listbox"
@@ -1147,6 +1210,10 @@ function SlashCommandPalette({
           return (
             <button
               key={command.command}
+              ref={(el) => {
+                if (el) optionRefs.current.set(index, el);
+                else optionRefs.current.delete(index);
+              }}
               type="button"
               role="option"
               aria-selected={selected}

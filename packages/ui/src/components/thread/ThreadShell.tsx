@@ -22,6 +22,7 @@ import { useCatbuddyStream, type SendImage, type SendOptions } from "@/hooks/use
 import { useSessionHistory } from "@/hooks/useSessions";
 import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway } from "@catbuddy/platform";
 import type { ChatSummary, SlashCommand, UIMessage } from "@catbuddy/shared";
+import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared";
 import { normalizeLegacyLongTaskMessages } from "@/lib/thread-display-compat";
 import { scrubSubagentUiMessages } from "@/lib/subagent-channel-display";
 import { useClient } from "@/providers/ClientProvider";
@@ -98,7 +99,9 @@ export function ThreadShell({
   const { client, modelName, token } = useClient();
   const gatewayWebOnly = useCatbuddyGateway() && !hasCatbuddyIpc();
   const [booting, setBooting] = useState(false);
-  const [slashCommands, setSlashCommands] = useState<SlashCommand[]>([]);
+  const [slashCommands, setSlashCommands] = useState<SlashCommand[]>(() =>
+    hasCatbuddyIpc() ? DESKTOP_BUILTIN_SLASH_COMMANDS : [],
+  );
   const [heroImageMode, setHeroImageMode] = useState(false);
   const [scrollToBottomSignal, setScrollToBottomSignal] = useState(0);
   const pendingFirstRef = useRef<PendingFirstMessage | null>(null);
@@ -258,13 +261,14 @@ export function ThreadShell({
   }, [chatId, send]);
 
   useEffect(() => {
+    if (!hasCatbuddyIpc()) return;
     let cancelled = false;
     (async () => {
       try {
         const commands = await listSlashCommands(token);
-        if (!cancelled) setSlashCommands(commands);
+        if (!cancelled && commands.length > 0) setSlashCommands(commands);
       } catch {
-        if (!cancelled) setSlashCommands([]);
+        if (!cancelled) setSlashCommands(DESKTOP_BUILTIN_SLASH_COMMANDS);
       }
     })();
     return () => {

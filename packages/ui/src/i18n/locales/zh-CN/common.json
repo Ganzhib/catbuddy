@@ -56,7 +56,7 @@
     "settings": "设置",
     "nav": {
       "mcp": "MCP",
-      "skills": "Skill",
+      "skills": "SKILL",
       "workspace": "工作空间"
     },
     "language": {
@@ -79,7 +79,7 @@
     "folderEmpty": "该工作空间还没有对话。",
     "expandMore": "展开更多 ({{count}})",
     "chatHistoryTitle": "聊天记录",
-    "panelSubtitle": "每个文件夹是一个工作空间。上传后开始的对话会归组在此，不展示文件夹内部文件。",
+    "panelSubtitle": "上传文件夹 A 后，会在 A 下创建 .catbuddy-desktop；AI 可操作 A 内与其同级的所有子文件夹。未上传时默认使用用户目录下的 .catbuddy-desktop。",
     "toggleFolderChats": "展开 {{name}} 的对话",
     "importFolder": "导入文件夹",
     "folderActions": {
@@ -141,6 +141,7 @@
       "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
       "pasteApply": "应用并连接",
       "pasteInvalid": "JSON 格式无效或不符合 MCP 配置结构。",
+      "desktopOnly": "MCP 设置仅在桌面客户端可用。",
       "copyTemplate": "复制配置",
       "templateCopied": "配置已复制到剪贴板，并填入下方粘贴框。",
       "templateCopiedPaste": "配置已填入下方粘贴框。"
@@ -414,6 +415,14 @@
           "history": {
             "title": "查看对话历史",
             "description": "打印最近 N 条已持久化的对话消息。"
+          },
+          "compact": {
+            "title": "压缩上下文",
+            "description": "将较早对话摘要写入 MEMORY.md。"
+          },
+          "model": {
+            "title": "切换模型",
+            "description": "显示或切换当前会话的模型预设。"
           },
           "dream": {
             "title": "运行 Dream",

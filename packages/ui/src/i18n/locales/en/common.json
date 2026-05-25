@@ -68,7 +68,7 @@
     "settings": "Settings",
     "nav": {
       "mcp": "MCP",
-      "skills": "Skills",
+      "skills": "SKILL",
       "workspace": "Workspace"
     },
     "language": {
@@ -91,7 +91,7 @@
     "folderEmpty": "No chats in this workspace yet.",
     "expandMore": "Show more ({{count}})",
     "chatHistoryTitle": "Chat history",
-    "panelSubtitle": "Each folder is a workspace. Chats you start after uploading are grouped here — folder contents are not shown.",
+    "panelSubtitle": "Upload folder A to create A/.catbuddy-desktop. The AI can access all folders alongside it under A. Without upload, use home/.catbuddy-desktop.",
     "toggleFolderChats": "Expand chats in {{name}}",
     "importFolder": "Import folder",
     "folderActions": {
@@ -153,6 +153,7 @@
       "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
       "pasteApply": "Apply & connect",
       "pasteInvalid": "Invalid JSON or MCP config format.",
+      "desktopOnly": "MCP settings are only available in the desktop app.",
       "copyTemplate": "Copy config",
       "templateCopied": "Config copied to clipboard and filled in the paste box below.",
       "templateCopiedPaste": "Config filled in the paste box below."
@@ -427,6 +428,14 @@
           "history": {
             "title": "Show conversation history",
             "description": "Print the last N persisted conversation messages."
+          },
+          "compact": {
+            "title": "Compact context",
+            "description": "Summarize older messages into MEMORY.md."
+          },
+          "model": {
+            "title": "Switch model",
+            "description": "Show or switch the model preset for this session."
           },
           "dream": {
             "title": "Run Dream",

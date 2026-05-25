@@ -66,10 +66,33 @@
     "recent": "Recent",
     "refreshSessions": "Refresh sessions",
     "settings": "Settings",
+    "nav": {
+      "mcp": "MCP",
+      "skills": "Skills",
+      "workspace": "Workspace"
+    },
     "language": {
       "label": "Language",
       "ariaLabel": "Change language"
     }
+  },
+  "panels": {
+    "mcp": {
+      "subtitle": "Connect MCP servers and browse the marketplace."
+    },
+    "skills": {
+      "subtitle": "Install skills into your workspace with one click."
+    }
+  },
+  "workspace": {
+    "sidebarTitle": "Folders",
+    "loading": "Loading workspace…",
+    "emptyHint": "Upload a folder from the composer — it appears here with its chat history.",
+    "folderEmpty": "No chats in this workspace yet.",
+    "expandMore": "Show more ({{count}})",
+    "chatHistoryTitle": "Chat history",
+    "panelSubtitle": "Each folder is a workspace. Chats you start after uploading are grouped here — folder contents are not shown.",
+    "importFolder": "Import folder"
   },
   "settings": {
     "backToChat": "Back to chat",
@@ -348,6 +371,8 @@
       "send": "Send message",
       "stop": "Stop response",
       "attachImage": "Attach image",
+      "uploadFolder": "Upload folder to workspace",
+      "folderImportFailed": "Could not import folder. Try again.",
       "imageMode": {
         "label": "Image Generation",
         "toggle": "Toggle image generation mode",

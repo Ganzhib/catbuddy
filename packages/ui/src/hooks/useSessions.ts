@@ -60,6 +60,13 @@ export function useSessions(): {
   }, [refresh]);
 
   useEffect(() => {
+    const onWorkspaceChanged = () => void refresh();
+    window.addEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
+    return () =>
+      window.removeEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
+  }, [refresh]);
+
+  useEffect(() => {
     return client.onSessionUpdate((_chatId, scope) => {
       // metadata：桌面 sessions_sync；focus：桌面新建/切换会话；deleted：跨端删除
       if (scope === "deleted") {

@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/BrandMark'
 import { DeleteConfirm } from '@/components/DeleteConfirm'
 import { Sidebar } from '@/components/Sidebar'
+import { McpMarketplacePanel } from '@/components/panels/McpMarketplacePanel'
+import { SkillMarketplacePanel } from '@/components/panels/SkillMarketplacePanel'
+import { WorkspacePanel } from '@/components/panels/WorkspacePanel'
 import { SettingsView } from '@/components/settings/SettingsView'
 import { ThreadShell } from '@/components/thread/ThreadShell'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -23,7 +26,7 @@ import {
 const SIDEBAR_STORAGE_KEY = 'catbuddy-webui.sidebar'
 const RESTART_STARTED_KEY = 'catbuddy-webui.restartStartedAt'
 const SIDEBAR_WIDTH = 296
-type ShellView = 'chat' | 'settings'
+import type { SidebarPanel } from '@/lib/sidebar-panel'
 
 function readSidebarOpen(): boolean {
   try { return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== '0' } catch { return true }
@@ -58,7 +61,7 @@ function Shell({
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const placeholderSessionsRef = useRef<Map<string, ChatSummary>>(new Map())
-  const [view, setView] = useState<ShellView>('chat')
+  const [view, setView] = useState<SidebarPanel>('chat')
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(readSidebarOpen)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ key: string; label: string } | null>(null)
@@ -121,6 +124,11 @@ function Shell({
     setMobileSidebarOpen(false)
   }, [])
 
+  const onSelectPanel = useCallback((panel: SidebarPanel) => {
+    setView(panel)
+    setMobileSidebarOpen(false)
+  }, [])
+
   const onOpenSettings = useCallback(() => {
     setView('settings'); setMobileSidebarOpen(false)
   }, [])
@@ -132,6 +140,8 @@ function Shell({
       return sessions.some(s => s.key === current) ? current : sessions[0]?.key ?? null
     })
   }, [sessions])
+
+  const showChatMain = view === 'chat'
 
   useEffect(() => {
     const id = activeSession?.chatId
@@ -184,9 +194,9 @@ function Shell({
     : t('app.brand')
 
   const sidebarProps = {
-    sessions, activeKey, loading, onNewChat, onSelect: onSelectChat,
+    sessions, activeKey, activePanel: view, loading, onNewChat, onSelect: onSelectChat,
     onRequestDelete: (key: string, label: string) => setPendingDelete({ key, label }),
-    onOpenSettings,
+    onSelectPanel, onOpenSettings,
   }
 
   return (
@@ -220,7 +230,7 @@ function Shell({
         </Sheet>
 
         <main className="relative flex h-full min-w-0 flex-1 flex-col">
-          <div className={cn('absolute inset-0 flex flex-col', view === 'settings' && 'invisible pointer-events-none')}>
+          <div className={cn('absolute inset-0 flex flex-col', !showChatMain && 'invisible pointer-events-none')}>
             <ThreadShell
               session={activeSession}
               title={headerTitle}
@@ -233,6 +243,27 @@ function Shell({
               hideSidebarToggleOnDesktop={desktopSidebarOpen}
             />
           </div>
+          {view === 'mcp' && (
+            <div className="absolute inset-0 flex flex-col">
+              <McpMarketplacePanel onBackToChat={onBackToChat} />
+            </div>
+          )}
+          {view === 'skills' && (
+            <div className="absolute inset-0 flex flex-col">
+              <SkillMarketplacePanel onBackToChat={onBackToChat} />
+            </div>
+          )}
+          {view === 'workspace' && (
+            <div className="absolute inset-0 flex flex-col">
+              <WorkspacePanel
+                sessions={sessions}
+                activeKey={activeKey}
+                onSelectChat={onSelectChat}
+                onRequestDelete={(key, label) => setPendingDelete({ key, label })}
+                onBackToChat={onBackToChat}
+              />
+            </div>
+          )}
           {view === 'settings' && (
             <div className="absolute inset-0 flex flex-col">
               <SettingsView

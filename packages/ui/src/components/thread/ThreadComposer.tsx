@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleHelp,
+  FolderUp,
   History,
   ImageIcon,
   Loader2,
@@ -43,6 +44,8 @@ import { useClipboardAndDrop } from "@/hooks/useClipboardAndDrop";
 import type { SendImage, SendOptions } from "@/hooks/useCatbuddyStream";
 import type { SlashCommand, GoalStateWsPayload } from "@catbuddy/shared";
 import { cn } from "@/lib/utils";
+import { hasCatbuddyIpc, importProjectFolder } from "@catbuddy/platform";
+import { notifyWorkspaceChanged } from "@/hooks/useWorkspaceFolders";
 
 /** ``<input accept>``: aligned with the server's MIME whitelist. SVG is
  * deliberately excluded to avoid an embedded-script XSS surface. */
@@ -385,6 +388,7 @@ export function ThreadComposer({
   const [uncontrolledImageMode, setUncontrolledImageMode] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>("auto");
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
+  const [importingFolder, setImportingFolder] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -719,6 +723,26 @@ export function ThreadComposer({
 
   const attachButtonDisabled = disabled || full;
   const showStopButton = isStreaming && !!onStop;
+  const showFolderUpload = hasCatbuddyIpc();
+
+  const handleImportFolder = useCallback(async () => {
+    if (importingFolder || disabled) return;
+    setImportingFolder(true);
+    setInlineError(null);
+    try {
+      const result = await importProjectFolder();
+      if (result.cancelled) return;
+      if (!result.ok) {
+        setInlineError(t("thread.composer.folderImportFailed"));
+      } else {
+        notifyWorkspaceChanged();
+      }
+    } catch {
+      setInlineError(t("thread.composer.folderImportFailed"));
+    } finally {
+      setImportingFolder(false);
+    }
+  }, [disabled, importingFolder, t]);
 
   return (
     <form
@@ -853,6 +877,28 @@ export function ThreadComposer({
             >
               <Plus className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
             </Button>
+            {showFolderUpload ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                disabled={disabled || importingFolder}
+                aria-label={t("thread.composer.uploadFolder")}
+                onClick={() => void handleImportFolder()}
+                className={cn(
+                  "rounded-full text-muted-foreground hover:text-foreground",
+                  isHero
+                    ? "h-9 w-9 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card"
+                    : "h-7.5 w-7.5 border border-border/55 bg-card shadow-[0_2px_8px_rgba(15,23,42,0.05)] hover:bg-card",
+                )}
+              >
+                {importingFolder ? (
+                  <Loader2 className={cn(isHero ? "h-5 w-5" : "h-4 w-4", "animate-spin")} />
+                ) : (
+                  <FolderUp className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
+                )}
+              </Button>
+            ) : null}
             <div ref={aspectControlRef} className="relative flex items-center gap-1">
               <Button
                 type="button"

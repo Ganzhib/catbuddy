@@ -211,7 +211,7 @@ function FolderGroup({
           type="button"
           onClick={() => {
             if (hasSessions) onToggleExpanded();
-            if (onSelectFolder) void onSelectFolder(folder.id);
+            if (!isActiveFolder && onSelectFolder) void onSelectFolder(folder.id);
           }}
           className={cn(
             "flex min-w-0 flex-1 items-center gap-1.5 text-left text-[14px]",

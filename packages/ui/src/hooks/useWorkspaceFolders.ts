@@ -8,8 +8,16 @@ import {
   type WorkspaceFolderStore,
 } from "@catbuddy/platform";
 
-export function notifyWorkspaceChanged(): void {
-  window.dispatchEvent(new CustomEvent("catbuddy:workspace-changed"));
+export function notifyWorkspaceChanged(options?: {
+  refreshFolders?: boolean;
+  refreshSessions?: boolean;
+}): void {
+  window.dispatchEvent(new CustomEvent("catbuddy:workspace-changed", {
+    detail: {
+      refreshFolders: options?.refreshFolders ?? true,
+      refreshSessions: options?.refreshSessions ?? true,
+    },
+  }));
 }
 
 export function useWorkspaceFolders() {
@@ -35,7 +43,12 @@ export function useWorkspaceFolders() {
 
   useEffect(() => {
     void refresh();
-    const onChanged = () => void refresh();
+    const onChanged = (event: Event) => {
+      const shouldRefresh = event instanceof CustomEvent
+        ? event.detail?.refreshFolders !== false
+        : true;
+      if (shouldRefresh) void refresh();
+    };
     window.addEventListener("catbuddy:workspace-changed", onChanged);
     return () => window.removeEventListener("catbuddy:workspace-changed", onChanged);
   }, [refresh]);
@@ -57,12 +70,21 @@ export function useWorkspaceFolders() {
   }, []);
 
   const selectFolder = useCallback(async (folderId: string | null) => {
-    const next = await setActiveWorkspaceFolder(folderId);
-    if (next) {
-      setStore(next);
-      notifyWorkspaceChanged();
+    const previous = store.activeFolderId;
+    if (folderId === previous) return;
+
+    setStore((current) => ({ ...current, activeFolderId: folderId }));
+    try {
+      const next = await setActiveWorkspaceFolder(folderId);
+      if (next) {
+        setStore(next);
+        notifyWorkspaceChanged({ refreshFolders: true, refreshSessions: false });
+      }
+    } catch (err) {
+      setStore((current) => ({ ...current, activeFolderId: previous }));
+      setError((err as Error).message);
     }
-  }, []);
+  }, [store.activeFolderId]);
 
   const removeFolder = useCallback(async (folderId: string) => {
     const next = await removeWorkspaceFolder(folderId);

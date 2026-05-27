@@ -6,8 +6,10 @@ import {
   Loader2,
   Plug,
   Plus,
+  ShieldCheck,
   Store,
   Trash2,
+  Wrench,
   XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -47,6 +49,27 @@ function parsePaste(raw: string): Record<string, McpServerConfig> {
     return { custom: parsed as unknown as McpServerConfig };
   }
   return parsed as Record<string, McpServerConfig>;
+}
+
+function Badge({
+  children,
+  tone = "muted",
+}: {
+  children: React.ReactNode;
+  tone?: "muted" | "success" | "warning";
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+        tone === "success" && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+        tone === "warning" && "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        tone === "muted" && "bg-muted/80 text-muted-foreground",
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function McpSettings({ variant = "settings" }: { variant?: "settings" | "panel" }) {
@@ -180,7 +203,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
   const sectionClass = isPanel
     ? panelSection
     : "rounded-[24px] border border-border/50 bg-card shadow-[0_20px_70px_rgba(15,23,42,0.07)]";
-  const innerCardClass = cn(panelCard, "p-4");
+  const innerCardClass = cn(panelCard, "flex h-full flex-col p-4 shadow-sm transition-colors hover:border-primary/25 hover:shadow-[0_10px_30px_rgba(59,130,246,0.08)]");
 
   if (loading) {
     return (
@@ -203,6 +226,24 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
           {statusMessage}
         </div>
       ) : null}
+
+      <div className="overflow-hidden rounded-[20px] border border-primary/10 bg-gradient-to-br from-primary/10 via-card to-sky-500/5 p-4 shadow-[0_12px_40px_rgba(59,130,246,0.08)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-background/70 px-3 py-1 text-[11px] font-medium text-primary ring-1 ring-primary/10">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+              MCP Marketplace
+            </div>
+            <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+              一键可用项会直接添加并重连；需要密钥、登录或远程 HTTP 的服务改为复制模板，避免误点后连接失败。
+            </p>
+          </div>
+          <div className="flex gap-2 text-[11px]">
+            <Badge tone="success">一键可用</Badge>
+            <Badge tone="warning">需配置</Badge>
+          </div>
+        </div>
+      </div>
 
       <section className={sectionClass}>
         <div className="border-b border-border/45 px-4 py-4 sm:px-5">
@@ -301,9 +342,13 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-[14px] font-medium">{entry.name}</h3>
-                    <p className="mt-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      {entry.category}
-                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      <Badge tone={entry.pasteOnly ? "warning" : "success"}>
+                        {entry.pasteOnly ? <Wrench className="h-3 w-3" aria-hidden /> : <CheckCircle2 className="h-3 w-3" aria-hidden />}
+                        {entry.pasteOnly ? "需配置" : "一键可用"}
+                      </Badge>
+                      <Badge>{entry.category}</Badge>
+                    </div>
                   </div>
                   {entry.docsUrl ? (
                     <button
@@ -324,6 +369,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                 <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                   {entry.description}
                 </p>
+                <div className="flex-1" />
                 {entry.setupNote ? (
                   <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground/90">
                     {entry.setupNote}
@@ -339,7 +385,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                     type="button"
                     size="sm"
                     variant="outline"
-                    className={cn("mt-3", panelBtnPrimary)}
+                    className={cn("mt-auto w-full", panelBtnPrimary)}
                     onClick={() => void handleCopyTemplate(entry)}
                   >
                     <Copy className="mr-1 h-4 w-4" aria-hidden />
@@ -350,7 +396,7 @@ export function McpSettings({ variant = "settings" }: { variant?: "settings" | "
                     type="button"
                     size="sm"
                     variant={installed ? "outline" : "default"}
-                    className={cn("mt-3", panelBtnPrimary)}
+                    className={cn("mt-auto w-full", panelBtnPrimary)}
                     disabled={installed || addingId === entry.id || saving}
                     onClick={() => void handleMarketplaceAdd(entry)}
                   >

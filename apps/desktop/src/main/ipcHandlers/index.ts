@@ -34,6 +34,11 @@ import {
   updateGatewayRuntimeRefs,
   type GatewayRemoteState,
 } from '../services/gateway-remote.js'
+import {
+  deleteDesktopSession,
+  getDesktopSessionDetail,
+  listAllDesktopSessions,
+} from '../services/desktop-sessions.js'
 export interface RegisterIpcHandlersOpts {
   getGatewayClient?: () => GatewayDesktopClient | null
   gatewayState?: GatewayRemoteState
@@ -48,6 +53,8 @@ export function registerIpcHandlers(
   const { agentLoop } = runtime
   const persistConfig = () => saveConfig(runtime.configFile, runtime.config)
   const homeCatbuddyDir = () => getHomeCatbuddyDir()
+  const homeWorkspace = () => path.join(homeCatbuddyDir(), 'workspace')
+  const allWorkspaceFolders = () => listWorkspaceFolders(homeCatbuddyDir()).folders
 
   const anchorToFolder = (folder: WorkspaceFolder | null) => {
     applyProjectAnchor(runtime, folder)
@@ -129,7 +136,7 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle('gateway:sync-all-sessions', async () => {
-    const list = await runtime.sessions.list()
+    const list = await listAllDesktopSessions(homeWorkspace(), allWorkspaceFolders())
     const keys = list.map((row) => row.key)
     getGatewayClient()?.syncSessions(keys)
     return { keys, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
@@ -147,11 +154,15 @@ export function registerIpcHandlers(
   }))
 
   // ═══ Session ═══
-  ipcMain.handle('session:list', async () => runtime.sessions.list())
-  ipcMain.handle('session:get', async (_event, { key }: { key: string }) => runtime.sessions.getDetail(key))
+  ipcMain.handle('session:list', async () =>
+    listAllDesktopSessions(homeWorkspace(), allWorkspaceFolders()),
+  )
+  ipcMain.handle('session:get', async (_event, { key }: { key: string }) =>
+    getDesktopSessionDetail(homeWorkspace(), allWorkspaceFolders(), key),
+  )
   ipcMain.handle('session:delete', async (_event, { key }: { key: string }) => {
     const sessionKey = String(key || '').trim()
-    const ok = runtime.sessions.delete(sessionKey)
+    const ok = deleteDesktopSession(homeWorkspace(), allWorkspaceFolders(), sessionKey)
     getGatewayClient()?.publishSessionDelete(sessionKey)
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send('session:deleted', { sessionKey })
@@ -159,9 +170,11 @@ export function registerIpcHandlers(
     return ok
   })
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => runtime.sessions.clear(key))
-  ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string } = {}) => {
+  ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string | null } = {}) => {
     const home = homeCatbuddyDir()
-    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(home)
+    const folderId = workspaceFolderId === undefined
+      ? getActiveWorkspaceFolderId(home)
+      : workspaceFolderId
     if (folderId) {
       const active = getActiveWorkspaceFolderId(home)
       if (folderId !== active) {
@@ -169,6 +182,9 @@ export function registerIpcHandlers(
         const folder = getWorkspaceFolderById(home, folderId)
         if (folder) anchorToFolder(folder)
       }
+    } else if (workspaceFolderId === null && getActiveWorkspaceFolderId(home)) {
+      setActiveWorkspaceFolderId(home, null)
+      anchorToFolder(null)
     }
 
     const key = `desktop:${Date.now()}`
@@ -177,7 +193,7 @@ export function registerIpcHandlers(
       runtime.sessions.setMetadata(key, { workspaceFolderId: folderId })
     }
     getGatewayClient()?.focusSession(key)
-    return { key }
+    return { key, workspaceFolderId: folderId ?? null }
   })
 
   // ═══ Config ═══
@@ -318,9 +334,13 @@ export function registerIpcHandlers(
 
   ipcMain.handle('workspace:select', async () => {
     const { dialog } = await import('electron')
+    const home = homeCatbuddyDir()
+    const activeFolderId = getActiveWorkspaceFolderId(home)
+    const activeFolder = activeFolderId ? getWorkspaceFolderById(home, activeFolderId) : null
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
       title: 'Select Workspace',
+      defaultPath: activeFolder?.projectRoot ?? agentLoop.workspace,
     })
     return result.canceled ? agentLoop.workspace : result.filePaths[0]
   })
@@ -383,17 +403,20 @@ export function registerIpcHandlers(
 
   ipcMain.handle('workspace:import-folder', async () => {
     const { dialog } = await import('electron')
+    const home = homeCatbuddyDir()
+    const activeFolderId = getActiveWorkspaceFolderId(home)
+    const activeFolder = activeFolderId ? getWorkspaceFolderById(home, activeFolderId) : null
 
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
       title: 'Select folder to add to workspace',
+      defaultPath: activeFolder?.projectRoot ?? agentLoop.workspace,
     })
     if (result.canceled || result.filePaths.length === 0) {
       return { ok: false as const, cancelled: true }
     }
 
     const sourcePath = result.filePaths[0]
-    const home = homeCatbuddyDir()
     const { folder, created, store } = createWorkspaceFolderFromPath(home, sourcePath)
     anchorToFolder(folder)
 

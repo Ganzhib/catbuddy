@@ -364,7 +364,7 @@ export class AgentLoop implements RuntimeState {
       this._config.tools.mcpServers = servers;
     }
     this.mcpManager.updateServers(servers);
-    return this.mcpManager.reload();
+    return this.mcpManager.reload(this.tools);
   }
 
   getMcpServerStatus() {

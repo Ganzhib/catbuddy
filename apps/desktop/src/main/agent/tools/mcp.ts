@@ -308,6 +308,12 @@ function formatConnectFailure(
 ): string {
   const errMessage = err instanceof Error ? err.message : String(err)
   const combined = `${stderr}\n${errMessage}`.toLowerCase()
+  if (combined.includes('timeout')) {
+    return 'Connection timed out while starting the MCP server. Check network/npm download speed, or run the npx command once in a terminal.'
+  }
+  if (combined.includes('enoent') || combined.includes('not recognized') || combined.includes('无法将') || combined.includes('不是内部或外部命令')) {
+    return `Command not found (${cfg.command}). Install Node.js/npm and make sure npx is available in PATH.`
+  }
   if (combined.includes('404') || combined.includes('not found') || combined.includes('e404')) {
     const pkg = cfg.args?.find((a) => a.startsWith('@') || a.includes('/')) ?? cfg.command
     return `Package or command not found (${pkg}). Check the marketplace entry or your config.`
@@ -339,20 +345,23 @@ export async function connectMcpServers(
       const { command, args, env } = normalizeWindowsStdioCommand(
         cfg.command,
         cfg.args,
-        cfg.env,
+        { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
       )
       const transport = new StdioClientTransport({
         command,
         args,
-        env: env ? { ...process.env, ...env } as Record<string, string> : undefined,
+        env,
         cwd: cfg.cwd,
         stderr: 'pipe',
       })
       releaseStderr = attachStderrCapture(transport)
       const client = new Client({ name: 'catbuddy-desktop', version: '0.1.0' })
-      await client.connect(transport)
+      await withTimeout(client.connect(transport), (cfg.toolTimeout ?? DEFAULT_TOOL_TIMEOUT_S) * 1000)
 
-      const { tools } = await client.listTools()
+      const { tools } = await withTimeout(
+        client.listTools(),
+        (cfg.toolTimeout ?? DEFAULT_TOOL_TIMEOUT_S) * 1000,
+      )
       const enabled = new Set(cfg.enabledTools ?? [])
       const allowAll = enabled.has('*')
       let registered = 0
@@ -447,13 +456,26 @@ export class McpManager {
     return [...names, ...this._listMcpToolNames()]
   }
 
-  async reload(): Promise<string> {
+  async reload(registry?: ToolRegistry): Promise<string> {
+    if (registry) {
+      this._registry = registry
+    }
+    if (!this._registry) {
+      this._connected = false
+      this._lastFailures = Object.keys(this._servers ?? {}).map((name) => ({
+        name,
+        error: 'MCP tool registry is not ready yet. Click reconnect again or restart the desktop app.',
+      }))
+      return 'MCP tool registry is not ready yet. Click reconnect again or restart the desktop app.'
+    }
+
     await this._disconnectAll()
     if (this._registry) {
       const removed = this._registry.unregisterByPrefix('mcp_')
       if (removed.length > 0) {
         console.info(`[McpManager] unregistered ${removed.length} MCP tool(s)`)
       }
+      this._registry.register(createMcpReloadTool(this))
     }
 
     const count = this._servers ? Object.keys(this._servers).length : 0

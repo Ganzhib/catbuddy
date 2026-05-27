@@ -38,7 +38,7 @@ export interface PlatformApi {
   fetchBootstrap(baseUrl?: string, secret?: string): Promise<BootstrapResponse>
   deriveWsUrl(wsPath: string, token: string): string
   listSessions(token: string, base?: string): Promise<ChatSummary[]>
-  createSession(token: string, base?: string, chatId?: string): Promise<ChatSummary>
+  createSession(token: string, base?: string, chatId?: string, workspaceFolderId?: string | null): Promise<ChatSummary>
   fetchWebuiThread(token: string, key: string, base?: string): Promise<WebuiThreadPersistedPayload | null>
   deleteSession(token: string, key: string, base?: string): Promise<boolean>
   fetchSettings(token: string, base?: string): Promise<SettingsPayload>
@@ -60,7 +60,23 @@ export function createPlatformApi(): PlatformApi {
       fetchBootstrap: fetchBootstrapIpc,
       deriveWsUrl: deriveWsUrlIpc,
       listSessions: listSessionsIpc,
-      createSession: async (_token, _base, chatId?) => {
+      createSession: async (_token, _base, chatId?, workspaceFolderId?) => {
+        if (window.catbuddy?.newSession) {
+          const created = await window.catbuddy.newSession(workspaceFolderId ?? null)
+          const key = created.key
+          const id = key.replace(/^desktop:/, '')
+          const now = new Date().toISOString()
+          return {
+            key,
+            channel: 'desktop',
+            chatId: id,
+            createdAt: now,
+            updatedAt: now,
+            title: '',
+            preview: '',
+            workspaceFolderId: workspaceFolderId ?? null,
+          }
+        }
         const id =
           chatId?.replace(/^desktop:/, '')
           ?? `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -74,6 +90,7 @@ export function createPlatformApi(): PlatformApi {
           updatedAt: now,
           title: '',
           preview: '',
+          workspaceFolderId: workspaceFolderId ?? null,
         }
       },
       fetchWebuiThread: fetchWebuiThreadIpc,

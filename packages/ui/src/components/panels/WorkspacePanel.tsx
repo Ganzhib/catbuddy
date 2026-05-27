@@ -40,6 +40,16 @@ export function WorkspacePanel({
     }
   }, [importFolder]);
 
+  const handleSelectChat = useCallback(
+    async (key: string, workspaceFolderId?: string) => {
+      if (workspaceFolderId && workspaceFolderId !== store.activeFolderId) {
+        await selectFolder(workspaceFolderId);
+      }
+      onSelectChat(key);
+    },
+    [onSelectChat, selectFolder, store.activeFolderId],
+  );
+
   return (
     <PanelShell
       title={t("sidebar.nav.workspace")}
@@ -77,7 +87,7 @@ export function WorkspacePanel({
             activeKey={activeKey}
             activeFolderId={store.activeFolderId}
             loading={loading}
-            onSelectChat={onSelectChat}
+            onSelectChat={(key, folderId) => void handleSelectChat(key, folderId)}
             onRequestDelete={onRequestDelete}
             onImportFolder={() => void importFolder()}
             onRemoveFolder={(id) => removeFolder(id)}

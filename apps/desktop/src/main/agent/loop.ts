@@ -274,6 +274,8 @@ export class AgentLoop implements RuntimeState {
     projectRoot: string;
     catbuddyDir: string;
     config?: catbuddyConfig;
+    /** Shared with IPC runtime; when omitted a new manager is created. */
+    sessionManager?: SessionManager;
   }): void {
     const workspace = path.resolve(opts.workspace);
     const projectRoot = path.resolve(opts.projectRoot);
@@ -281,7 +283,8 @@ export class AgentLoop implements RuntimeState {
     const restrict = opts.config?.tools?.restrictToWorkspace ?? false;
 
     (this as { workspace: string }).workspace = workspace;
-    (this as { sessions: SessionManager }).sessions = new SessionManager(workspace);
+    (this as { sessions: SessionManager }).sessions =
+      opts.sessionManager ?? new SessionManager(workspace);
 
     const globalWorkspace = getGlobalProfileWorkspace();
     this.context = new ContextBuilder(workspace, {
@@ -323,6 +326,14 @@ export class AgentLoop implements RuntimeState {
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.config?.agents?.defaults?.consolidationRatio ?? 0.5,
     });
+
+    if (this.autoCompact) {
+      const ttl =
+        opts.config?.agents?.defaults?.sessionTtlMinutes ??
+        this._config?.agents?.defaults?.sessionTtlMinutes ??
+        0;
+      this.autoCompact = new AutoCompact(this.sessions, this.consolidator, ttl);
+    }
   }
 
   /** Connect MCP servers from config (call after construction). */

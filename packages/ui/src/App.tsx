@@ -106,7 +106,10 @@ function Shell({
 
   const onCreateChat = useCallback(async () => {
     try {
-      const chatId = await createChat()
+      const activeFolderId = window.catbuddy?.listWorkspaceFolders
+        ? (await window.catbuddy.listWorkspaceFolders())?.activeFolderId ?? null
+        : null
+      const chatId = await createChat(activeFolderId)
       setActiveKey(toSessionKey(chatId))
       setView('chat')
       setMobileSidebarOpen(false)
@@ -145,8 +148,8 @@ function Shell({
 
   useEffect(() => {
     const id = activeSession?.chatId
-    if (id) client.attach(id)
-  }, [activeSession?.chatId, client])
+    if (id) client.attach(id, activeSession.workspaceFolderId ?? null)
+  }, [activeSession?.chatId, activeSession?.workspaceFolderId, client])
 
   // Desktop 新建/切换对话并发消息时，跟随到对应 sessionKey（见 session_updated scope=focus）
   useEffect(() => {

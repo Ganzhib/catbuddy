@@ -31,7 +31,7 @@ interface WorkspaceChatSectionProps {
   activeKey: string | null;
   activeFolderId?: string | null;
   loading?: boolean;
-  onSelectChat: (key: string) => void;
+  onSelectChat: (key: string, workspaceFolderId?: string) => void;
   onRequestDelete: (key: string, label: string) => void;
   onImportFolder?: () => void | Promise<void>;
   onRemoveFolder?: (folderId: string) => void | Promise<void>;
@@ -168,7 +168,7 @@ function FolderGroup({
   sessions: ChatSummary[];
   activeKey: string | null;
   isActiveFolder: boolean;
-  onSelectChat: (key: string) => void;
+  onSelectChat: (key: string, workspaceFolderId?: string) => void;
   onRemoveFolder?: (folderId: string) => void | Promise<void>;
   onSelectFolder?: (folderId: string) => void | Promise<void>;
   onImportFolder?: () => void | Promise<void>;
@@ -298,7 +298,7 @@ function FolderGroup({
               key={session.key}
               session={session}
               active={session.key === activeKey}
-              onSelect={() => onSelectChat(session.key)}
+              onSelect={() => onSelectChat(session.key, folder.id)}
             />
           ))}
           {!showAll && hiddenCount > 0 ? (

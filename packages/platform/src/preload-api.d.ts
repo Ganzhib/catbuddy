@@ -37,7 +37,7 @@ export interface CatbuddyPreloadApi {
   getSession(key: string): Promise<SessionDetail | null>
   deleteSession(key: string): Promise<boolean>
   clearSession(key: string): Promise<void>
-  newSession(): Promise<{ key: string }>
+  newSession(workspaceFolderId?: string | null): Promise<{ key: string }>
 
   getConfig(): Promise<catbuddyConfig>
   getSettingsPayload?(): Promise<import('@catbuddy/shared').SettingsPayload>
@@ -106,6 +106,7 @@ export interface CatbuddyPreloadApi {
   gatewaySubscribeSession(payload: {
     sessionKey?: string
     chatId?: string
+    workspaceFolderId?: string | null
   }): Promise<{ sessionKey: string; subscribed?: string[] }>
   gatewaySyncAllSessions(): Promise<{ keys: string[]; subscribed?: string[] }>
   setGatewayAccountEmail(payload: {

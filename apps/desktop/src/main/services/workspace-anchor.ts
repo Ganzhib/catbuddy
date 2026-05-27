@@ -105,13 +105,15 @@ export function applyProjectAnchor(
 
   runtime.configFile = anchor.configFile;
   runtime.config = config;
+  const sessions = new SessionManager(anchor.workspace);
+  runtime.sessions = sessions;
   runtime.agentLoop.reanchorProject({
     workspace: anchor.workspace,
     projectRoot: anchor.projectRoot,
     catbuddyDir: anchor.catbuddyDir,
     config,
+    sessionManager: sessions,
   });
-  runtime.sessions = new SessionManager(anchor.workspace);
 
   saveConfig(anchor.configFile, config);
   console.log(

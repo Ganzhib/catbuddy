@@ -80,7 +80,13 @@ export function Sidebar(props: SidebarProps) {
     [filteredSessions],
   );
 
-  const selectChat = (key: string) => {
+  const selectChat = async (key: string, workspaceFolderId?: string | null) => {
+    if (
+      workspaceFolderId &&
+      workspaceFolderId !== store.activeFolderId
+    ) {
+      await selectFolder(workspaceFolderId);
+    }
     props.onSelectPanel("chat");
     props.onSelect(key);
   };

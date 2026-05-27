@@ -13,6 +13,7 @@ import type { MessageBus } from "../bus/index.js";
 import type { ChannelManager } from "../channels/index.js";
 import { GatewayChannel } from "../channels/index.js";
 import type { SessionManager } from "../session/session-manager.js";
+import type { DesktopRuntimeRefs } from "./workspace-anchor.js";
 import { buildWebuiThreadFromSession } from "../sync/session-thread.js";
 import { postGatewayAuthHttp } from "./gateway-auth-http.js";
 
@@ -105,6 +106,24 @@ function safeIpcHandle(channel: string, handler: Parameters<typeof ipcMain.handl
     // no prior handler (first register)
   }
   ipcMain.handle(channel, handler);
+}
+
+/** Keep gateway session provider aligned after workspace anchor changes. */
+export function updateGatewayRuntimeRefs(
+  state: GatewayRemoteState,
+  runtime: Pick<DesktopRuntimeRefs, "sessions" | "config" | "configFile">,
+): void {
+  state.appConfig = runtime.config;
+  state.appConfigFile = runtime.configFile;
+  state.appSessions = runtime.sessions;
+  const client = state.gatewayWsClient;
+  if (!client) return;
+  try {
+    const rows = runtime.sessions.list();
+    client.syncSessions(rows.map((r) => r.key));
+  } catch (err) {
+    console.warn("[main] Gateway syncSessions after anchor failed:", err);
+  }
 }
 
 export function applyGatewayRemote(state: GatewayRemoteState): void {

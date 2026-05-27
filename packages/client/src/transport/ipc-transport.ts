@@ -194,9 +194,9 @@ export class IpcTransport implements AgentTransport {
     window.catbuddy?.sendMessage(chatId, content, mediaUrls);
   }
 
-  ensureSession(chatId: string): void {
+  ensureSession(chatId: string, workspaceFolderId?: string | null): void {
     const id = chatId.trim();
     if (!id) return;
-    void window.catbuddy?.gatewaySubscribeSession({ chatId: id });
+    void window.catbuddy?.gatewaySubscribeSession({ chatId: id, workspaceFolderId: workspaceFolderId ?? null });
   }
 }

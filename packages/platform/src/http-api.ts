@@ -46,10 +46,14 @@ export async function createSessionHttp(
   token: string,
   base: string = '',
   chatId?: string,
+  workspaceFolderId?: string | null,
 ): Promise<ChatSummary> {
   return apiFetch<ChatSummary>('/api/sessions', token, base, {
     method: 'POST',
-    body: JSON.stringify(chatId ? { chatId } : {}),
+    body: JSON.stringify({
+      ...(chatId ? { chatId } : {}),
+      ...(workspaceFolderId ? { workspaceFolderId } : {}),
+    }),
   })
 }
 

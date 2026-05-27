@@ -25,6 +25,7 @@ import {
 import {
   applyGatewayRemote,
   registerGatewayRemoteIpc,
+  updateGatewayRuntimeRefs,
   type GatewayRemoteState,
 } from "./gateway-remote.js";
 
@@ -111,16 +112,17 @@ export async function initAgent(): Promise<AgentRuntime> {
     const folder = getWorkspaceFolderById(homeDir, registry.activeFolderId);
     if (folder) {
       applyProjectAnchor(runtime, folder);
+      updateGatewayRuntimeRefs(gatewayState, runtime);
       sessions = runtime.sessions;
       config = runtime.config;
       configFile = runtime.configFile;
-      gatewayState.appConfig = config;
-      gatewayState.appConfigFile = configFile;
-      gatewayState.appSessions = sessions;
     }
   }
 
-  registerIpcHandlers(runtime, () => gatewayState.gatewayWsClient);
+  registerIpcHandlers(runtime, {
+    getGatewayClient: () => gatewayState.gatewayWsClient,
+    gatewayState,
+  });
 
   const cron = startDesktopCron(runtime);
   const heartbeat = startDesktopHeartbeat(runtime);

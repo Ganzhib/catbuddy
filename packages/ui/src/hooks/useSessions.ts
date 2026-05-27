@@ -4,6 +4,7 @@ import { useClient } from "@/providers/ClientProvider";
 import i18n from "@/i18n";
 import {
   ApiError,
+  createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   fetchWebuiThread,
   listSessions,
@@ -25,7 +26,7 @@ export function useSessions(): {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  createChat: () => Promise<string>;
+  createChat: (workspaceFolderId?: string | null) => Promise<string>;
   deleteChat: (key: string) => Promise<void>;
 } {
   const { client, token } = useClient();
@@ -35,11 +36,15 @@ export function useSessions(): {
   const tokenRef = useRef(token);
   tokenRef.current = token;
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (replace = false) => {
     try {
       setLoading(true);
       const rows = await listSessions(tokenRef.current);
-      setSessions((prev) => mergeChatSummaries(rows, prev));
+      if (replace) {
+        setSessions(rows.map((row) => normalizeChatSummary(row)));
+      } else {
+        setSessions((prev) => mergeChatSummaries(rows, prev));
+      }
       setError(null);
     } catch (e) {
       const msg =
@@ -60,7 +65,7 @@ export function useSessions(): {
   }, [refresh]);
 
   useEffect(() => {
-    const onWorkspaceChanged = () => void refresh();
+    const onWorkspaceChanged = () => void refresh(true);
     window.addEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
     return () =>
       window.removeEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
@@ -83,24 +88,15 @@ export function useSessions(): {
     });
   }, [client, refresh]);
 
-  const createChat = useCallback(async (): Promise<string> => {
-    // Gateway 模式也不在「新建」时 POST 桌面，避免产生大量空会话；首条消息发送时再注册
-    const chatId = await client.newChat();
-    const row = normalizeChatSummary({
-      key: toSessionKey(chatId),
-      channel: "desktop",
-      chatId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      title: "",
-      preview: "",
-    });
-    client.attach(row.chatId);
+  const createChat = useCallback(async (workspaceFolderId?: string | null): Promise<string> => {
+    const created = await apiCreateSession(tokenRef.current, undefined, undefined, workspaceFolderId);
+    const row = normalizeChatSummary(created);
+    client.attach(row.chatId, row.workspaceFolderId ?? workspaceFolderId ?? null);
     setSessions((prev) => [
       row,
       ...prev.filter((s) => toSessionKey(s.key) !== row.key),
     ]);
-    return chatId;
+    return row.chatId;
   }, [client]);
 
   const deleteChat = useCallback(

@@ -179,11 +179,11 @@ export class catbuddyClient {
     return Promise.resolve(newId);
   }
 
-  attach(chatId: string): void {
+  attach(chatId: string, workspaceFolderId?: string | null): void {
     const id = bareChatId(chatId);
     this.knownChats.add(id);
     this._activeChatId = id;
-    this.transport.ensureSession?.(id);
+    this.transport.ensureSession?.(id, workspaceFolderId ?? null);
   }
 
   sendMessage(

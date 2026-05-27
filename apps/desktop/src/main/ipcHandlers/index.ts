@@ -27,17 +27,32 @@ import {
   removeWorkspaceFolder,
   setActiveWorkspaceFolderId,
 } from '../services/workspace-folders.js'
-import type { catbuddyConfig, McpServerConfig } from "@catbuddy/shared"
+import type { catbuddyConfig, McpServerConfig, WorkspaceFolder } from "@catbuddy/shared"
 import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared"
 import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
+import {
+  updateGatewayRuntimeRefs,
+  type GatewayRemoteState,
+} from '../services/gateway-remote.js'
+export interface RegisterIpcHandlersOpts {
+  getGatewayClient?: () => GatewayDesktopClient | null
+  gatewayState?: GatewayRemoteState
+}
 
 export function registerIpcHandlers(
   runtime: DesktopRuntimeRefs,
-  getGatewayClient: () => GatewayDesktopClient | null = () => null,
+  opts: RegisterIpcHandlersOpts = {},
 ) {
+  const getGatewayClient = opts.getGatewayClient ?? (() => null)
+  const gatewayState = opts.gatewayState
   const { agentLoop } = runtime
   const persistConfig = () => saveConfig(runtime.configFile, runtime.config)
   const homeCatbuddyDir = () => getHomeCatbuddyDir()
+
+  const anchorToFolder = (folder: WorkspaceFolder | null) => {
+    applyProjectAnchor(runtime, folder)
+    if (gatewayState) updateGatewayRuntimeRefs(gatewayState, runtime)
+  }
 
   const toSessionKey = (chatId?: string): string => {
     if (!chatId?.trim()) return 'desktop:main'
@@ -50,14 +65,15 @@ export function registerIpcHandlers(
     return idx === -1 ? sessionKey : sessionKey.slice(idx + 1)
   }
 
-  const ensureSessionWorkspaceFolder = (sessionKey: string) => {
+  const ensureSessionWorkspaceFolder = (sessionKey: string, preferredFolderId?: string | null) => {
     runtime.sessions.getOrCreate(sessionKey)
     const existing = runtime.sessions.getMetadataValue<string>(sessionKey, 'workspaceFolderId')
     if (existing) return existing
     const active = getActiveWorkspaceFolderId(homeCatbuddyDir())
-    if (active) {
-      runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: active })
-      return active
+    const folderId = preferredFolderId?.trim() || active
+    if (folderId) {
+      runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: folderId })
+      return folderId
     }
     return null
   }
@@ -104,9 +120,10 @@ export function registerIpcHandlers(
     };
   })
 
-  ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId }: { sessionKey?: string; chatId?: string }) => {
+  ipcMain.handle('gateway:subscribe-session', async (_event, { sessionKey, chatId, workspaceFolderId }: { sessionKey?: string; chatId?: string; workspaceFolderId?: string | null }) => {
     const key = sessionKey?.trim() || toSessionKey(chatId)
     runtime.sessions.getOrCreate(key)
+    ensureSessionWorkspaceFolder(key, workspaceFolderId)
     getGatewayClient()?.focusSession(key)
     return { sessionKey: key, subscribed: getGatewayClient()?.subscribedSessionKeys ?? [] }
   })
@@ -143,9 +160,19 @@ export function registerIpcHandlers(
   })
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => runtime.sessions.clear(key))
   ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string } = {}) => {
+    const home = homeCatbuddyDir()
+    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(home)
+    if (folderId) {
+      const active = getActiveWorkspaceFolderId(home)
+      if (folderId !== active) {
+        setActiveWorkspaceFolderId(home, folderId)
+        const folder = getWorkspaceFolderById(home, folderId)
+        if (folder) anchorToFolder(folder)
+      }
+    }
+
     const key = `desktop:${Date.now()}`
     runtime.sessions.getOrCreate(key)
-    const folderId = workspaceFolderId ?? getActiveWorkspaceFolderId(homeCatbuddyDir())
     if (folderId) {
       runtime.sessions.setMetadata(key, { workspaceFolderId: folderId })
     }
@@ -368,7 +395,7 @@ export function registerIpcHandlers(
     const sourcePath = result.filePaths[0]
     const home = homeCatbuddyDir()
     const { folder, created, store } = createWorkspaceFolderFromPath(home, sourcePath)
-    applyProjectAnchor(runtime, folder)
+    anchorToFolder(folder)
 
     return {
       ok: true as const,
@@ -391,7 +418,7 @@ export function registerIpcHandlers(
       const home = homeCatbuddyDir()
       const store = setActiveWorkspaceFolderId(home, folderId)
       const folder = folderId ? getWorkspaceFolderById(home, folderId) : null
-      applyProjectAnchor(runtime, folder)
+      anchorToFolder(folder)
       return store
     },
   )
@@ -399,7 +426,13 @@ export function registerIpcHandlers(
   ipcMain.handle(
     'workspace-folders:remove',
     async (_event, { folderId }: { folderId: string }) => {
-      return removeWorkspaceFolder(homeCatbuddyDir(), folderId)
+      const home = homeCatbuddyDir()
+      const store = removeWorkspaceFolder(home, folderId)
+      const nextFolder = store.activeFolderId
+        ? getWorkspaceFolderById(home, store.activeFolderId)
+        : null
+      anchorToFolder(nextFolder)
+      return store
     },
   )
 

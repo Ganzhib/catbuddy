@@ -139,13 +139,16 @@ export function ThreadShell({
 
   useEffect(() => {
     if (!chatId) return;
-    client.attach(chatId);
-  }, [chatId, client]);
+    client.attach(chatId, session?.workspaceFolderId ?? null);
+  }, [chatId, session?.workspaceFolderId, client]);
 
   useEffect(() => {
     if (!historyKey || !window.catbuddy?.gatewaySubscribeSession) return;
-    void window.catbuddy.gatewaySubscribeSession({ sessionKey: historyKey });
-  }, [historyKey]);
+    void window.catbuddy.gatewaySubscribeSession({
+      sessionKey: historyKey,
+      workspaceFolderId: session?.workspaceFolderId ?? null,
+    });
+  }, [historyKey, session?.workspaceFolderId]);
 
   const displayMessages = useMemo(() => projectWebuiThreadMessages(messages), [messages]);
 

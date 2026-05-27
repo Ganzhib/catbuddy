@@ -8,9 +8,19 @@ import type { SkillInfo } from "@catbuddy/shared"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/** Bundled main lives in dist-electron/ → ../skills is the app skills root. */
+/** Resolve bundled skills across dev, unpacked builds, and packaged resources. */
 export function resolveBuiltinSkillsDir(): string {
-  return path.resolve(__dirname, '../skills')
+  const candidates = [
+    path.resolve(__dirname, '../skills'),
+    path.resolve(__dirname, 'skills'),
+    path.resolve(__dirname, '../../skills'),
+    path.resolve(process.resourcesPath ?? '', 'skills'),
+    path.resolve(process.cwd(), 'skills'),
+    path.resolve(process.cwd(), 'apps/desktop/skills'),
+  ]
+
+  const found = candidates.find((dir) => fs.existsSync(dir))
+  return found ?? candidates[0]!
 }
 
 export const ALWAYS_ON_SKILLS = new Set(['memory', 'my'])

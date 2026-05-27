@@ -32,6 +32,8 @@ function copyMainAssetsPlugin() {
   const assetsDest = path.join(__dirname, "dist-electron/assets");
   const preloadSrc = path.join(__dirname, "src/preload");
   const preloadDest = path.join(__dirname, "dist-electron/preload");
+  const skillsSrc = path.join(__dirname, "skills");
+  const skillsDest = path.join(__dirname, "dist-electron/skills");
 
   function copy() {
     if (fs.existsSync(assetsSrc)) {
@@ -39,6 +41,9 @@ function copyMainAssetsPlugin() {
     }
     if (fs.existsSync(preloadSrc)) {
       copyDirRecursive(preloadSrc, preloadDest);
+    }
+    if (fs.existsSync(skillsSrc)) {
+      copyDirRecursive(skillsSrc, skillsDest);
     }
     for (const envName of [".env.production"]) {
       const envSrc = path.join(repoRoot, envName);

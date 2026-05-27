@@ -1,4 +1,4 @@
-import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate } from '@catbuddy/shared'
+import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate, SkillInfo } from '@catbuddy/shared'
 import { fetchBootstrapHttp, deriveWsUrlHttp } from './http-bootstrap'
 import { fetchBootstrapIpc, deriveWsUrlIpc } from './ipc-bootstrap'
 import {
@@ -24,6 +24,10 @@ import {
   updateMcpServersIpc,
   fetchMcpMarketplaceIpc,
   addMcpFromMarketplaceIpc,
+  fetchSkillMarketplaceIpc,
+  installSkillFromMarketplaceIpc,
+  listSkillsIpc,
+  toggleSkillIpc,
   listSlashCommandsIpc,
 } from './ipc-api'
 
@@ -49,6 +53,10 @@ export interface PlatformApi {
   updateMcpServers(token: string, servers: Record<string, import('@catbuddy/shared').McpServerConfig>, base?: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
   fetchMcpMarketplace(token: string, base?: string): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]>
   addMcpFromMarketplace(token: string, id: string, base?: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+  listSkills(token: string, base?: string): Promise<SkillInfo[]>
+  toggleSkill(token: string, name: string, enabled: boolean, base?: string): Promise<void>
+  fetchSkillMarketplace(token: string, base?: string): Promise<import('@catbuddy/shared').SkillMarketplaceEntry[]>
+  installSkillFromMarketplace(token: string, id: string, base?: string): Promise<import('@catbuddy/shared').SkillInstallResult>
   listSlashCommands(token: string, base?: string): Promise<SlashCommand[]>
   readonly mode: 'desktop' | 'web'
 }
@@ -104,6 +112,10 @@ export function createPlatformApi(): PlatformApi {
       updateMcpServers: updateMcpServersIpc,
       fetchMcpMarketplace: fetchMcpMarketplaceIpc,
       addMcpFromMarketplace: addMcpFromMarketplaceIpc,
+      listSkills: listSkillsIpc,
+      toggleSkill: toggleSkillIpc,
+      fetchSkillMarketplace: fetchSkillMarketplaceIpc,
+      installSkillFromMarketplace: installSkillFromMarketplaceIpc,
       listSlashCommands: listSlashCommandsIpc,
     }
   }
@@ -131,6 +143,18 @@ export function createPlatformApi(): PlatformApi {
     },
     addMcpFromMarketplace: async () => {
       throw new Error('MCP settings are desktop-only')
+    },
+    listSkills: async () => {
+      throw new Error('Skills are desktop-only')
+    },
+    toggleSkill: async () => {
+      throw new Error('Skills are desktop-only')
+    },
+    fetchSkillMarketplace: async () => {
+      throw new Error('Skill marketplace is desktop-only')
+    },
+    installSkillFromMarketplace: async () => {
+      throw new Error('Skill marketplace is desktop-only')
     },
     listSlashCommands: listSlashCommandsHttp,
   }

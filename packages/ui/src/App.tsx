@@ -60,6 +60,7 @@ function Shell({
   const { theme, toggle } = useTheme()
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions()
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const [draftWorkspaceFolderId, setDraftWorkspaceFolderId] = useState<string | null>(null)
   const placeholderSessionsRef = useRef<Map<string, ChatSummary>>(new Map())
   const [view, setView] = useState<SidebarPanel>('chat')
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(readSidebarOpen)
@@ -113,6 +114,7 @@ function Shell({
           : null
       const chatId = await createChat(activeFolderId)
       setActiveKey(toSessionKey(chatId))
+      setDraftWorkspaceFolderId(null)
       setView('chat')
       setMobileSidebarOpen(false)
       return chatId
@@ -120,11 +122,12 @@ function Shell({
   }, [createChat])
 
   const onNewChat = useCallback(() => {
-    setActiveKey(null); setView('chat'); setMobileSidebarOpen(false)
+    setActiveKey(null); setDraftWorkspaceFolderId(null); setView('chat'); setMobileSidebarOpen(false)
   }, [])
 
-  const onSelectChat = useCallback((key: string) => {
-    setActiveKey(toSessionKey(key))
+  const onSelectChat = useCallback((key: string | null, workspaceFolderId?: string | null) => {
+    setActiveKey(key ? toSessionKey(key) : null)
+    setDraftWorkspaceFolderId(key ? null : workspaceFolderId ?? null)
     setView('chat')
     setMobileSidebarOpen(false)
   }, [])
@@ -140,6 +143,7 @@ function Shell({
 
   const onBackToChat = useCallback(() => {
     setView('chat')
+    setDraftWorkspaceFolderId(null)
     setActiveKey(current => {
       if (!current) return null
       return sessions.some(s => s.key === current) ? current : sessions[0]?.key ?? null
@@ -159,6 +163,7 @@ function Shell({
       if (scope !== 'focus' || !chatId || chatId === 'metadata') return
       const key = toSessionKey(chatId)
       setActiveKey((prev) => (prev === key ? prev : key))
+      setDraftWorkspaceFolderId(null)
       setView('chat')
       client.attach(chatId)
     })
@@ -172,6 +177,7 @@ function Shell({
   useEffect(() => {
     return client.onGoHomeRequest(() => {
       setActiveKey(null);
+      setDraftWorkspaceFolderId(null);
       setView('chat');
     })
   }, [client])
@@ -242,6 +248,7 @@ function Shell({
               onToggleSidebar={toggleSidebar}
               onNewChat={onNewChat}
               onCreateChat={onCreateChat}
+              draftWorkspaceFolderId={draftWorkspaceFolderId}
               onTurnEnd={onTurnEnd}
               theme={theme}
               onToggleTheme={toggle}

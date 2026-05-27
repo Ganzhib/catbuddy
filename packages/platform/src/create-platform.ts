@@ -66,6 +66,7 @@ export function createPlatformApi(): PlatformApi {
           const key = created.key
           const id = key.replace(/^desktop:/, '')
           const now = new Date().toISOString()
+          const actualWorkspaceFolderId = created.workspaceFolderId ?? workspaceFolderId ?? null
           return {
             key,
             channel: 'desktop',
@@ -74,7 +75,7 @@ export function createPlatformApi(): PlatformApi {
             updatedAt: now,
             title: '',
             preview: '',
-            workspaceFolderId: workspaceFolderId ?? null,
+            workspaceFolderId: actualWorkspaceFolderId,
           }
         }
         const id =

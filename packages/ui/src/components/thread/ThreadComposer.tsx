@@ -77,6 +77,10 @@ interface ThreadComposerProps {
   runStartedAt?: number | null;
   /** Sustained objective for this chat (WebSocket ``goal_state``). */
   goalState?: GoalStateWsPayload;
+  /** Workspace folder id bound to the selected conversation. Null means regular chat history. */
+  workspaceFolderId?: string | null;
+  /** True when the composer belongs to an existing selected conversation. */
+  chatSessionSelected?: boolean;
 }
 
 const COMMAND_ICONS: Record<string, LucideIcon> = {
@@ -388,6 +392,8 @@ export function ThreadComposer({
   onStop,
   runStartedAt = null,
   goalState,
+  workspaceFolderId,
+  chatSessionSelected = false,
 }: ThreadComposerProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
@@ -427,9 +433,13 @@ export function ThreadComposer({
     useAttachedImages();
 
   const { store: workspaceStore, selectFolder } = useWorkspaceFolders();
+  const effectiveWorkspaceFolderId = workspaceFolderId ?? null;
   const activeWorkspaceFolder = useMemo(
-    () => workspaceStore.folders.find((f) => f.id === workspaceStore.activeFolderId) ?? null,
-    [workspaceStore.activeFolderId, workspaceStore.folders],
+    () => {
+      if (!effectiveWorkspaceFolderId) return null;
+      return workspaceStore.folders.find((f) => f.id === effectiveWorkspaceFolderId) ?? null;
+    },
+    [effectiveWorkspaceFolderId, workspaceStore.folders],
   );
 
   const formatRejection = useCallback(
@@ -787,7 +797,7 @@ export function ThreadComposer({
 
   const attachButtonDisabled = disabled || full;
   const showStopButton = isStreaming && !!onStop;
-  const showFolderUpload = hasCatbuddyIpc();
+  const showFolderUpload = hasCatbuddyIpc() && !!workspaceFolderId;
 
   const handleImportFolder = useCallback(async () => {
     if (importingFolder || disabled) return;
@@ -954,18 +964,20 @@ export function ThreadComposer({
                   <span className="min-w-0 flex-1 truncate font-medium text-foreground/85">
                     {activeWorkspaceFolder.name}
                   </span>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    aria-label={t("thread.composer.clearFolder")}
-                    onClick={() => void selectFolder(null)}
-                    className={cn(
-                      "inline-flex shrink-0 items-center justify-center rounded-full text-muted-foreground/75 transition-colors hover:bg-muted/60 hover:text-foreground",
-                      isHero ? "h-6 w-6" : "h-5 w-5",
-                    )}
-                  >
-                    <X className={cn(isHero ? "h-3.5 w-3.5" : "h-3 w-3")} aria-hidden />
-                  </button>
+                  {!chatSessionSelected ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-label={t("thread.composer.clearFolder")}
+                      onClick={() => void selectFolder(null)}
+                      className={cn(
+                        "inline-flex shrink-0 items-center justify-center rounded-full text-muted-foreground/75 transition-colors hover:bg-muted/60 hover:text-foreground",
+                        isHero ? "h-6 w-6" : "h-5 w-5",
+                      )}
+                    >
+                      <X className={cn(isHero ? "h-3.5 w-3.5" : "h-3 w-3")} aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <Button

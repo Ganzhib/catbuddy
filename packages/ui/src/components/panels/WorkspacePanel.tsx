@@ -13,7 +13,7 @@ import type { ChatSummary } from "@catbuddy/shared";
 interface WorkspacePanelProps {
   sessions: ChatSummary[];
   activeKey: string | null;
-  onSelectChat: (key: string) => void;
+  onSelectChat: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
   onCreateChat: (workspaceFolderId: string) => unknown;
   onBackToChat: () => void;
@@ -43,11 +43,25 @@ export function WorkspacePanel({
   }, [importFolder]);
 
   const handleSelectChat = useCallback(
-    async (key: string, workspaceFolderId?: string) => {
-      if (workspaceFolderId && workspaceFolderId !== store.activeFolderId) {
-        await selectFolder(workspaceFolderId);
+    async (key: string, workspaceFolderId?: string | null) => {
+      if (workspaceFolderId) {
+        if (workspaceFolderId !== store.activeFolderId) {
+          await selectFolder(workspaceFolderId);
+        }
+      } else if (store.activeFolderId) {
+        await selectFolder(null);
       }
       onSelectChat(key);
+    },
+    [onSelectChat, selectFolder, store.activeFolderId],
+  );
+
+  const handleSelectFolder = useCallback(
+    async (folderId: string) => {
+      if (folderId !== store.activeFolderId) {
+        await selectFolder(folderId);
+      }
+      onSelectChat(null, folderId);
     },
     [onSelectChat, selectFolder, store.activeFolderId],
   );
@@ -93,7 +107,7 @@ export function WorkspacePanel({
             onRequestDelete={onRequestDelete}
             onCreateChat={onCreateChat}
             onImportFolder={() => void importFolder()}
-            onSelectFolder={(id) => selectFolder(id)}
+            onSelectFolder={(id) => void handleSelectFolder(id)}
           />
         </section>
       </div>

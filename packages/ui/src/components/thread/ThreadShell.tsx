@@ -37,7 +37,8 @@ interface ThreadShellProps {
   onToggleSidebar: () => void;
   onGoHome?: () => void;
   onNewChat?: () => void;
-  onCreateChat?: () => Promise<string | null>;
+  onCreateChat?: (workspaceFolderId?: string | null) => Promise<string | null>;
+  draftWorkspaceFolderId?: string | null;
   onTurnEnd?: () => void;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
@@ -81,6 +82,7 @@ export function ThreadShell({
   title,
   onToggleSidebar,
   onCreateChat,
+  draftWorkspaceFolderId = null,
   onTurnEnd,
   theme = "light",
   onToggleTheme = () => {},
@@ -284,13 +286,13 @@ export function ThreadShell({
       if (booting) return;
       setBooting(true);
       pendingFirstRef.current = { content, images, options };
-      const newId = await onCreateChat?.();
+      const newId = await onCreateChat?.(draftWorkspaceFolderId);
       if (!newId) {
         pendingFirstRef.current = null;
         setBooting(false);
       }
     },
-    [booting, onCreateChat],
+    [booting, draftWorkspaceFolderId, onCreateChat],
   );
 
   const handleThreadSend = useCallback(
@@ -366,6 +368,8 @@ export function ThreadShell({
           onStop={stop}
           runStartedAt={runStartedAt}
           goalState={goalState}
+          workspaceFolderId={session.workspaceFolderId ?? null}
+          chatSessionSelected
         />
       ) : (
         <ThreadComposer
@@ -384,6 +388,7 @@ export function ThreadShell({
           onImageModeChange={setHeroImageMode}
           runStartedAt={runStartedAt}
           goalState={goalState}
+          workspaceFolderId={draftWorkspaceFolderId}
         />
       )}
       {showHeroComposer ? quickActions : null}

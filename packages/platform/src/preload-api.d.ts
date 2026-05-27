@@ -37,7 +37,7 @@ export interface CatbuddyPreloadApi {
   getSession(key: string): Promise<SessionDetail | null>
   deleteSession(key: string): Promise<boolean>
   clearSession(key: string): Promise<void>
-  newSession(workspaceFolderId?: string | null): Promise<{ key: string }>
+  newSession(workspaceFolderId?: string | null): Promise<{ key: string; workspaceFolderId?: string | null }>
 
   getConfig(): Promise<catbuddyConfig>
   getSettingsPayload?(): Promise<import('@catbuddy/shared').SettingsPayload>

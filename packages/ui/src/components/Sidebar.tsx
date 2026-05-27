@@ -32,7 +32,7 @@ interface SidebarProps {
   loading: boolean;
   onNewChat: () => void;
   onCreateChat: (workspaceFolderId: string) => unknown;
-  onSelect: (key: string) => void;
+  onSelect: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
   onSelectPanel: (panel: SidebarPanel) => void;
   onOpenSettings: () => void;
@@ -81,14 +81,23 @@ export function Sidebar(props: SidebarProps) {
   );
 
   const selectChat = async (key: string, workspaceFolderId?: string | null) => {
-    if (
-      workspaceFolderId &&
-      workspaceFolderId !== store.activeFolderId
-    ) {
-      await selectFolder(workspaceFolderId);
+    if (workspaceFolderId) {
+      if (workspaceFolderId !== store.activeFolderId) {
+        await selectFolder(workspaceFolderId);
+      }
+    } else if (store.activeFolderId) {
+      await selectFolder(null);
     }
     props.onSelectPanel("chat");
     props.onSelect(key);
+  };
+
+  const selectWorkspaceFolder = async (folderId: string) => {
+    if (folderId !== store.activeFolderId) {
+      await selectFolder(folderId);
+    }
+    props.onSelectPanel("chat");
+    props.onSelect(null, folderId);
   };
 
   const chatHistorySessions = isDesktop ? ungroupedSessions : filteredSessions;
@@ -200,7 +209,7 @@ export function Sidebar(props: SidebarProps) {
             onRequestDelete={props.onRequestDelete}
             onCreateChat={props.onCreateChat}
             onImportFolder={() => void importFolder()}
-            onSelectFolder={(id) => selectFolder(id)}
+            onSelectFolder={(id) => void selectWorkspaceFolder(id)}
             compact
           />
         </div>

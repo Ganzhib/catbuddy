@@ -15,6 +15,7 @@ interface WorkspacePanelProps {
   activeKey: string | null;
   onSelectChat: (key: string) => void;
   onRequestDelete: (key: string, label: string) => void;
+  onCreateChat: (workspaceFolderId: string) => unknown;
   onBackToChat: () => void;
 }
 
@@ -23,10 +24,11 @@ export function WorkspacePanel({
   activeKey,
   onSelectChat,
   onRequestDelete,
+  onCreateChat,
   onBackToChat,
 }: WorkspacePanelProps) {
   const { t } = useTranslation();
-  const { store, loading, error, importFolder, selectFolder, removeFolder } = useWorkspaceFolders();
+  const { store, loading, error, importFolder, selectFolder } = useWorkspaceFolders();
   const [importing, setImporting] = useState(false);
 
   const workspaceSessions = sessions.filter((s) => !!s.workspaceFolderId);
@@ -89,8 +91,8 @@ export function WorkspacePanel({
             loading={loading}
             onSelectChat={(key, folderId) => void handleSelectChat(key, folderId)}
             onRequestDelete={onRequestDelete}
+            onCreateChat={onCreateChat}
             onImportFolder={() => void importFolder()}
-            onRemoveFolder={(id) => removeFolder(id)}
             onSelectFolder={(id) => selectFolder(id)}
           />
         </section>

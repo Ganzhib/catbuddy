@@ -65,7 +65,7 @@ export function useSessions(): {
   }, [refresh]);
 
   useEffect(() => {
-    const onWorkspaceChanged = () => void refresh(true);
+    const onWorkspaceChanged = () => void refresh();
     window.addEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
     return () =>
       window.removeEventListener("catbuddy:workspace-changed", onWorkspaceChanged);

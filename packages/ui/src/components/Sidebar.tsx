@@ -31,6 +31,7 @@ interface SidebarProps {
   activePanel: SidebarPanel;
   loading: boolean;
   onNewChat: () => void;
+  onCreateChat: (workspaceFolderId: string) => unknown;
   onSelect: (key: string) => void;
   onRequestDelete: (key: string, label: string) => void;
   onSelectPanel: (panel: SidebarPanel) => void;
@@ -48,7 +49,6 @@ export function Sidebar(props: SidebarProps) {
     loading: workspaceLoading,
     importFolder,
     selectFolder,
-    removeFolder,
   } = useWorkspaceFolders();
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -198,8 +198,8 @@ export function Sidebar(props: SidebarProps) {
             loading={workspaceLoading}
             onSelectChat={selectChat}
             onRequestDelete={props.onRequestDelete}
+            onCreateChat={props.onCreateChat}
             onImportFolder={() => void importFolder()}
-            onRemoveFolder={(id) => removeFolder(id)}
             onSelectFolder={(id) => selectFolder(id)}
             compact
           />

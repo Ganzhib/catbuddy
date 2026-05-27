@@ -104,11 +104,13 @@ function Shell({
     else setMobileSidebarOpen(v => !v)
   }, [])
 
-  const onCreateChat = useCallback(async () => {
+  const onCreateChat = useCallback(async (workspaceFolderId?: string | null) => {
     try {
-      const activeFolderId = window.catbuddy?.listWorkspaceFolders
-        ? (await window.catbuddy.listWorkspaceFolders())?.activeFolderId ?? null
-        : null
+      const activeFolderId = workspaceFolderId !== undefined
+        ? workspaceFolderId
+        : window.catbuddy?.listWorkspaceFolders
+          ? (await window.catbuddy.listWorkspaceFolders())?.activeFolderId ?? null
+          : null
       const chatId = await createChat(activeFolderId)
       setActiveKey(toSessionKey(chatId))
       setView('chat')
@@ -197,7 +199,7 @@ function Shell({
     : t('app.brand')
 
   const sidebarProps = {
-    sessions, activeKey, activePanel: view, loading, onNewChat, onSelect: onSelectChat,
+    sessions, activeKey, activePanel: view, loading, onNewChat, onCreateChat, onSelect: onSelectChat,
     onRequestDelete: (key: string, label: string) => setPendingDelete({ key, label }),
     onSelectPanel, onOpenSettings,
   }
@@ -263,6 +265,7 @@ function Shell({
                 activeKey={activeKey}
                 onSelectChat={onSelectChat}
                 onRequestDelete={(key, label) => setPendingDelete({ key, label })}
+                onCreateChat={onCreateChat}
                 onBackToChat={onBackToChat}
               />
             </div>

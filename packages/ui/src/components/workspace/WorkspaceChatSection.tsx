@@ -15,7 +15,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deriveTitle } from "@/lib/format";
@@ -33,6 +32,7 @@ interface WorkspaceChatSectionProps {
   loading?: boolean;
   onSelectChat: (key: string, workspaceFolderId?: string) => void;
   onRequestDelete: (key: string, label: string) => void;
+  onCreateChat?: (workspaceFolderId: string) => unknown;
   onImportFolder?: () => void | Promise<void>;
   onRemoveFolder?: (folderId: string) => void | Promise<void>;
   onSelectFolder?: (folderId: string) => void | Promise<void>;
@@ -46,6 +46,8 @@ export function WorkspaceChatSection({
   activeFolderId = null,
   loading = false,
   onSelectChat,
+  onRequestDelete,
+  onCreateChat,
   onImportFolder,
   onRemoveFolder,
   onSelectFolder,
@@ -53,6 +55,7 @@ export function WorkspaceChatSection({
 }: WorkspaceChatSectionProps) {
   const { t } = useTranslation();
   const [sectionExpanded, setSectionExpanded] = useState(true);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(() => new Set());
 
   const sessionsByFolder = useMemo(() => {
     const map = new Map<string, ChatSummary[]>();
@@ -141,10 +144,19 @@ export function WorkspaceChatSection({
                 sessions={sessionsByFolder.get(folder.id) ?? []}
                 activeKey={activeKey}
                 isActiveFolder={folder.id === activeFolderId}
+                expanded={expandedFolderIds.has(folder.id)}
+                onToggleExpanded={() => {
+                  setExpandedFolderIds((current) => {
+                    const next = new Set(current);
+                    if (next.has(folder.id)) next.delete(folder.id);
+                    else next.add(folder.id);
+                    return next;
+                  });
+                }}
                 onSelectChat={onSelectChat}
-                onRemoveFolder={onRemoveFolder}
+                onRequestDelete={onRequestDelete}
+                onCreateChat={onCreateChat}
                 onSelectFolder={onSelectFolder}
-                onImportFolder={onImportFolder}
               />
             ))}
           </ul>
@@ -159,23 +171,26 @@ function FolderGroup({
   sessions,
   activeKey,
   isActiveFolder,
+  expanded,
+  onToggleExpanded,
   onSelectChat,
-  onRemoveFolder,
+  onRequestDelete,
+  onCreateChat,
   onSelectFolder,
-  onImportFolder,
 }: {
   folder: WorkspaceFolder;
   sessions: ChatSummary[];
   activeKey: string | null;
   isActiveFolder: boolean;
+  expanded: boolean;
+  onToggleExpanded: () => void;
   onSelectChat: (key: string, workspaceFolderId?: string) => void;
-  onRemoveFolder?: (folderId: string) => void | Promise<void>;
+  onRequestDelete: (key: string, label: string) => void;
+  onCreateChat?: (workspaceFolderId: string) => unknown;
   onSelectFolder?: (folderId: string) => void | Promise<void>;
-  onImportFolder?: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   const visible = showAll ? sessions : sessions.slice(0, COLLAPSED_CHAT_LIMIT);
@@ -192,102 +207,50 @@ function FolderGroup({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => {
+            if (hasSessions) onToggleExpanded();
+            if (onSelectFolder) void onSelectFolder(folder.id);
+          }}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-1.5 text-left text-[14px]",
+            isActiveFolder ? "font-medium" : "font-normal",
+            sb.text,
+          )}
+          aria-expanded={hasSessions ? expanded : undefined}
+          aria-label={hasSessions ? t("workspace.toggleFolderChats", { name: folder.name }) : folder.name}
+        >
+          <Folder className={cn("h-4 w-4 shrink-0 stroke-[1.5]", sb.icon)} aria-hidden />
+          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+          {hasSessions ? (
+            <ChevronRight
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                expanded && "rotate-90",
+              )}
+              aria-hidden
+            />
+          ) : null}
+        </button>
+
+        {hovered && onCreateChat ? (
           <button
             type="button"
-            onClick={() => {
-              if (onSelectFolder) void onSelectFolder(folder.id);
+            onClick={(event) => {
+              event.stopPropagation();
+              void onCreateChat(folder.id);
             }}
             className={cn(
-              "flex min-w-0 flex-1 items-center gap-1.5 text-left text-[14px]",
-              isActiveFolder ? "font-medium" : "font-normal",
-              sb.text,
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors duration-200",
+              sb.iconMuted,
+              sb.iconHover,
+              sb.iconButtonHover,
             )}
+            aria-label={t("sidebar.newChat")}
           >
-            <Folder className={cn("h-4 w-4 shrink-0 stroke-[1.5]", sb.icon)} aria-hidden />
-            <span className="truncate">{folder.name}</span>
+            <Plus className="h-4 w-4" />
           </button>
-          {hasSessions && hovered ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className={cn(
-                "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                sb.icon,
-                sb.iconButtonHover,
-              )}
-              aria-expanded={expanded}
-              aria-label={t("workspace.toggleFolderChats", { name: folder.name })}
-            >
-              <ChevronRight
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform duration-200",
-                  expanded && "rotate-90",
-                )}
-                aria-hidden
-              />
-            </button>
-          ) : null}
-        </div>
-
-        {hovered ? (
-          <div className="flex shrink-0 items-center">
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-200",
-                sb.iconMuted,
-                sb.iconHover,
-                sb.iconButtonHover,
-              )}
-              aria-label={t("workspace.folderActions.menu", { name: folder.name })}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              {onSelectFolder ? (
-                <DropdownMenuItem onSelect={() => void onSelectFolder(folder.id)}>
-                  {t("workspace.folderActions.setActive")}
-                </DropdownMenuItem>
-              ) : null}
-              {onImportFolder ? (
-                <DropdownMenuItem onSelect={() => void onImportFolder()}>
-                  <FolderPlus className="mr-2 h-4 w-4" />
-                  {t("workspace.importFolder")}
-                </DropdownMenuItem>
-              ) : null}
-              {(onSelectFolder || onImportFolder) && onRemoveFolder ? (
-                <DropdownMenuSeparator />
-              ) : null}
-              {onRemoveFolder ? (
-                <DropdownMenuItem
-                  onSelect={() => void onRemoveFolder(folder.id)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t("workspace.folderActions.remove")}
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {onImportFolder ? (
-            <button
-              type="button"
-              onClick={() => void onImportFolder()}
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-200",
-                sb.iconMuted,
-                sb.iconHover,
-                sb.iconButtonHover,
-              )}
-              aria-label={t("workspace.importFolder")}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          ) : null}
-          </div>
         ) : null}
       </div>
 
@@ -299,6 +262,7 @@ function FolderGroup({
               session={session}
               active={session.key === activeKey}
               onSelect={() => onSelectChat(session.key, folder.id)}
+              onRequestDelete={onRequestDelete}
             />
           ))}
           {!showAll && hiddenCount > 0 ? (
@@ -326,10 +290,12 @@ function ChatRow({
   session,
   active,
   onSelect,
+  onRequestDelete,
 }: {
   session: ChatSummary;
   active: boolean;
   onSelect: () => void;
+  onRequestDelete: (key: string, label: string) => void;
 }) {
   const { t } = useTranslation();
   const title = session.title?.trim() || deriveTitle(session.preview, t("chat.newChat"));
@@ -337,17 +303,50 @@ function ChatRow({
 
   return (
     <li className="min-w-0">
-      <button
-        type="button"
-        onClick={onSelect}
-        title={label}
+      <div
         className={cn(
-          "flex min-h-8 w-full min-w-0 items-center rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors duration-200",
+          "group flex min-h-8 w-full min-w-0 items-stretch rounded-lg text-[13px] transition-colors duration-200",
           active ? cn(sb.active, "font-medium") : cn(sb.text, sb.bubbleHover),
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-      </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          title={label}
+          className="min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left"
+        >
+          <span className="block min-w-0 truncate">{label}</span>
+        </button>
+        <div className="flex shrink-0 items-center pr-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger
+              className={cn(
+                "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-200",
+                sb.iconMuted,
+                sb.iconHover,
+                sb.iconButtonHover,
+              )}
+              aria-label={t("chat.actions", { title })}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(event) => event.preventDefault()}
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  window.setTimeout(() => onRequestDelete(session.key, label), 0);
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t("chat.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </li>
   );
 }

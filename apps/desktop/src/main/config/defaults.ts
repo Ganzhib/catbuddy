@@ -64,6 +64,49 @@ export function getDefaultConfig(): catbuddyConfig {
   }
 }
 
+export function normalizeConfigWithDefaults(config: catbuddyConfig): boolean {
+  const defaults = getDefaultConfig()
+  let changed = false
+
+  config.agents ??= defaults.agents
+  config.agents.defaults ??= defaults.agents.defaults
+  config.providers ??= defaults.providers
+
+  if (!config.agents.defaults.model?.trim()) {
+    config.agents.defaults.model = defaults.agents.defaults.model
+    changed = true
+  }
+
+  const provider = config.agents.defaults.provider?.trim()
+  if (!provider || !config.providers[provider]) {
+    const inferred = inferProviderFromModel(provider || config.agents.defaults.model)
+    const nextProvider = inferred && config.providers[inferred]
+      ? inferred
+      : defaults.agents.defaults.provider
+    if (config.agents.defaults.provider !== nextProvider) {
+      console.warn(
+        `[config] Provider "${provider || '(empty)'}" is not configured; using "${nextProvider}".`,
+      )
+      config.agents.defaults.provider = nextProvider
+      changed = true
+    }
+  }
+
+  for (const [name, providerConfig] of Object.entries(defaults.providers)) {
+    config.providers[name] ??= providerConfig
+  }
+
+  return changed
+}
+
+function inferProviderFromModel(model: string): string | undefined {
+  const normalized = model.trim().toLowerCase()
+  if (normalized.startsWith('deepseek')) return 'deepseek'
+  if (normalized.startsWith('gpt-') || normalized.startsWith('o1') || normalized.startsWith('o3') || normalized.startsWith('o4')) return 'openai'
+  if (normalized.startsWith('claude')) return 'anthropic'
+  return undefined
+}
+
 export function getProviderConfig(config: catbuddyConfig, model: string) {
   const defaults = config.agents.defaults
   const providerName = defaults.provider

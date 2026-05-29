@@ -5,7 +5,7 @@ export function resolveProviderApiKey(providerName: string, stored?: string): st
   const fromConfig = stored?.trim() ?? ''
   if (fromConfig) return fromConfig
   if (providerName === 'deepseek') {
-    return process.env.DEEPSEEK_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || ''
+    return process.env.DEEPSEEK_KEY?.trim() || process.env.DEEPSEEK_API_KEY?.trim() || ''
   }
   if (providerName === 'openai') {
     return process.env.OPENAI_API_KEY?.trim() || ''

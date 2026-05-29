@@ -6,7 +6,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 export function configureElectronApp(): boolean {
-  const userData = path.join(app.getPath("home"), ".catbuddy", "electron");
+  const profileDir = app.isPackaged ? "electron" : "electron-dev";
+  const userData = path.join(app.getPath("home"), ".catbuddy", profileDir);
   fs.mkdirSync(userData, { recursive: true });
   app.setPath("userData", userData);
 
@@ -17,6 +18,7 @@ export function configureElectronApp(): boolean {
 
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
+    console.warn(`[main] Another Catbuddy ${app.isPackaged ? "packaged" : "dev"} instance is already running. Quitting this process.`);
     app.quit();
     return false;
   }

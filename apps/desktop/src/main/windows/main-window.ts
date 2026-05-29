@@ -34,7 +34,11 @@ export function createMainWindow(): BrowserWindow {
   });
 
 
-  win.on("ready-to-show", () => win.show());
+  win.on("ready-to-show", () => {
+    console.log("[main] Main window ready-to-show");
+    win.show();
+    win.focus();
+  });
 
   if(!app.isPackaged) {
     win.webContents.on("before-input-event", (_event, input) => {

@@ -43,6 +43,7 @@ app.whenReady().then(async () => {
   await initAgent();
 
   mainWindow = createMainWindow();
+  console.log("[main] Main window created");
   mainWindow.on("closed", () => {
     mainWindow = null;
   });

@@ -7,27 +7,19 @@ import { getDefaultConfig } from "../config/defaults.js";
 import { saveConfig } from "../config/persist.js";
 import { log } from "../utils/index.js";
 import { MessageBus } from "../bus/index.js";
-import { ChannelManager, DesktopChannel } from "../channels/index.js";
+import { ChannelManager, DesktopChannel, GatewayChannel } from "../channels/index.js";
 import { registerIpcHandlers } from "../ipcHandlers/index.js";
 import {
   applyProjectAnchor,
   getDefaultHomeAnchor,
-  getHomeCatbuddyDir,
   type DesktopRuntimeRefs,
 } from "./workspace-anchor.js";
 import { startDesktopCron } from "../cron/index.js";
 import { startDesktopHeartbeat } from "../heartbeat/index.js";
 import {
-  getActiveWorkspaceFolderId,
   getWorkspaceFolderById,
   listWorkspaceFolders,
 } from "./workspace-folders.js";
-import {
-  applyGatewayRemote,
-  registerGatewayRemoteIpc,
-  updateGatewayRuntimeRefs,
-  type GatewayRemoteState,
-} from "./gateway-remote.js";
 
 export interface AgentRuntime {
   agentLoop: AgentLoop;
@@ -36,7 +28,6 @@ export interface AgentRuntime {
   channelManager: ChannelManager;
   config: any;
   configFile: string;
-  gatewayState: GatewayRemoteState;
 }
 
 export async function initAgent(): Promise<AgentRuntime> {
@@ -66,20 +57,12 @@ export async function initAgent(): Promise<AgentRuntime> {
   const bus = new MessageBus();
   const channelManager = new ChannelManager(bus);
   channelManager.register(new DesktopChannel());
-
-  const gatewayState: GatewayRemoteState = {
-    gatewayWsClient: null,
-    gatewayAccountEmail: config.gateway?.accountEmail?.trim().toLowerCase() || undefined,
-    appConfig: config,
-    appConfigFile: configFile,
-    appSessions: sessions,
-    appBus: bus,
-    appChannelManager: channelManager,
-  };
-
-  applyGatewayRemote(gatewayState);
-  registerGatewayRemoteIpc(gatewayState);
-
+  channelManager.register(new GatewayChannel({
+    config,
+    configFile,
+    sessions,
+    bus,
+  }));
   const provider = createProvider(config);
   const agentLoop = new AgentLoop({
     provider,
@@ -100,11 +83,12 @@ export async function initAgent(): Promise<AgentRuntime> {
 
   await agentLoop.connectMcp();
 
-  const runtime: DesktopRuntimeRefs = {
+  const runtime: DesktopRuntimeRefs & { channelManager: ChannelManager } = {
     agentLoop,
     sessions,
     config,
     configFile,
+    channelManager,
   };
 
   const registry = listWorkspaceFolders(homeDir);
@@ -112,17 +96,14 @@ export async function initAgent(): Promise<AgentRuntime> {
     const folder = getWorkspaceFolderById(homeDir, registry.activeFolderId);
     if (folder) {
       applyProjectAnchor(runtime, folder);
-      updateGatewayRuntimeRefs(gatewayState, runtime);
+      channelManager.updateRuntimeRefs(runtime);
       sessions = runtime.sessions;
       config = runtime.config;
       configFile = runtime.configFile;
     }
   }
 
-  registerIpcHandlers(runtime, {
-    getGatewayClient: () => gatewayState.gatewayWsClient,
-    gatewayState,
-  });
+  registerIpcHandlers(runtime);
 
   const cron = startDesktopCron(runtime);
   const heartbeat = startDesktopHeartbeat(runtime);
@@ -144,6 +125,5 @@ export async function initAgent(): Promise<AgentRuntime> {
     channelManager,
     config,
     configFile,
-    gatewayState,
   };
 }

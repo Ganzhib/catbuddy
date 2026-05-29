@@ -29,27 +29,19 @@ import {
 } from '../services/workspace-folders.js'
 import type { catbuddyConfig, McpServerConfig, WorkspaceFolder } from "@catbuddy/shared"
 import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared"
-import type { GatewayDesktopClient } from '@catbuddy/gateway-sdk-desktop'
-import {
-  updateGatewayRuntimeRefs,
-  type GatewayRemoteState,
-} from '../services/gateway-remote.js'
+import type { GatewayChannel } from '../channels/gateway.js'
+import type { ChannelManager } from '../channels/manager.js'
 import {
   deleteDesktopSession,
   getDesktopSessionDetail,
   listAllDesktopSessions,
 } from '../services/desktop-sessions.js'
-export interface RegisterIpcHandlersOpts {
-  getGatewayClient?: () => GatewayDesktopClient | null
-  gatewayState?: GatewayRemoteState
-}
+type IpcRuntimeRefs = DesktopRuntimeRefs & { channelManager: ChannelManager }
 
-export function registerIpcHandlers(
-  runtime: DesktopRuntimeRefs,
-  opts: RegisterIpcHandlersOpts = {},
-) {
-  const getGatewayClient = opts.getGatewayClient ?? (() => null)
-  const gatewayState = opts.gatewayState
+export function registerIpcHandlers(runtime: IpcRuntimeRefs) {
+  const gatewayChannel = () =>
+    runtime.channelManager.get('gateway') as GatewayChannel | undefined
+  const getGatewayClient = () => gatewayChannel()?.client ?? null
   const { agentLoop } = runtime
   const persistConfig = () => saveConfig(runtime.configFile, runtime.config)
   const homeCatbuddyDir = () => getHomeCatbuddyDir()
@@ -58,7 +50,7 @@ export function registerIpcHandlers(
 
   const anchorToFolder = (folder: WorkspaceFolder | null) => {
     applyProjectAnchor(runtime, folder)
-    if (gatewayState) updateGatewayRuntimeRefs(gatewayState, runtime)
+    runtime.channelManager.updateRuntimeRefs(runtime)
   }
 
   const toSessionKey = (chatId?: string): string => {

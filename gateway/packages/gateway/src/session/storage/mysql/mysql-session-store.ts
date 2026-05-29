@@ -1,3 +1,4 @@
+import { sessionRecordsFromWebuiMessages } from '@catbuddy/shared'
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise'
 import type { MysqlPool } from '../../database/mysql-pool.js'
 import {
@@ -150,37 +151,7 @@ export class MysqlSessionStore implements SessionStore {
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) return
 
     const info = await this.getOrCreate(sessionKey)
-    const messages: MessageRecord[] = []
-    let id = 1
-    for (const m of rawMessages) {
-      if (!m || typeof m !== 'object') continue
-      const row = m as Record<string, unknown>
-      const role = String(row.role || 'assistant')
-      const content = String(row.content ?? '')
-      const createdAt =
-        typeof row.createdAt === 'number'
-          ? new Date(row.createdAt).toISOString()
-          : new Date().toISOString()
-      if (row.kind === 'trace') {
-        const traces = Array.isArray(row.traces) ? row.traces.map(String) : [content]
-        messages.push({
-          id: id++,
-          sessionKey,
-          role: 'tool',
-          content: traces.join('\n'),
-          name: 'trace',
-          timestamp: createdAt,
-        })
-      } else if (role === 'user' || role === 'assistant' || role === 'system') {
-        messages.push({
-          id: id++,
-          sessionKey,
-          role,
-          content,
-          timestamp: createdAt,
-        })
-      }
-    }
+    const messages = sessionRecordsFromWebuiMessages(sessionKey, rawMessages)
     if (messages.length === 0) return
 
     info.updatedAt =

@@ -2,9 +2,9 @@
  * Desktop ⇄ Gateway session protocol helpers (mirrors sdk-web session helpers).
  */
 import type {
-  GatewaySessionClientMessage,
+  GatewayDesktopClientMessage,
   GatewaySessionRow,
-  GatewaySessionServerMessage,
+  GatewayServerToDesktopMessage,
 } from '@catbuddy/shared'
 import { bareChatId } from '@catbuddy/shared'
 
@@ -12,7 +12,7 @@ export const GATEWAY_DESKTOP_RECONNECT_MS = 3_000
 export const GATEWAY_DESKTOP_RECONNECT_MAX_MS = 60_000
 
 export type GatewayInboundMessage = Extract<
-  GatewaySessionServerMessage,
+  GatewayServerToDesktopMessage,
   { type: 'inbound_message' }
 >
 
@@ -37,7 +37,7 @@ export function buildUiEventMessage(
   sessionKey: string,
   chatId: string,
   event: Record<string, unknown>,
-): GatewaySessionClientMessage {
+): GatewayDesktopClientMessage {
   return {
     type: 'ui_event',
     sessionKey,

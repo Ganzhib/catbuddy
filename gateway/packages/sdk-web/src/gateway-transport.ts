@@ -108,6 +108,10 @@ export class GatewayTransport implements AgentTransport {
         callbacks.onStatus('error')
         this.callbacks?.onSendError?.(code)
       },
+      onDesktopStatus: (online) => {
+        callbacks.onStatus(online ? 'open' : 'error')
+        if (!online) this.callbacks?.onSendError?.('desktop_offline')
+      },
       dispatch: {
         getActiveSessionKey: () =>
           activeSessionKeyFromChatId(callbacks.getActiveChatId()),

@@ -820,6 +820,33 @@ export class GatewayStateService {
     this.notifyWebClientsSessionListChanged(boundDevice)
   }
 
+  sendDesktopStatus(
+    online: boolean,
+    options?: { ws?: WebSocket; deviceId?: string; accountEmail?: string },
+  ): void {
+    const payload = JSON.stringify({
+      type: 'desktop_status',
+      online,
+      ...(options?.deviceId ? { deviceId: options.deviceId } : {}),
+    })
+    if (options?.ws) {
+      if (options.ws.readyState === 1) options.ws.send(payload)
+      return
+    }
+    const wantEmail = options?.accountEmail ? this.normalizeEmail(options.accountEmail) : ''
+    for (const client of this.clients.values()) {
+      if (client.role !== 'web' || client.ws.readyState !== 1) continue
+      if (wantEmail) {
+        const token = this.webTokenFromClientKey(client.clientKey)
+        const webEmail = this.normalizeEmail(
+          client.webEmail || this.getWebEmailForToken(token) || '',
+        )
+        if (webEmail !== wantEmail) continue
+      }
+      client.ws.send(payload)
+    }
+  }
+
   registerDesktop(
     ws: WebSocket,
     deviceId: string,
@@ -851,6 +878,10 @@ export class GatewayStateService {
     })
     void this.pushSyncToDesktop(ws, email || undefined)
     if (email) this.flushPendingDesktopDeletes(ws, email)
+    this.sendDesktopStatus(true, {
+      deviceId,
+      accountEmail: email || undefined,
+    })
     return { ok: true }
   }
 
@@ -961,6 +992,12 @@ export class GatewayStateService {
   disconnect(clientKey: string): void {
     const client = this.clients.get(clientKey)
     if (!client) return
+    const disconnectedDesktop = client.role === 'desktop'
+      ? {
+          deviceId: client.deviceId,
+          accountEmail: client.accountEmail,
+        }
+      : null
     if (client.role === 'desktop') {
       for (const [sk, did] of this.sessionDesktop) {
         if (did === client.deviceId) this.sessionDesktop.delete(sk)
@@ -977,6 +1014,9 @@ export class GatewayStateService {
       this.sessionWebSockets.get(sk)?.delete(client.ws)
     }
     this.clients.delete(clientKey)
+    if (disconnectedDesktop) {
+      this.sendDesktopStatus(false, disconnectedDesktop)
+    }
   }
 
   countDesktops(): { total: number; online: number } {

@@ -8,15 +8,23 @@
 
 export type GatewaySessionRole = 'web' | 'desktop'
 
-export type GatewaySessionClientMessage =
-  | {
-      type: 'register'
-      role: GatewaySessionRole
-      deviceId: string
-      token: string
-      /** Desktop only: same email as Web JWT login (multi-tenant routing). */
-      accountEmail?: string
-    }
+export type GatewaySessionRegisterMessage = {
+  type: 'register'
+  role: GatewaySessionRole
+  deviceId: string
+  token: string
+  /** Desktop only: same email as Web JWT login (multi-tenant routing). */
+  accountEmail?: string
+}
+
+export type GatewayWebClientMessage =
+  | GatewaySessionRegisterMessage
+  | { type: 'subscribe'; sessionKey: string }
+  | { type: 'unsubscribe'; sessionKey: string }
+  | { type: 'ping' }
+
+export type GatewayDesktopClientMessage =
+  | GatewaySessionRegisterMessage
   | { type: 'subscribe'; sessionKey: string }
   | { type: 'unsubscribe'; sessionKey: string }
   | { type: 'ping' }
@@ -28,6 +36,7 @@ export type GatewaySessionClientMessage =
   | {
       type: 'thread_response'
       requestId: string
+      sessionKey: string
       payload: Record<string, unknown> | null
     }
   | {
@@ -43,12 +52,27 @@ export type GatewaySessionClientMessage =
       event: Record<string, unknown>
     }
 
-export type GatewaySessionServerMessage =
+export type GatewayServerCommonMessage =
   | {
       type: 'registered'
       deviceId: string
       role: GatewaySessionRole
     }
+  | { type: 'error'; message: string }
+  | { type: 'pong' }
+
+export type GatewayServerToWebMessage =
+  | GatewayServerCommonMessage
+  | {
+      type: 'ui_event'
+      sessionKey: string
+      chatId: string
+      event: Record<string, unknown>
+    }
+  | { type: 'desktop_status'; online: boolean; deviceId?: string }
+
+export type GatewayServerToDesktopMessage =
+  | GatewayServerCommonMessage
   | {
       type: 'inbound_message'
       sessionKey: string
@@ -66,17 +90,12 @@ export type GatewaySessionServerMessage =
       sessions: GatewaySessionRow[]
       threads?: Record<string, Record<string, unknown> | null>
     }
-  | {
-      type: 'ui_event'
-      sessionKey: string
-      chatId: string
-      event: Record<string, unknown>
-    }
-  | { type: 'desktop_status'; online: boolean; deviceId?: string }
-  | { type: 'error'; message: string }
-  | { type: 'pong' }
 
-export type GatewaySessionEnvelope = GatewaySessionClientMessage | GatewaySessionServerMessage
+export type GatewaySessionMessage =
+  | GatewayWebClientMessage
+  | GatewayDesktopClientMessage
+  | GatewayServerToWebMessage
+  | GatewayServerToDesktopMessage
 
 export interface GatewayHttpSendBody {
   content: string
@@ -191,7 +210,7 @@ export enum GatewayErrorCode {
 // ─── Unified wire envelope ──────────────────────────────────────────────────
 
 /** Any JSON frame on Gateway WebSocket (discriminate with type guards). */
-export type GatewayWireMessage = GatewaySessionEnvelope | MessageFrame
+export type GatewayWireMessage = GatewaySessionMessage | MessageFrame
 
 const GATEWAY_SESSION_TYPES = new Set<string>([
   'register',
@@ -217,7 +236,7 @@ const GATEWAY_SESSION_TYPES = new Set<string>([
 
 const FRAME_TYPES = new Set<string>(['push', 'ack', 'ping', 'pong', 'auth'])
 
-export function isGatewaySessionEnvelope(value: unknown): value is GatewaySessionEnvelope {
+export function isGatewaySessionMessage(value: unknown): value is GatewaySessionMessage {
   if (!value || typeof value !== 'object') return false
   const t = (value as { type?: string }).type
   return typeof t === 'string' && GATEWAY_SESSION_TYPES.has(t)
@@ -237,5 +256,5 @@ export function isMessageFrame(value: unknown): value is MessageFrame {
 }
 
 export function isGatewayWireMessage(value: unknown): value is GatewayWireMessage {
-  return isGatewaySessionEnvelope(value) || isMessageFrame(value)
+  return isGatewaySessionMessage(value) || isMessageFrame(value)
 }

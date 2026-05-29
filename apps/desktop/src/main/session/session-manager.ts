@@ -1,6 +1,7 @@
 /** Session Manager - JSONL 实现 Local First 原则 */
 import * as fs from 'fs'
 import * as path from 'path'
+import { sessionRecordsFromWebuiMessages } from '@catbuddy/shared'
 import type { SessionInfo, SessionDetail, MessageRecord } from "@catbuddy/shared"
 
 
@@ -182,34 +183,7 @@ export class SessionManager {
     }
 
     const { info, messages } = this._initSession(sessionKey)
-    let id = 1
-    for (const m of raw) {
-      const role = String(m.role ?? 'assistant')
-      const content = String(m.content ?? '')
-      const ts =
-        typeof m.createdAt === 'number'
-          ? new Date(m.createdAt).toISOString()
-          : new Date().toISOString()
-      if (m.kind === 'trace') {
-        const traces = Array.isArray(m.traces) ? m.traces.map(String) : [content]
-        messages.push({
-          id: id++,
-          sessionKey,
-          role: 'tool',
-          content: traces.join('\n'),
-          name: 'trace',
-          timestamp: ts,
-        })
-      } else if (role === 'user' || role === 'assistant' || role === 'system') {
-        messages.push({
-          id: id++,
-          sessionKey,
-          role: role as MessageRecord['role'],
-          content,
-          timestamp: ts,
-        })
-      }
-    }
+    messages.push(...sessionRecordsFromWebuiMessages(sessionKey, raw))
     if (messages.length === 0) return
     info.updatedAt = incomingAt || messages[messages.length - 1].timestamp
     info.preview = this._extractPreview(messages)

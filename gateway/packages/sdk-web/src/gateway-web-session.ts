@@ -4,7 +4,7 @@
  */
 import type {
   GatewayHttpSendResponse,
-  GatewaySessionServerMessage,
+  GatewayServerToWebMessage,
   InboundEvent,
 } from '@catbuddy/shared'
 import { bareChatId, toSessionKey } from '@catbuddy/shared'
@@ -36,7 +36,7 @@ export type GatewayUiDispatch = {
 
 /** Route a server `ui_event` to callbacks (session filter + focus handling). */
 export function dispatchGatewayUiEvent(
-  msg: Extract<GatewaySessionServerMessage, { type: 'ui_event' }>,
+  msg: Extract<GatewayServerToWebMessage, { type: 'ui_event' }>,
   dispatch: GatewayUiDispatch,
 ): void {
   const raw = msg.event
@@ -72,6 +72,7 @@ export type GatewayWebSocketConfig = {
   onOpen?: () => void
   onClose?: () => void
   onError?: (message: string) => void
+  onDesktopStatus?: (online: boolean, deviceId?: string) => void
   dispatch: GatewayUiDispatch
 }
 
@@ -116,9 +117,9 @@ export function openGatewayWebSocket(
   }
 
   ws.onmessage = (raw) => {
-    let msg: GatewaySessionServerMessage
+    let msg: GatewayServerToWebMessage
     try {
-      msg = JSON.parse(String(raw.data)) as GatewaySessionServerMessage
+      msg = JSON.parse(String(raw.data)) as GatewayServerToWebMessage
     } catch {
       return
     }
@@ -133,6 +134,10 @@ export function openGatewayWebSocket(
     }
     if (msg.type === 'ui_event') {
       dispatchGatewayUiEvent(msg, dispatchBridge)
+      return
+    }
+    if (msg.type === 'desktop_status') {
+      config.onDesktopStatus?.(msg.online, msg.deviceId)
     }
   }
 

@@ -5,8 +5,8 @@
 import { randomUUID } from 'node:crypto'
 import WebSocket from 'ws'
 import type {
-  GatewaySessionClientMessage,
-  GatewaySessionServerMessage,
+  GatewayDesktopClientMessage,
+  GatewayServerToDesktopMessage,
   GatewaySessionRow,
   InboundMessage,
   SessionDetail,
@@ -243,9 +243,9 @@ export class GatewayDesktopClient {
 
     ws.on('message', (data) => {
       if (ws !== this.ws) return
-      let msg: GatewaySessionServerMessage
+      let msg: GatewayServerToDesktopMessage
       try {
-        msg = JSON.parse(data.toString()) as GatewaySessionServerMessage
+        msg = JSON.parse(data.toString()) as GatewayServerToDesktopMessage
       } catch { return }
       this.handleServerMessage(msg)
     })
@@ -259,7 +259,7 @@ export class GatewayDesktopClient {
     })
   }
 
-  private handleServerMessage(msg: GatewaySessionServerMessage): void {
+  private handleServerMessage(msg: GatewayServerToDesktopMessage): void {
     try {
       this._handleServerMessageImpl(msg)
     } catch (err) {
@@ -267,7 +267,7 @@ export class GatewayDesktopClient {
     }
   }
 
-  private _handleServerMessageImpl(msg: GatewaySessionServerMessage): void {
+  private _handleServerMessageImpl(msg: GatewayServerToDesktopMessage): void {
     if (msg.type === 'registered') {
       this._connected = true
       this._lastError = undefined
@@ -308,6 +308,7 @@ export class GatewayDesktopClient {
       this.send({
         type: 'thread_response',
         requestId: msg.requestId,
+        sessionKey,
         payload: payload as Record<string, unknown> | null,
       })
       return
@@ -373,7 +374,7 @@ export class GatewayDesktopClient {
   }
 
   private applySyncPush(
-    msg: Extract<GatewaySessionServerMessage, { type: 'sync_push' }>,
+    msg: Extract<GatewayServerToDesktopMessage, { type: 'sync_push' }>,
   ): void {
     if (!this.sessionProvider) return
     const rows = Array.isArray(msg.sessions) ? msg.sessions : []
@@ -404,7 +405,7 @@ export class GatewayDesktopClient {
     )
   }
 
-  private send(msg: GatewaySessionClientMessage): void {
+  private send(msg: GatewayDesktopClientMessage): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
     try {
       this.ws.send(JSON.stringify(msg))

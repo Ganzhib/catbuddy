@@ -53,7 +53,7 @@ export const LANDING_COPY = {
     links: [
       { label: 'Gitee', href: 'https://gitee.com/luli1314520' },
       { label: 'Blog', href: 'https://resume.ganzhibin.icu/' },
-      {label: '稀土掘金', href: 'https://juejin.cn/user/3806962499980916/posts'},
+      {label: '稀土掘金', href: 'https://juejin.cn/column/7642179319759011859'},
     ],
   },
 } as const

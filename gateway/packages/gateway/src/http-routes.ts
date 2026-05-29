@@ -72,6 +72,9 @@ export function registerHttpRoutes(
     const sessionKey = decodeURIComponent(req.params.sessionKey)
     const content = String(req.body?.content || '')
     if (!content.trim()) return reply.status(400).send({ ok: false, error: 'empty_content' })
+    const media = Array.isArray(req.body?.media)
+      ? req.body.media.filter((item): item is string => typeof item === 'string')
+      : undefined
     state.ensureWebSubscribedForToken(token, sessionKey)
     const chatId = state.chatIdFromSessionKey(sessionKey)
     const result = await state.handleWebInboundForUser(
@@ -80,7 +83,7 @@ export function registerHttpRoutes(
       sessionKey,
       chatId,
       content,
-      req.body?.media,
+      media,
       'web',
     )
     return reply.status(result.ok ? 200 : 503).send(result)
@@ -120,7 +123,7 @@ export function registerHttpRoutes(
     )
     if (!result.ok) return reply.status(503).send({ ok: false, error: result.error })
     const now = new Date().toISOString()
-    return reply.status(201).send({
+    return reply.status(result.offline ? 202 : 201).send({
       key: sessionKey,
       channel: 'desktop',
       chatId,
@@ -128,6 +131,7 @@ export function registerHttpRoutes(
       updatedAt: now,
       title: '',
       preview: '',
+      offline: result.offline === true,
     })
   })
 

@@ -60,6 +60,11 @@ export function attachGatewaySessionWebSocket(
             }
             clientKey = `web:${token}:${deviceId}`
             ws.send(JSON.stringify({ type: 'registered', deviceId, role }))
+            const desktop = state.pickDesktopForWebToken(token)
+            state.sendDesktopStatus(!!desktop, {
+              ws,
+              deviceId: desktop?.deviceId,
+            })
           })().catch((err) => {
             log(`web register error: ${err instanceof Error ? err.message : String(err)}`)
             ws.close()
@@ -115,6 +120,7 @@ export function attachGatewaySessionWebSocket(
         state.resolveThreadRpc(
           String(msg.requestId || ''),
           (msg.payload as Record<string, unknown> | null) ?? null,
+          String(msg.sessionKey || ''),
         )
         return
       }

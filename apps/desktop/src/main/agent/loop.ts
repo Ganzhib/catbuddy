@@ -128,6 +128,8 @@ interface TurnCtx {
 // ══════════════════════════════
 export class AgentLoop implements RuntimeState {
   readonly workspace: string;
+  readonly projectRoot!: string;
+  readonly catbuddyDir!: string;
   readonly sessions: SessionManager;
   readonly tools: ToolRegistry;
   readonly commands: CommandRouter;
@@ -188,6 +190,14 @@ export class AgentLoop implements RuntimeState {
   }) {
     this.provider = opts.provider;
     this.workspace = opts.workspace;
+    const projectRoot =
+      opts.projectRoot ?? path.resolve(opts.workspace);
+    const catbuddyDir =
+      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy");
+    const restrict = opts.restrictToWorkspace ?? false;
+    const projectWorkspace = restrict ? opts.workspace : catbuddyDir;
+    (this as { projectRoot: string }).projectRoot = projectRoot;
+    (this as { catbuddyDir: string }).catbuddyDir = catbuddyDir;
     this.model = opts.model ?? opts.provider.defaultModel;
     this.maxIterations = opts.maxIterations ?? 50;
     this.contextWindowTokens = opts.contextWindowTokens ?? 128_000;
@@ -195,26 +205,19 @@ export class AgentLoop implements RuntimeState {
     this.maxMessages = opts.maxMessages ?? 120;
     this.providerRetryMode = "standard";
 
-    const projectRoot =
-      opts.projectRoot ?? path.dirname(path.dirname(path.resolve(opts.workspace)));
-    const catbuddyDir =
-      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy");
-
-    const restrict = opts.restrictToWorkspace ?? false;
-
     this.sessions = opts.sessionManager ?? new SessionManager(opts.workspace);
     const globalWorkspace = getGlobalProfileWorkspace();
-    this.context = new ContextBuilder(opts.workspace, {
+    this.context = new ContextBuilder(projectWorkspace, {
       timezone: opts.timezone,
       disabledSkills: opts.disabledSkills,
-      workRoot: restrict ? opts.workspace : projectRoot,
+      workRoot: restrict ? projectWorkspace : projectRoot,
       fileAccessMode: restrict ? 'internal' : 'project',
       globalWorkspace,
     });
     // 首次运行时创建 workspace 引导文件
     this.context.ensureBootstrapFiles();
     this.tools = new ToolRegistry();
-    this.tools.setWorkspace(opts.workspace, restrict);
+    this.tools.setWorkspace(projectWorkspace, restrict);
     this.tools.setProjectRoot(projectRoot, catbuddyDir);
     this.tools.registerBuiltinTools();
     this.runner = new AgentRunner(opts.provider);
@@ -223,7 +226,7 @@ export class AgentLoop implements RuntimeState {
       provider: opts.provider,
       model: this.model,
       sessions: this.sessions,
-      workspace: opts.workspace,
+      workspace: projectWorkspace,
       globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.consolidationRatio ?? 0.5,
@@ -231,7 +234,7 @@ export class AgentLoop implements RuntimeState {
 
     if (opts.config) {
       this._config = opts.config;
-      this.memoryStore = new LayeredMemoryStore(opts.workspace, globalWorkspace);
+      this.memoryStore = new LayeredMemoryStore(projectWorkspace, globalWorkspace);
       this.autoCompact = new AutoCompact(
         this.sessions,
         this.consolidator,
@@ -241,7 +244,7 @@ export class AgentLoop implements RuntimeState {
       if (opts.bus) {
         this.subagents = new SubagentManager(
           opts.provider,
-          opts.workspace,
+          projectWorkspace,
           opts.bus,
           this.model,
           this.maxToolResultChars,
@@ -268,70 +271,60 @@ export class AgentLoop implements RuntimeState {
     registerBuiltinCommands(this.commands);
   }
 
-  /** Switch agent workspace + file-tool project root (e.g. after uploading folder A). */
+  /** Switch the folder the agent operates on; app config/session/channel remain stable. */
   reanchorProject(opts: {
     workspace: string;
     projectRoot: string;
     catbuddyDir: string;
-    config?: catbuddyConfig;
-    /** Shared with IPC runtime; when omitted a new manager is created. */
-    sessionManager?: SessionManager;
+    restrictToWorkspace?: boolean;
   }): void {
     const workspace = path.resolve(opts.workspace);
     const projectRoot = path.resolve(opts.projectRoot);
     const catbuddyDir = path.resolve(opts.catbuddyDir);
-    const restrict = opts.config?.tools?.restrictToWorkspace ?? false;
+    const restrict = opts.restrictToWorkspace ?? false;
+    const projectWorkspace = restrict ? path.join(catbuddyDir, "workspace") : catbuddyDir;
 
     (this as { workspace: string }).workspace = workspace;
-    (this as { sessions: SessionManager }).sessions =
-      opts.sessionManager ?? new SessionManager(workspace);
+    (this as { projectRoot: string }).projectRoot = projectRoot;
+    (this as { catbuddyDir: string }).catbuddyDir = catbuddyDir;
 
     const globalWorkspace = getGlobalProfileWorkspace();
-    this.context = new ContextBuilder(workspace, {
-      timezone: opts.config?.agents?.defaults?.timezone ?? this._config?.agents?.defaults?.timezone,
-      disabledSkills: opts.config?.agents?.defaults?.disabledSkills ?? this._config?.agents?.defaults?.disabledSkills,
-      workRoot: restrict ? workspace : projectRoot,
+    this.context = new ContextBuilder(projectWorkspace, {
+      timezone: this._config?.agents?.defaults?.timezone,
+      disabledSkills: this._config?.agents?.defaults?.disabledSkills,
+      workRoot: restrict ? projectWorkspace : projectRoot,
       fileAccessMode: restrict ? 'internal' : 'project',
       globalWorkspace,
     });
     this.context.ensureBootstrapFiles();
 
-    this.tools.setWorkspace(workspace, restrict);
+    this.tools.setWorkspace(projectWorkspace, restrict);
     this.tools.setProjectRoot(projectRoot, catbuddyDir);
 
     this.subagents?.setWorkArea({
-      workspace,
+      workspace: projectWorkspace,
       projectRoot,
       catbuddyDir,
       restrictToWorkspace: restrict,
     });
 
-    if (opts.config) {
-      this._config = opts.config;
-      this.memoryStore = new LayeredMemoryStore(workspace, globalWorkspace);
-      if (this.provider) {
-        this.dream = new Dream(this.memoryStore, this.provider, this.model);
-      }
-      if (this.mcpManager) {
-        this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
-      }
+    this.memoryStore = new LayeredMemoryStore(projectWorkspace, globalWorkspace);
+    if (this.provider) {
+      this.dream = new Dream(this.memoryStore, this.provider, this.model);
     }
 
     (this as { consolidator: Consolidator }).consolidator = new Consolidator({
       provider: this.provider,
       model: this.model,
       sessions: this.sessions,
-      workspace,
+      workspace: projectWorkspace,
       globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
-      consolidationRatio: opts.config?.agents?.defaults?.consolidationRatio ?? 0.5,
+      consolidationRatio: this._config?.agents?.defaults?.consolidationRatio ?? 0.5,
     });
 
     if (this.autoCompact) {
-      const ttl =
-        opts.config?.agents?.defaults?.sessionTtlMinutes ??
-        this._config?.agents?.defaults?.sessionTtlMinutes ??
-        0;
+      const ttl = this._config?.agents?.defaults?.sessionTtlMinutes ?? 0;
       this.autoCompact = new AutoCompact(this.sessions, this.consolidator, ttl);
     }
   }

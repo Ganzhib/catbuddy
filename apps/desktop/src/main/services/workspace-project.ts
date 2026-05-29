@@ -32,12 +32,17 @@ export function getWorkspaceProjectInfo(
   configFile: string,
   workspace: string,
 ): WorkspaceProjectInfo {
-  const catbuddyDir = getCatbuddyDirFromConfigFile(configFile);
-  return {
-    projectRoot: getProjectRoot(catbuddyDir),
-    catbuddyDir,
-    workspace,
-  };
+  const homeCatbuddyDir = getCatbuddyDirFromConfigFile(configFile);
+  const homeWorkspace = path.join(homeCatbuddyDir, "workspace");
+  const resolvedWorkspace = path.resolve(workspace);
+  const isHomeWorkspace = resolvedWorkspace === path.resolve(homeWorkspace);
+  const projectRoot = isHomeWorkspace
+    ? getProjectRoot(homeCatbuddyDir)
+    : resolvedWorkspace;
+  const catbuddyDir = isHomeWorkspace
+    ? homeCatbuddyDir
+    : path.join(projectRoot, CATBUDDY_DIR_NAME);
+  return { projectRoot, catbuddyDir, workspace: resolvedWorkspace };
 }
 
 function isHidden(name: string): boolean {
@@ -123,7 +128,8 @@ export function importFolderToProjectRoot(
 export function ensureCatbuddyDir(projectRoot: string): string {
   const catbuddyDir = path.join(projectRoot, CATBUDDY_DIR_NAME);
   fs.mkdirSync(path.join(catbuddyDir, "config"), { recursive: true });
-  fs.mkdirSync(path.join(catbuddyDir, "workspace"), { recursive: true });
+  fs.mkdirSync(path.join(catbuddyDir, "memory"), { recursive: true });
+  fs.mkdirSync(path.join(catbuddyDir, "skills"), { recursive: true });
   return catbuddyDir;
 }
 

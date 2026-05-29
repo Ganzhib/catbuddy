@@ -3,7 +3,7 @@ import path from "node:path";
 import { AgentLoop } from "../agent/loop.js";
 import { createProvider } from "../providers/index.js";
 import { SessionManager } from "../session/session-manager.js";
-import { getDefaultConfig } from "../config/defaults.js";
+import { getDefaultConfig, normalizeConfigWithDefaults } from "../config/defaults.js";
 import { saveConfig } from "../config/persist.js";
 import { log } from "../utils/index.js";
 import { MessageBus } from "../bus/index.js";
@@ -50,6 +50,11 @@ export async function initAgent(): Promise<AgentRuntime> {
     console.log("[main] Config written to:", configFile);
   }
 
+  if (normalizeConfigWithDefaults(config)) {
+    saveConfig(configFile, config);
+    console.log("[main] Config normalized and saved:", configFile);
+  }
+
   (config as any).runtime = { config_path: configFile };
   console.log("[main] Workspace:", workspace);
 
@@ -83,12 +88,11 @@ export async function initAgent(): Promise<AgentRuntime> {
 
   await agentLoop.connectMcp();
 
-  const runtime: DesktopRuntimeRefs & { channelManager: ChannelManager } = {
+  const runtime: DesktopRuntimeRefs = {
     agentLoop,
     sessions,
     config,
     configFile,
-    channelManager,
   };
 
   const registry = listWorkspaceFolders(homeDir);
@@ -96,14 +100,10 @@ export async function initAgent(): Promise<AgentRuntime> {
     const folder = getWorkspaceFolderById(homeDir, registry.activeFolderId);
     if (folder) {
       applyProjectAnchor(runtime, folder);
-      channelManager.updateRuntimeRefs(runtime);
-      sessions = runtime.sessions;
-      config = runtime.config;
-      configFile = runtime.configFile;
     }
   }
 
-  registerIpcHandlers(runtime);
+  registerIpcHandlers(runtime, channelManager);
 
   const cron = startDesktopCron(runtime);
   const heartbeat = startDesktopHeartbeat(runtime);

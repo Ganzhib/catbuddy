@@ -24,7 +24,7 @@ export function runHeartbeatOnce(
     return "skipped";
   }
 
-  const workspace = runtime.agentLoop.workspace;
+  const workspace = runtime.agentLoop.catbuddyDir;
   if (!opts?.force && !workspaceHasHeartbeatTasks(workspace)) {
     return "no-tasks";
   }

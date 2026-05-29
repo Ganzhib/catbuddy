@@ -4,7 +4,6 @@
 import type { OutboundMessage } from "@catbuddy/shared";
 import type { BaseChannel } from "./base";
 import type { MessageBus } from "../bus";
-import type { DesktopRuntimeRefs } from "../services/workspace-anchor.js";
 
 export class ChannelManager {
   private channels = new Map<string, BaseChannel>();
@@ -23,19 +22,6 @@ export class ChannelManager {
 
   get(name: string): BaseChannel | undefined {
     return this.channels.get(name);
-  }
-
-  updateRuntimeRefs(
-    runtime: Pick<DesktopRuntimeRefs, "sessions" | "config" | "configFile">,
-  ): void {
-    for (const channel of this.channels.values()) {
-      const candidate = channel as BaseChannel & {
-        updateRuntimeRefs?: (
-          refs: Pick<DesktopRuntimeRefs, "sessions" | "config" | "configFile">,
-        ) => void;
-      };
-      candidate.updateRuntimeRefs?.(runtime);
-    }
   }
 
   async start(): Promise<void> {

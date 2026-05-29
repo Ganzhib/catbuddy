@@ -8,7 +8,6 @@ import { buildWebuiThreadFromSession } from "../sync/session-thread.js";
 import { postGatewayAuthHttp } from "../services/gateway-auth-http.js";
 import type { MessageBus } from "../bus/index.js";
 import type { SessionManager } from "../session/session-manager.js";
-import type { DesktopRuntimeRefs } from "../services/workspace-anchor.js";
 import type { BaseChannel } from "./base";
 
 let lastErr = "";
@@ -58,12 +57,6 @@ export class GatewayChannel implements BaseChannel {
     this.applyRemote();
   }
   async stop(): Promise<void> { this._running = false; this.stopClient(); }
-
-  updateRuntimeRefs(runtime: Pick<DesktopRuntimeRefs, "sessions" | "config" | "configFile">): void {
-    this.refs = { ...this.refs, ...runtime };
-    this.accountEmail = this.refs.config.gateway?.accountEmail?.trim().toLowerCase() || this.accountEmail;
-    this.syncSessions();
-  }
 
   private registerIpc(): void {
     if (this.ipcRegistered) return;

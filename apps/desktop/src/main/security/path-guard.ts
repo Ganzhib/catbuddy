@@ -75,7 +75,9 @@ export class PathGuard {
       throw new Error(`Access denied: "${label}" is outside ${scope}`);
     }
 
-    if (p === this.catbuddyDir || p.startsWith(this.catbuddyDir + path.sep)) {
+    const insideCatbuddy = p === this.catbuddyDir || p.startsWith(this.catbuddyDir + path.sep);
+    const insideInternalWorkspace = p === this.workspace || p.startsWith(this.workspace + path.sep);
+    if (insideCatbuddy && (this.mode !== "internal" || !insideInternalWorkspace)) {
       throw new Error(
         `Access denied: "${label}" is inside ${CATBUDDY_DIR_NAME} (reserved for CatBuddy)`,
       );

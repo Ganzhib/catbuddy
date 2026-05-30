@@ -689,8 +689,21 @@ export class GatewayStateService {
     chatId: string,
     ownerEmail?: string,
     webToken?: string,
+    workspaceFolderId?: string | null,
   ): Promise<{ ok: boolean; error?: string; offline?: boolean }> {
     await this.store.getOrCreate(sessionKey)
+    if (workspaceFolderId) {
+      await this.store.mergeSessionRow({
+        key: sessionKey,
+        channel: this.channelFromSessionKey(sessionKey),
+        chatId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        title: '',
+        preview: '',
+        workspaceFolderId,
+      })
+    }
     if (ownerEmail?.trim()) {
       await this.store.setSessionOwner(sessionKey, ownerEmail)
     }
@@ -700,7 +713,12 @@ export class GatewayStateService {
     if (!exec) return { ok: true, offline: true }
     exec.sessions.add(sessionKey)
     this.sessionDesktop.set(sessionKey, exec.deviceId)
-    exec.ws.send(JSON.stringify({ type: 'create_session', sessionKey, chatId }))
+    exec.ws.send(JSON.stringify({
+      type: 'create_session',
+      sessionKey,
+      chatId,
+      workspaceFolderId: workspaceFolderId ?? null,
+    }))
     return { ok: true }
   }
 
@@ -739,6 +757,13 @@ export class GatewayStateService {
 
     this.sessionDesktop.set(sessionKey, exec.deviceId)
     exec.sessions.add(sessionKey)
+    const info = await this.store.get(sessionKey)
+    const workspaceFolderId = typeof info?.metadata?.workspaceFolderId === 'string'
+      ? info.metadata.workspaceFolderId
+      : null
+    const workspaceFolderName = typeof info?.metadata?.workspaceFolderName === 'string'
+      ? info.metadata.workspaceFolderName
+      : null
     exec.ws.send(
       JSON.stringify({
         type: 'inbound_message',
@@ -746,6 +771,8 @@ export class GatewayStateService {
         chatId,
         content,
         media: media ?? [],
+        workspaceFolderId,
+        workspaceFolderName,
         source,
       }),
     )

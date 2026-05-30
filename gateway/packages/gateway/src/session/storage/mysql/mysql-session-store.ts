@@ -191,16 +191,26 @@ export class MysqlSessionStore implements SessionStore {
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
           lastConsolidated: 0,
-          metadata: {},
+          metadata: {
+            ...(row.workspaceFolderId ? { workspaceFolderId: row.workspaceFolderId } : {}),
+            ...(row.workspaceFolderName ? { workspaceFolderName: row.workspaceFolderName } : {}),
+          },
         },
         [],
       )
       return
     }
-    if (row.updatedAt > local.updatedAt) {
+    const nextMetadata = {
+      ...local.metadata,
+      ...(row.workspaceFolderId ? { workspaceFolderId: row.workspaceFolderId } : {}),
+      ...(row.workspaceFolderName ? { workspaceFolderName: row.workspaceFolderName } : {}),
+    }
+    const metadataChanged = JSON.stringify(nextMetadata) !== JSON.stringify(local.metadata)
+    if (row.updatedAt > local.updatedAt || metadataChanged) {
       local.title = row.title ?? local.title
       local.preview = row.preview ?? local.preview
-      local.updatedAt = row.updatedAt
+      if (row.updatedAt > local.updatedAt) local.updatedAt = row.updatedAt
+      local.metadata = nextMetadata
       const conn = await this.db.getPool().getConnection()
       try {
         await this.writeSession(conn, local)
@@ -221,10 +231,6 @@ export class MysqlSessionStore implements SessionStore {
       `SELECT s.session_key, s.title, s.preview, s.created_at, s.updated_at,
               s.last_consolidated, s.metadata
        FROM gateway_sessions s
-       WHERE EXISTS (
-         SELECT 1 FROM gateway_session_messages m
-         WHERE m.session_key = s.session_key LIMIT 1
-       )
        ORDER BY s.updated_at DESC`,
     )
     return rows.map((r) => this.rowToInfo(r))
@@ -490,6 +496,14 @@ export class MysqlSessionStore implements SessionStore {
       updatedAt: info.updatedAt,
       title: info.title,
       preview: info.preview,
+      workspaceFolderId:
+        typeof info.metadata?.workspaceFolderId === 'string'
+          ? info.metadata.workspaceFolderId
+          : null,
+      workspaceFolderName:
+        typeof info.metadata?.workspaceFolderName === 'string'
+          ? info.metadata.workspaceFolderName
+          : null,
     }
   }
 

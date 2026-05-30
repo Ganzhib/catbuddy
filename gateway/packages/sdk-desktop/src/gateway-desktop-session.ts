@@ -18,7 +18,14 @@ export type GatewayInboundMessage = Extract<
 
 export function sessionRowFromKey(
   key: string,
-  meta: { createdAt: string; updatedAt: string; title?: string; preview?: string },
+  meta: {
+    createdAt: string
+    updatedAt: string
+    title?: string
+    preview?: string
+    workspaceFolderId?: string | null
+    workspaceFolderName?: string | null
+  },
 ): GatewaySessionRow {
   const channel = key.includes(':') ? key.slice(0, key.indexOf(':')) : 'desktop'
   const chatId = bareChatId(key)
@@ -30,6 +37,8 @@ export function sessionRowFromKey(
     updatedAt: meta.updatedAt,
     title: meta.title ?? '',
     preview: meta.preview ?? '',
+    workspaceFolderId: meta.workspaceFolderId ?? null,
+    workspaceFolderName: meta.workspaceFolderName ?? null,
   }
 }
 

@@ -34,4 +34,6 @@ export interface GatewaySessionRow {
   updatedAt: string
   title?: string
   preview: string
+  workspaceFolderId?: string | null
+  workspaceFolderName?: string | null
 }

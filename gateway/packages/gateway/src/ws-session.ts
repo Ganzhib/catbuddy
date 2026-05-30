@@ -109,6 +109,14 @@ export function attachGatewaySessionWebSocket(
           updatedAt: String(s.updatedAt || new Date().toISOString()),
           title: s.title != null ? String(s.title) : '',
           preview: String(s.preview || ''),
+          workspaceFolderId:
+            typeof s.workspaceFolderId === 'string' && s.workspaceFolderId.trim()
+              ? s.workspaceFolderId.trim()
+              : null,
+          workspaceFolderName:
+            typeof s.workspaceFolderName === 'string' && s.workspaceFolderName.trim()
+              ? s.workspaceFolderName.trim()
+              : null,
         }))
         const requestId = msg.requestId ? String(msg.requestId) : ''
         void state.applySessionsSync(deviceId, rows, { notifyWebClients: !requestId })

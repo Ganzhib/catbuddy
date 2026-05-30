@@ -108,18 +108,22 @@ export function registerHttpRoutes(
     return state.fetchSessionsForWeb(email, token)
   })
 
-  app.post<{ Body: { chatId?: string } }>('/api/sessions', async (req, reply) => {
+  app.post<{ Body: { chatId?: string; workspaceFolderId?: string | null } }>('/api/sessions', async (req, reply) => {
     const email = await auth.resolveWebEmail(authHeader(req))
     const token = await auth.resolveWebToken(authHeader(req))
     const raw = String(req.body?.chatId || '').trim()
     const bare = raw.startsWith('desktop:') ? raw.slice('desktop:'.length) : raw
     const chatId = bare || `${Date.now()}_${randomBytes(3).toString('hex')}`
     const sessionKey = `desktop:${chatId}`
+    const workspaceFolderId = typeof req.body?.workspaceFolderId === 'string'
+      ? req.body.workspaceFolderId
+      : null
     const result = await state.forwardCreateSessionToDesktop(
       sessionKey,
       chatId,
       email,
       token,
+      workspaceFolderId,
     )
     if (!result.ok) return reply.status(503).send({ ok: false, error: result.error })
     const now = new Date().toISOString()
@@ -131,6 +135,7 @@ export function registerHttpRoutes(
       updatedAt: now,
       title: '',
       preview: '',
+      workspaceFolderId,
       offline: result.offline === true,
     })
   })

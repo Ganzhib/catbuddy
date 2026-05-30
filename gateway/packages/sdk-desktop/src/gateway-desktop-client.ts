@@ -26,6 +26,8 @@ import {
 
 export interface GatewaySessionProvider {
   list(): SessionInfo[]
+  /** Optional richer desktop catalog spanning all workspace folders. */
+  listAllSessions?: () => SessionInfo[]
   getDetail(key: string): SessionDetail | null
   getOrCreate(key: string): SessionInfo
   importWebuiThread(sessionKey: string, payload: Record<string, unknown>): void
@@ -54,7 +56,11 @@ export interface GatewayDesktopClientStatus {
 
 export type GatewayInboundHandler = (msg: GatewayInboundMessage) => void
 
-export type GatewayCreateSessionHandler = (sessionKey: string, chatId: string) => void
+export type GatewayCreateSessionHandler = (
+  sessionKey: string,
+  chatId: string,
+  workspaceFolderId?: string | null,
+) => void
 
 export type GatewayDeleteSessionHandler = (sessionKey: string) => void
 
@@ -159,6 +165,7 @@ export class GatewayDesktopClient {
     for (const key of sessionKeys) {
       this.subscribeSession(key)
     }
+    this.publishSessionsSync()
   }
 
   get subscribedSessionKeys(): string[] {
@@ -332,6 +339,7 @@ export class GatewayDesktopClient {
         this.options.onCreateSession?.(
           sessionKey,
           chatId || bareChatId(sessionKey),
+          msg.workspaceFolderId ?? null,
         )
         this.publishSessionsSync()
       }
@@ -368,7 +376,11 @@ export class GatewayDesktopClient {
       content: msg.content,
       media: msg.media ?? [],
       timestamp: Date.now(),
-      metadata: { _gateway_source: msg.source },
+      metadata: {
+        _gateway_source: msg.source,
+        ...(msg.workspaceFolderId ? { workspaceFolderId: msg.workspaceFolderId } : {}),
+        ...(msg.workspaceFolderName ? { workspaceFolderName: msg.workspaceFolderName } : {}),
+      },
       sessionKeyOverride: msg.sessionKey,
     })
   }
@@ -395,12 +407,21 @@ export class GatewayDesktopClient {
 
   private buildSessionRows(): GatewaySessionRow[] {
     if (!this.sessionProvider) return []
-    return this.sessionProvider.list().map((s) =>
+    const sessions = this.sessionProvider.listAllSessions?.() ?? this.sessionProvider.list()
+    return sessions.map((s) =>
       sessionRowFromKey(s.key, {
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
         title: s.title,
         preview: s.preview,
+        workspaceFolderId:
+          typeof s.metadata?.workspaceFolderId === 'string'
+            ? s.metadata.workspaceFolderId
+            : null,
+        workspaceFolderName:
+          typeof s.metadata?.workspaceFolderName === 'string'
+            ? s.metadata.workspaceFolderName
+            : null,
       }),
     )
   }

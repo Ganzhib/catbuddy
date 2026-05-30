@@ -16,8 +16,8 @@ function subscribeVoid(channel, cb) {
 /** Renderer-facing API exposed via contextBridge. */
 function createCatbuddyApi() {
   return {
-    sendMessage: (chatId, content, media) =>
-      ipcRenderer.invoke(IPC.AGENT_SEND, { chatId, content, media }),
+    sendMessage: (chatId, content, media, workspaceFolderId) =>
+      ipcRenderer.invoke(IPC.AGENT_SEND, { chatId, content, media, workspaceFolderId }),
     stopAgent: (sessionKey) => ipcRenderer.invoke(IPC.AGENT_STOP, { sessionKey }),
     getStatus: () => ipcRenderer.invoke(IPC.AGENT_STATUS),
 

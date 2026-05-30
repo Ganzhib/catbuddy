@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import path from "node:path";
 import { BrowserWindow, ipcMain } from "electron";
 import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData, catbuddyConfig } from "@catbuddy/shared";
 import { CATBUDDY_GATEWAY_HOST, resolveBuiltinGatewayWsUrl } from "@catbuddy/shared";
@@ -8,6 +9,9 @@ import { buildWebuiThreadFromSession } from "../sync/session-thread.js";
 import { postGatewayAuthHttp } from "../services/gateway-auth-http.js";
 import type { MessageBus } from "../bus/index.js";
 import type { SessionManager } from "../session/session-manager.js";
+import { getHomeCatbuddyDir } from "../services/workspace-anchor.js";
+import { listWorkspaceFolders } from "../services/workspace-folders.js";
+import { listAllDesktopSessions, getDesktopSessionDetail, getSessionManager, deleteDesktopSession } from "../services/desktop-sessions.js";
 import type { BaseChannel } from "./base";
 
 let lastErr = "";
@@ -142,7 +146,17 @@ export class GatewayChannel implements BaseChannel {
       onError: (message) => { this.logWsError(message); this.broadcast("gateway:connection-changed", { connected: false, lastError: message }); },
       sessionProvider: {
         list: () => this.refs.sessions.list(),
-        getDetail: (key) => this.refs.sessions.getDetail(key),
+        listAllSessions: () =>
+          listAllDesktopSessions(
+            path.join(getHomeCatbuddyDir(), 'workspace'),
+            listWorkspaceFolders(getHomeCatbuddyDir()).folders,
+          ),
+        getDetail: (key) =>
+          getDesktopSessionDetail(
+            path.join(getHomeCatbuddyDir(), 'workspace'),
+            listWorkspaceFolders(getHomeCatbuddyDir()).folders,
+            key,
+          ) ?? this.refs.sessions.getDetail(key),
         getOrCreate: (key) => this.refs.sessions.getOrCreate(key),
         importWebuiThread: (key, payload) => this.refs.sessions.importWebuiThread(key, payload),
       },
@@ -151,14 +165,33 @@ export class GatewayChannel implements BaseChannel {
         this.refs.bus.publishInbound(msg);
         this.broadcast("agent:gateway-inbound", { chatId: msg.chatId, sessionKey: msg.sessionKeyOverride ?? `desktop:${msg.chatId}`, content: msg.content });
       },
-      onCreateSession: (sessionKey, chatId) => {
-        this.refs.sessions.getOrCreate(sessionKey);
+      onCreateSession: (sessionKey, chatId, workspaceFolderId) => {
+        const folders = listWorkspaceFolders(getHomeCatbuddyDir()).folders
+        const folder = workspaceFolderId
+          ? folders.find((f) => f.id === workspaceFolderId)
+          : null
+        const manager = getSessionManager(
+          path.join(getHomeCatbuddyDir(), 'workspace'),
+          folders,
+          folder?.id ?? null,
+        )
+        manager.getOrCreate(sessionKey);
+        if (folder) {
+          manager.setMetadata(sessionKey, {
+            workspaceFolderId: folder.id,
+            workspaceFolderName: folder.name,
+          })
+        }
         this.gateway?.focusSession(sessionKey);
         console.log("[main] Gateway create_session:", sessionKey);
         this.broadcast("session:created", { sessionKey, chatId });
       },
       onDeleteSession: (sessionKey) => {
-        this.refs.sessions.delete(sessionKey);
+        deleteDesktopSession(
+          path.join(getHomeCatbuddyDir(), 'workspace'),
+          listWorkspaceFolders(getHomeCatbuddyDir()).folders,
+          sessionKey,
+        );
         console.log("[main] Gateway delete_session:", sessionKey);
         this.broadcast("session:deleted", { sessionKey });
       },
@@ -199,7 +232,15 @@ export class GatewayChannel implements BaseChannel {
   private email(): string | undefined { return [this.accountEmail, this.refs.config.gateway?.accountEmail, process.env.GATEWAY_ACCOUNT_EMAIL].map((v) => v?.trim().toLowerCase()).find((v) => v?.includes("@")); }
   private saveAndApply(): void { fs.writeFileSync(this.refs.configFile, JSON.stringify(this.refs.config, null, 2), "utf-8"); this.applyRemote(); }
   private stopClient(): void { this.gateway?.stop(); this.gateway = null; }
-  private syncSessions(): void { if (this.gateway) this.gateway.syncSessions(this.refs.sessions.list().map((row) => row.key)); }
+  private syncSessions(): void {
+    if (!this.gateway) return;
+    this.gateway.syncSessions(
+      listAllDesktopSessions(
+        path.join(getHomeCatbuddyDir(), 'workspace'),
+        listWorkspaceFolders(getHomeCatbuddyDir()).folders,
+      ).map((row) => row.key),
+    );
+  }
   private sessionKey(chatId: string): string { return chatId.startsWith("desktop:") ? chatId : `desktop:${chatId}`; }
   private emitSession(chatId: string, event: Record<string, unknown>): void { this.gateway?.publishUiEvent(this.sessionKey(chatId), chatId, event); }
   private broadcast(channel: string, payload: Record<string, unknown>): void { for (const win of BrowserWindow.getAllWindows()) win.webContents.send(channel, payload); }

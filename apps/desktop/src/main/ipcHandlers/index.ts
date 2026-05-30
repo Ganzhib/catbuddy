@@ -34,6 +34,7 @@ import type { ChannelManager } from '../channels/manager.js'
 import {
   deleteDesktopSession,
   getDesktopSessionDetail,
+  getSessionManager,
   listAllDesktopSessions,
 } from '../services/desktop-sessions.js'
 export function registerIpcHandlers(
@@ -57,24 +58,19 @@ export function registerIpcHandlers(
     sessionKey: string,
     preferredFolderId?: string | null,
   ): string | null => {
-    runtime.sessions.getOrCreate(sessionKey)
     if (preferredFolderId !== undefined) {
-      if (preferredFolderId) {
-        runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: preferredFolderId })
-        return preferredFolderId
-      }
-      runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: null })
-      return null
+      return preferredFolderId
     }
-
-    const existing = runtime.sessions.getMetadataValue<string>(sessionKey, 'workspaceFolderId')
-    if (existing) return existing
-
-    const active = getActiveWorkspaceFolderId(homeCatbuddyDir())
-    if (active) {
-      runtime.sessions.setMetadata(sessionKey, { workspaceFolderId: active })
-      return active
+    // Check all project session managers to find which folder owns this session
+    const folders = allWorkspaceFolders()
+    for (const folder of folders) {
+      const mgr = getSessionManager(homeWorkspace(), folders, folder.id)
+      const val = mgr.getMetadataValue<string | null>(sessionKey, 'workspaceFolderId')
+      if (val) return val
     }
+    // Fallback: check home workspace
+    const existing = runtime.sessions.getMetadataValue<string | null>(sessionKey, 'workspaceFolderId')
+    if (existing !== undefined) return existing
     return null
   }
 
@@ -85,6 +81,16 @@ export function registerIpcHandlers(
     const folderId = resolveSessionFolderId(sessionKey, preferredFolderId)
     const folder = folderId ? getWorkspaceFolderById(homeCatbuddyDir(), folderId) : null
     anchorToFolder(folder)
+
+    const mgr = getSessionManager(homeWorkspace(), allWorkspaceFolders(), folderId)
+    agentLoop.bindSessionManager(sessionKey, mgr)
+    mgr.getOrCreate(sessionKey)
+    if (folderId) {
+      mgr.setMetadata(sessionKey, {
+        workspaceFolderId: folderId,
+        ...(folder ? { workspaceFolderName: folder.name } : {}),
+      })
+    }
     return folderId
   }
 
@@ -101,12 +107,11 @@ export function registerIpcHandlers(
 
   // ═══ Agent ═══
   // IPC 消息 → bus.inbound → run() → _dispatch() → bus.outbound → DesktopChannel → 前端
-  ipcMain.handle('agent:send', async (_event, { chatId, content, media }: { chatId?: string; content: string; media?: string[] }) => {
+  ipcMain.handle('agent:send', async (_event, { chatId, content, media, workspaceFolderId }: { chatId?: string; content: string; media?: string[]; workspaceFolderId?: string | null }) => {
     const sessionKey = toSessionKey(chatId)
     const bus = agentLoop.bus;
     if (!bus) throw new Error("AgentLoop must be initialized with a MessageBus");
-    runtime.sessions.getOrCreate(sessionKey);
-    const workspaceFolderId = activateSessionWorkspace(sessionKey);
+    const resolvedFolderId = activateSessionWorkspace(sessionKey, workspaceFolderId);
     bus.publishInbound({
       channel: 'desktop',
       senderId: 'user',
@@ -114,7 +119,7 @@ export function registerIpcHandlers(
       content,
       media: media ?? [],
       timestamp: Date.now(),
-      metadata: { workspaceFolderId: workspaceFolderId ?? null },
+      metadata: { workspaceFolderId: resolvedFolderId ?? null },
       sessionKeyOverride: sessionKey,
     });
     getGatewayClient()?.focusSession(sessionKey);
@@ -186,16 +191,13 @@ export function registerIpcHandlers(
   ipcMain.handle('session:clear', async (_event, { key }: { key: string }) => runtime.sessions.clear(key))
   ipcMain.handle('session:new', async (_event, { workspaceFolderId }: { workspaceFolderId?: string | null } = {}) => {
     const home = homeCatbuddyDir()
-    const folderId = workspaceFolderId === undefined
-      ? getActiveWorkspaceFolderId(home)
-      : workspaceFolderId
+    const folderId = workspaceFolderId ?? null
 
-    if (workspaceFolderId !== undefined) {
+    if (folderId) {
       setActiveWorkspaceFolderId(home, folderId)
     }
 
     const key = `desktop:${Date.now()}`
-    runtime.sessions.getOrCreate(key)
     const resolvedFolderId = activateSessionWorkspace(key, folderId)
     getGatewayClient()?.focusSession(key)
     return { key, workspaceFolderId: resolvedFolderId }

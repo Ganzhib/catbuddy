@@ -12,7 +12,7 @@ import type {
 } from '@catbuddy/shared'
 
 export interface CatbuddyPreloadApi {
-  sendMessage(chatId: string, content: string, media?: string[]): Promise<void>
+  sendMessage(chatId: string, content: string, media?: string[], workspaceFolderId?: string | null): Promise<void>
   stopAgent(sessionKey: string): Promise<void>
   getStatus(): Promise<AgentStatus>
 

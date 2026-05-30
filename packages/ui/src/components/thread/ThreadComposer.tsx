@@ -79,6 +79,7 @@ interface ThreadComposerProps {
   goalState?: GoalStateWsPayload;
   /** Workspace folder id bound to the selected conversation. Null means regular chat history. */
   workspaceFolderId?: string | null;
+  onWorkspaceFolderIdChange?: (workspaceFolderId: string | null) => void;
   /** True when the composer belongs to an existing selected conversation. */
   chatSessionSelected?: boolean;
 }
@@ -393,6 +394,7 @@ export function ThreadComposer({
   runStartedAt = null,
   goalState,
   workspaceFolderId,
+  onWorkspaceFolderIdChange,
   chatSessionSelected = false,
 }: ThreadComposerProps) {
   const { t } = useTranslation();
@@ -407,6 +409,7 @@ export function ThreadComposer({
   const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>("auto");
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
   const [importingFolder, setImportingFolder] = useState(false);
+  const [folderChipCleared, setFolderChipCleared] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -433,7 +436,7 @@ export function ThreadComposer({
     useAttachedImages();
 
   const { store: workspaceStore, selectFolder } = useWorkspaceFolders();
-  const effectiveWorkspaceFolderId = workspaceFolderId ?? null;
+  const effectiveWorkspaceFolderId = folderChipCleared ? null : (workspaceFolderId ?? workspaceStore.activeFolderId ?? null);
   const activeWorkspaceFolder = useMemo(
     () => {
       if (!effectiveWorkspaceFolderId) return null;
@@ -441,6 +444,23 @@ export function ThreadComposer({
     },
     [effectiveWorkspaceFolderId, workspaceStore.folders],
   );
+  const workspaceChipLabel = activeWorkspaceFolder?.name ?? t("workspace.defaultWorkspace");
+
+  useEffect(() => {
+    if (chatSessionSelected || workspaceFolderId) setFolderChipCleared(false);
+  }, [chatSessionSelected, workspaceFolderId]);
+
+  useEffect(() => {
+    if (chatSessionSelected || folderChipCleared) return;
+    if (workspaceFolderId != null || !workspaceStore.activeFolderId) return;
+    onWorkspaceFolderIdChange?.(workspaceStore.activeFolderId);
+  }, [
+    chatSessionSelected,
+    folderChipCleared,
+    onWorkspaceFolderIdChange,
+    workspaceFolderId,
+    workspaceStore.activeFolderId,
+  ]);
 
   const formatRejection = useCallback(
     (reason: AttachmentError): string => {
@@ -797,7 +817,7 @@ export function ThreadComposer({
 
   const attachButtonDisabled = disabled || full;
   const showStopButton = isStreaming && !!onStop;
-  const showFolderUpload = hasCatbuddyIpc() && !!workspaceFolderId;
+  const showFolderUpload = hasCatbuddyIpc();
 
   const handleImportFolder = useCallback(async () => {
     if (importingFolder || disabled) return;
@@ -809,6 +829,7 @@ export function ThreadComposer({
       if (!result.ok) {
         setInlineError(t("thread.composer.folderImportFailed"));
       } else {
+        setFolderChipCleared(false);
         notifyWorkspaceChanged();
       }
     } catch {
@@ -952,24 +973,28 @@ export function ThreadComposer({
               <Plus className={cn(isHero ? "h-5 w-5" : "h-4 w-4")} />
             </Button>
             {showFolderUpload ? (
-              activeWorkspaceFolder ? (
+              !folderChipCleared ? (
                 <div
                   className={cn(
                     "flex max-w-[11rem] shrink-0 items-center gap-1 rounded-full border border-border/55 bg-card px-2 shadow-[0_2px_8px_rgba(15,23,42,0.05)] sm:max-w-[14rem]",
                     isHero ? "h-9 text-[12px]" : "h-7.5 text-[11px]",
                   )}
-                  title={activeWorkspaceFolder.name}
+                  title={workspaceChipLabel}
                 >
                   <Folder className={cn("shrink-0 stroke-[1.5]", isHero ? "h-4 w-4" : "h-3.5 w-3.5")} />
                   <span className="min-w-0 flex-1 truncate font-medium text-foreground/85">
-                    {activeWorkspaceFolder.name}
+                    {workspaceChipLabel}
                   </span>
                   {!chatSessionSelected ? (
                     <button
                       type="button"
                       disabled={disabled}
                       aria-label={t("thread.composer.clearFolder")}
-                      onClick={() => void selectFolder(null)}
+                      onClick={() => {
+                        setFolderChipCleared(true);
+                        onWorkspaceFolderIdChange?.(null);
+                        void selectFolder(null);
+                      }}
                       className={cn(
                         "inline-flex shrink-0 items-center justify-center rounded-full text-muted-foreground/75 transition-colors hover:bg-muted/60 hover:text-foreground",
                         isHero ? "h-6 w-6" : "h-5 w-5",

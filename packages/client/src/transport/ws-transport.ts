@@ -35,7 +35,7 @@ export class WsTransport implements AgentTransport {
     return () => this.teardown();
   }
 
-  sendMessage(chatId: string, content: string, mediaUrls?: string[]): void {
+  sendMessage(chatId: string, content: string, mediaUrls?: string[], _workspaceFolderId?: string | null): void {
     const outbound: Outbound = {
       type: "message",
       chat_id: chatId,

@@ -121,6 +121,8 @@ export interface ChatSummary {
   preview: string;
   /** Logical workspace folder id grouping this chat history. */
   workspaceFolderId?: string | null;
+  /** Display name for workspace grouping when folder registry is unavailable (Gateway/Web). */
+  workspaceFolderName?: string | null;
 }
 
 export interface WorkspaceFolder {
@@ -129,8 +131,10 @@ export interface WorkspaceFolder {
   createdAt: string;
   /** Project root directory (e.g. selected folder A). */
   projectRoot: string;
-  /** `.catbuddy` inside project root. */
+  /** `.catbuddy` inside project root (memory/skills only). */
   catbuddyDir: string;
+  /** App-owned project data dir: `~/.catbuddy/projects/<id>/` for sessions. */
+  dataDir: string;
 }
 
 export type GatewayMode = 'nanobot' | 'gateway'

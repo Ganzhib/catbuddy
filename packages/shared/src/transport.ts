@@ -18,7 +18,7 @@ export interface TransportCallbacks {
 export interface AgentTransport {
   readonly kind: TransportKind
   attach(callbacks: TransportCallbacks): () => void
-  sendMessage(chatId: string, content: string, mediaUrls?: string[]): void
+  sendMessage(chatId: string, content: string, mediaUrls?: string[], workspaceFolderId?: string | null): void
   ensureSession?(chatId: string, workspaceFolderId?: string | null): void
   updateUrl?(url: string): void
 }

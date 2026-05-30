@@ -61,6 +61,7 @@ function Shell({
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [draftWorkspaceFolderId, setDraftWorkspaceFolderId] = useState<string | null>(null)
+  const [draftWorkspaceCleared, setDraftWorkspaceCleared] = useState(false)
   const placeholderSessionsRef = useRef<Map<string, ChatSummary>>(new Map())
   const [view, setView] = useState<SidebarPanel>('chat')
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(readSidebarOpen)
@@ -105,29 +106,49 @@ function Shell({
     else setMobileSidebarOpen(v => !v)
   }, [])
 
+  const getActiveWorkspaceFolderId = useCallback(async (): Promise<string | null> => {
+    if (!window.catbuddy?.listWorkspaceFolders) return null
+    try {
+      return (await window.catbuddy.listWorkspaceFolders())?.activeFolderId ?? null
+    } catch (e) {
+      console.error('Failed to read active workspace folder', e)
+      return null
+    }
+  }, [])
+
   const onCreateChat = useCallback(async (workspaceFolderId?: string | null) => {
     try {
       const activeFolderId = workspaceFolderId !== undefined
         ? workspaceFolderId
-        : window.catbuddy?.listWorkspaceFolders
-          ? (await window.catbuddy.listWorkspaceFolders())?.activeFolderId ?? null
-          : null
+        : await getActiveWorkspaceFolderId()
       const chatId = await createChat(activeFolderId)
       setActiveKey(toSessionKey(chatId))
       setDraftWorkspaceFolderId(null)
+      setDraftWorkspaceCleared(false)
       setView('chat')
       setMobileSidebarOpen(false)
       return chatId
     } catch (e) { console.error('Failed to create chat', e); return null }
-  }, [createChat])
+  }, [createChat, getActiveWorkspaceFolderId])
 
   const onNewChat = useCallback(() => {
-    setActiveKey(null); setDraftWorkspaceFolderId(null); setView('chat'); setMobileSidebarOpen(false)
-  }, [])
+    setActiveKey(null); setView('chat'); setMobileSidebarOpen(false); setDraftWorkspaceCleared(false)
+    void getActiveWorkspaceFolderId().then((folderId) => {
+      setDraftWorkspaceFolderId(folderId)
+    })
+  }, [getActiveWorkspaceFolderId])
+
+  useEffect(() => {
+    if (activeKey || draftWorkspaceCleared || draftWorkspaceFolderId !== null) return
+    void getActiveWorkspaceFolderId().then((folderId) => {
+      setDraftWorkspaceFolderId(folderId)
+    })
+  }, [activeKey, draftWorkspaceCleared, draftWorkspaceFolderId, getActiveWorkspaceFolderId])
 
   const onSelectChat = useCallback((key: string | null, workspaceFolderId?: string | null) => {
     setActiveKey(key ? toSessionKey(key) : null)
     setDraftWorkspaceFolderId(key ? null : workspaceFolderId ?? null)
+    setDraftWorkspaceCleared(false)
     setView('chat')
     setMobileSidebarOpen(false)
   }, [])
@@ -144,6 +165,7 @@ function Shell({
   const onBackToChat = useCallback(() => {
     setView('chat')
     setDraftWorkspaceFolderId(null)
+    setDraftWorkspaceCleared(false)
     setActiveKey(current => {
       if (!current) return null
       return sessions.some(s => s.key === current) ? current : sessions[0]?.key ?? null
@@ -164,6 +186,7 @@ function Shell({
       const key = toSessionKey(chatId)
       setActiveKey((prev) => (prev === key ? prev : key))
       setDraftWorkspaceFolderId(null)
+      setDraftWorkspaceCleared(false)
       setView('chat')
       client.attach(chatId)
     })
@@ -178,6 +201,7 @@ function Shell({
     return client.onGoHomeRequest(() => {
       setActiveKey(null);
       setDraftWorkspaceFolderId(null);
+      setDraftWorkspaceCleared(false);
       setView('chat');
     })
   }, [client])
@@ -249,6 +273,10 @@ function Shell({
               onNewChat={onNewChat}
               onCreateChat={onCreateChat}
               draftWorkspaceFolderId={draftWorkspaceFolderId}
+              onDraftWorkspaceFolderIdChange={(folderId) => {
+                setDraftWorkspaceFolderId(folderId)
+                setDraftWorkspaceCleared(folderId === null)
+              }}
               onTurnEnd={onTurnEnd}
               theme={theme}
               onToggleTheme={toggle}

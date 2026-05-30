@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Upload } from "lucide-react";
 
 import { PanelShell } from "@/components/panels/PanelShell";
-import { WorkspaceChatSection } from "@/components/workspace/WorkspaceChatSection";
+import { WorkspaceChatSection, DEFAULT_WORKSPACE_FOLDER_ID } from "@/components/workspace/WorkspaceChatSection";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
 import { panelBtnPrimary, panelSection } from "@/lib/panel-styles";
@@ -15,7 +15,7 @@ interface WorkspacePanelProps {
   activeKey: string | null;
   onSelectChat: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
-  onCreateChat: (workspaceFolderId: string) => unknown;
+  onCreateChat: (workspaceFolderId: string | null) => unknown;
   onBackToChat: () => void;
 }
 
@@ -31,7 +31,7 @@ export function WorkspacePanel({
   const { store, loading, error, importFolder, selectFolder } = useWorkspaceFolders();
   const [importing, setImporting] = useState(false);
 
-  const workspaceSessions = sessions.filter((s) => !!s.workspaceFolderId);
+  const workspaceSessions = sessions;
 
   const handleImport = useCallback(async () => {
     setImporting(true);
@@ -57,13 +57,18 @@ export function WorkspacePanel({
   );
 
   const handleSelectFolder = useCallback(
-    async (folderId: string) => {
+    async (folderId: string | null) => {
       if (folderId !== store.activeFolderId) {
         await selectFolder(folderId);
       }
       onSelectChat(null, folderId);
     },
     [onSelectChat, selectFolder, store.activeFolderId],
+  );
+
+  const createWorkspaceChat = useCallback(
+    (folderId: string) => onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId),
+    [onCreateChat],
   );
 
   return (
@@ -103,11 +108,11 @@ export function WorkspacePanel({
             activeKey={activeKey}
             activeFolderId={store.activeFolderId}
             loading={loading}
-            onSelectChat={(key, folderId) => void handleSelectChat(key, folderId)}
+            onSelectChat={(key, folderId) => void handleSelectChat(key, folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId)}
             onRequestDelete={onRequestDelete}
-            onCreateChat={onCreateChat}
+            onCreateChat={createWorkspaceChat}
             onImportFolder={() => void importFolder()}
-            onSelectFolder={(id) => void handleSelectFolder(id)}
+            onSelectFolder={(id) => void handleSelectFolder(id === DEFAULT_WORKSPACE_FOLDER_ID ? null : id)}
           />
         </section>
       </div>

@@ -39,6 +39,7 @@ interface ThreadShellProps {
   onNewChat?: () => void;
   onCreateChat?: (workspaceFolderId?: string | null) => Promise<string | null>;
   draftWorkspaceFolderId?: string | null;
+  onDraftWorkspaceFolderIdChange?: (workspaceFolderId: string | null) => void;
   onTurnEnd?: () => void;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
@@ -83,6 +84,7 @@ export function ThreadShell({
   onToggleSidebar,
   onCreateChat,
   draftWorkspaceFolderId = null,
+  onDraftWorkspaceFolderIdChange,
   onTurnEnd,
   theme = "light",
   onToggleTheme = () => {},
@@ -133,7 +135,13 @@ export function ThreadShell({
     setMessages,
     streamError,
     dismissStreamError,
-  } = useCatbuddyStream(chatId, initial, hasPendingToolCalls, handleTurnEnd);
+  } = useCatbuddyStream(
+    chatId,
+    initial,
+    hasPendingToolCalls,
+    handleTurnEnd,
+    session?.workspaceFolderId ?? draftWorkspaceFolderId ?? null,
+  );
 
   useEffect(() => {
     if (chatId && historyKey) sessionKeyByChatIdRef.current.set(chatId, historyKey);
@@ -389,6 +397,7 @@ export function ThreadShell({
           runStartedAt={runStartedAt}
           goalState={goalState}
           workspaceFolderId={draftWorkspaceFolderId}
+          onWorkspaceFolderIdChange={onDraftWorkspaceFolderIdChange}
         />
       )}
       {showHeroComposer ? quickActions : null}

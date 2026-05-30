@@ -23,6 +23,18 @@ import { cn } from "@/lib/utils";
 import type { ChatSummary, WorkspaceFolder } from "@catbuddy/shared";
 
 const COLLAPSED_CHAT_LIMIT = 3;
+export const DEFAULT_WORKSPACE_FOLDER_ID = "__catbuddy_default_workspace__";
+
+function createDefaultWorkspaceFolder(name: string): WorkspaceFolder {
+  return {
+    id: DEFAULT_WORKSPACE_FOLDER_ID,
+    name,
+    createdAt: "",
+    projectRoot: "",
+    catbuddyDir: "",
+    dataDir: "",
+  };
+}
 
 interface WorkspaceChatSectionProps {
   folders: WorkspaceFolder[];
@@ -34,7 +46,6 @@ interface WorkspaceChatSectionProps {
   onRequestDelete: (key: string, label: string) => void;
   onCreateChat?: (workspaceFolderId: string) => unknown;
   onImportFolder?: () => void | Promise<void>;
-  onRemoveFolder?: (folderId: string) => void | Promise<void>;
   onSelectFolder?: (folderId: string) => void | Promise<void>;
   compact?: boolean;
 }
@@ -49,7 +60,6 @@ export function WorkspaceChatSection({
   onRequestDelete,
   onCreateChat,
   onImportFolder,
-  onRemoveFolder,
   onSelectFolder,
   compact = false,
 }: WorkspaceChatSectionProps) {
@@ -57,14 +67,19 @@ export function WorkspaceChatSection({
   const [sectionExpanded, setSectionExpanded] = useState(true);
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(() => new Set());
 
+  const displayFolders = useMemo(
+    () => [createDefaultWorkspaceFolder(t("workspace.defaultWorkspace")), ...folders],
+    [folders, t],
+  );
+
   const sessionsByFolder = useMemo(() => {
     const map = new Map<string, ChatSummary[]>();
-    for (const folder of folders) {
+    for (const folder of displayFolders) {
       map.set(folder.id, []);
     }
     for (const session of sessions) {
-      const folderId = session.workspaceFolderId;
-      if (!folderId || !map.has(folderId)) continue;
+      const folderId = session.workspaceFolderId ?? DEFAULT_WORKSPACE_FOLDER_ID;
+      if (!map.has(folderId)) continue;
       map.get(folderId)!.push(session);
     }
     for (const list of map.values()) {
@@ -75,7 +90,7 @@ export function WorkspaceChatSection({
       );
     }
     return map;
-  }, [folders, sessions]);
+  }, [displayFolders, sessions]);
 
   if (loading) {
     return (
@@ -115,7 +130,7 @@ export function WorkspaceChatSection({
       )}
 
       {sectionExpanded ? (
-        folders.length === 0 ? (
+        displayFolders.length === 0 ? (
           <div className={cn("space-y-2 px-3 py-2", compact ? "mt-1" : "mt-3")}>
             <p className={cn("text-[12px] leading-relaxed", sb.textMuted)}>
               {t("workspace.emptyHint")}
@@ -137,13 +152,13 @@ export function WorkspaceChatSection({
           </div>
         ) : (
           <ul className={cn("space-y-0.5 pb-1", compact ? "mt-0.5 px-1" : "mt-3")} role="tree">
-            {folders.map((folder) => (
+            {displayFolders.map((folder) => (
               <FolderGroup
                 key={folder.id}
                 folder={folder}
                 sessions={sessionsByFolder.get(folder.id) ?? []}
                 activeKey={activeKey}
-                isActiveFolder={folder.id === activeFolderId}
+                isActiveFolder={folder.id === (activeFolderId ?? DEFAULT_WORKSPACE_FOLDER_ID)}
                 expanded={expandedFolderIds.has(folder.id)}
                 onToggleExpanded={() => {
                   setExpandedFolderIds((current) => {
@@ -239,6 +254,8 @@ function FolderGroup({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
+              setShowAll(false);
+              if (!expanded) onToggleExpanded();
               void onCreateChat(folder.id);
             }}
             className={cn(

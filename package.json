@@ -5,7 +5,7 @@
   "description": "catbuddy monorepo — desktop + web",
   "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "dev": "pnpm --filter @catbuddy/desktop dev",
+    "dev": "pnpm dev:gateway && pnpm dev:desktop && pnpm dev:web",
     "dev:desktop": "pnpm --filter @catbuddy/desktop dev",
     "dev:desktop:gateway": "pnpm --filter @catbuddy/desktop dev",
     "dev:web": "pnpm --filter @catbuddy/web dev",

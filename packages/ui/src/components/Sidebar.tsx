@@ -13,9 +13,7 @@ import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { DesktopClientDownload } from "@/components/DesktopClientDownload";
 import { GatewayRemoteSwitch } from "@/components/GatewayRemoteSwitch";
 import { SidebarNavButton } from "@/components/SidebarNavButton";
-import { SidebarSectionHeader } from "@/components/SidebarSectionHeader";
-import { WorkspaceChatSection } from "@/components/workspace/WorkspaceChatSection";
-import { ChatList } from "@/components/ChatList";
+import { WorkspaceChatSection, DEFAULT_WORKSPACE_FOLDER_ID } from "@/components/workspace/WorkspaceChatSection";
 import { Separator } from "@/components/ui/separator";
 import { useWorkspaceFolders } from "@/hooks/useWorkspaceFolders";
 import { brandAssets } from "@/lib/brand";
@@ -23,7 +21,7 @@ import { sb, sbInput } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { SidebarPanel } from "@/lib/sidebar-panel";
 import { hasCatbuddyIpc } from "@catbuddy/platform";
-import type { ChatSummary } from "@catbuddy/shared";
+import type { ChatSummary, WorkspaceFolder } from "@catbuddy/shared";
 
 interface SidebarProps {
   sessions: ChatSummary[];
@@ -31,7 +29,7 @@ interface SidebarProps {
   activePanel: SidebarPanel;
   loading: boolean;
   onNewChat: () => void;
-  onCreateChat: (workspaceFolderId: string) => unknown;
+  onCreateChat: (workspaceFolderId: string | null) => unknown;
   onSelect: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
   onSelectPanel: (panel: SidebarPanel) => void;
@@ -42,7 +40,6 @@ interface SidebarProps {
 export function Sidebar(props: SidebarProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
-  const [chatHistoryExpanded, setChatHistoryExpanded] = useState(true);
   const isDesktop = hasCatbuddyIpc();
   const {
     store,
@@ -70,20 +67,33 @@ export function Sidebar(props: SidebarProps) {
     });
   }, [normalizedQuery, props.sessions]);
 
-  const workspaceSessions = useMemo(
-    () => filteredSessions.filter((s) => !!s.workspaceFolderId),
-    [filteredSessions],
-  );
+  const workspaceSessions = filteredSessions;
 
-  const ungroupedSessions = useMemo(
-    () => filteredSessions.filter((s) => !s.workspaceFolderId),
-    [filteredSessions],
-  );
+  const derivedWorkspaceFolders = useMemo<WorkspaceFolder[]>(() => {
+    if (isDesktop) return store.folders;
+    const byId = new Map<string, WorkspaceFolder>();
+    for (const session of filteredSessions) {
+      const id = session.workspaceFolderId?.trim();
+      if (!id || byId.has(id)) continue;
+      byId.set(id, {
+        id,
+        name: session.workspaceFolderName?.trim() || id,
+        createdAt: session.createdAt ?? "",
+        projectRoot: "",
+        catbuddyDir: "",
+        dataDir: "",
+      });
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [filteredSessions, isDesktop, store.folders]);
 
   const selectChat = async (key: string, workspaceFolderId?: string | null) => {
-    if (workspaceFolderId) {
-      if (workspaceFolderId !== store.activeFolderId) {
-        await selectFolder(workspaceFolderId);
+    const actualFolderId = workspaceFolderId === DEFAULT_WORKSPACE_FOLDER_ID
+      ? null
+      : workspaceFolderId ?? null;
+    if (actualFolderId) {
+      if (actualFolderId !== store.activeFolderId) {
+        await selectFolder(actualFolderId);
       }
     } else if (store.activeFolderId) {
       await selectFolder(null);
@@ -93,15 +103,17 @@ export function Sidebar(props: SidebarProps) {
   };
 
   const selectWorkspaceFolder = async (folderId: string) => {
-    if (folderId !== store.activeFolderId) {
-      await selectFolder(folderId);
+    const actualFolderId = folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId;
+    if (actualFolderId !== store.activeFolderId) {
+      await selectFolder(actualFolderId);
     }
     props.onSelectPanel("chat");
-    props.onSelect(null, folderId);
+    props.onSelect(null, actualFolderId);
   };
 
-  const chatHistorySessions = isDesktop ? ungroupedSessions : filteredSessions;
-  const showChatHistoryBlock = !isDesktop || ungroupedSessions.length > 0 || props.loading;
+  const createWorkspaceChat = (folderId: string) => {
+    return props.onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId);
+  };
 
   return (
     <nav
@@ -196,18 +208,17 @@ export function Sidebar(props: SidebarProps) {
         ) : null}
       </div>
 
-      {/* 工作空间 */}
       {isDesktop ? (
-        <div className={cn("min-h-0 shrink overflow-y-auto border-y py-2", sb.border)}>
+        <div className={cn("min-h-0 flex-1 overflow-y-auto border-y py-2", sb.border)}>
           <WorkspaceChatSection
-            folders={store.folders}
+            folders={derivedWorkspaceFolders}
             sessions={workspaceSessions}
             activeKey={props.activeKey}
             activeFolderId={store.activeFolderId}
             loading={workspaceLoading}
             onSelectChat={selectChat}
             onRequestDelete={props.onRequestDelete}
-            onCreateChat={props.onCreateChat}
+            onCreateChat={createWorkspaceChat}
             onImportFolder={() => void importFolder()}
             onSelectFolder={(id) => void selectWorkspaceFolder(id)}
             compact
@@ -215,33 +226,20 @@ export function Sidebar(props: SidebarProps) {
         </div>
       ) : null}
 
-      {/* 聊天记录 */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        {showChatHistoryBlock ? (
-          <>
-            <SidebarSectionHeader
-              title={t("workspace.chatHistoryTitle")}
-              expanded={chatHistoryExpanded}
-              onToggle={() => setChatHistoryExpanded((v) => !v)}
-              className={cn(isDesktop && store.folders.length > 0 ? "mt-2" : "mt-1")}
-            />
-            {chatHistoryExpanded ? (
-              <ChatList
-                sessions={chatHistorySessions}
-                activeKey={props.activeKey}
-                loading={props.loading}
-                emptyLabel={
-                  normalizedQuery ? t("sidebar.noSearchResults") : t("chat.noSessions")
-                }
-                onSelect={selectChat}
-                onRequestDelete={props.onRequestDelete}
-              />
-            ) : null}
-          </>
-        ) : (
-          <div className="flex-1" aria-hidden />
-        )}
-      </div>
+      {!isDesktop ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <WorkspaceChatSection
+            folders={derivedWorkspaceFolders}
+            sessions={filteredSessions}
+            activeKey={props.activeKey}
+            activeFolderId={null}
+            loading={props.loading}
+            onSelectChat={selectChat}
+            onRequestDelete={props.onRequestDelete}
+            compact
+          />
+        </div>
+      ) : null}
 
       <Separator className={cn("bg-[#C8DCF0]/80 dark:bg-sidebar-border/50")} />
       <div className={cn("py-4", sb.px)}>

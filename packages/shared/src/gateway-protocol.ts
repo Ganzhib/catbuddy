@@ -79,9 +79,11 @@ export type GatewayServerToDesktopMessage =
       chatId: string
       content: string
       media?: string[]
+      workspaceFolderId?: string | null
+      workspaceFolderName?: string | null
       source: 'web' | 'gateway'
     }
-  | { type: 'create_session'; sessionKey: string; chatId: string }
+  | { type: 'create_session'; sessionKey: string; chatId: string; workspaceFolderId?: string | null }
   | { type: 'delete_session'; sessionKey: string }
   | { type: 'request_sessions'; requestId: string }
   | { type: 'request_thread'; requestId: string; sessionKey: string }
@@ -119,6 +121,8 @@ export interface GatewaySessionRow {
   updatedAt: string
   title?: string
   preview: string
+  workspaceFolderId?: string | null
+  workspaceFolderName?: string | null
 }
 
 // ─── MessageFrame (push / multi-node) ───────────────────────────────────────

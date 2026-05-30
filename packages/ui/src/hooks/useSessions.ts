@@ -25,7 +25,7 @@ export function useSessions(): {
   sessions: ChatSummary[];
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (replace?: boolean) => Promise<void>;
   createChat: (workspaceFolderId?: string | null) => Promise<string>;
   deleteChat: (key: string) => Promise<void>;
 } {
@@ -69,7 +69,7 @@ export function useSessions(): {
       const shouldRefresh = event instanceof CustomEvent
         ? event.detail?.refreshSessions !== false
         : true;
-      if (shouldRefresh) void refresh();
+      if (shouldRefresh) void refresh(true);
     };
     window.addEventListener("catbuddy:workspace-changed", onWorkspaceChanged);
     return () =>

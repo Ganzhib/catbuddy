@@ -88,6 +88,7 @@
     "sidebarTitle": "Folders",
     "loading": "Loading workspace…",
     "emptyHint": "Upload a folder from the composer — it appears here with its chat history.",
+    "defaultWorkspace": "Default workspace",
     "folderEmpty": "No chats in this workspace yet.",
     "expandMore": "Show more ({{count}})",
     "chatHistoryTitle": "Chat history",

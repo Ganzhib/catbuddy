@@ -190,13 +190,15 @@ export class IpcTransport implements AgentTransport {
     };
   }
 
-  sendMessage(chatId: string, content: string, mediaUrls?: string[]): void {
-    window.catbuddy?.sendMessage(chatId, content, mediaUrls);
+  sendMessage(chatId: string, content: string, mediaUrls?: string[], workspaceFolderId?: string | null): void {
+    window.catbuddy?.sendMessage(chatId, content, mediaUrls, workspaceFolderId);
   }
 
   ensureSession(chatId: string, workspaceFolderId?: string | null): void {
     const id = chatId.trim();
     if (!id) return;
-    void window.catbuddy?.gatewaySubscribeSession({ chatId: id, workspaceFolderId: workspaceFolderId ?? null });
+    const payload: { chatId: string; workspaceFolderId?: string | null } = { chatId: id };
+    if (workspaceFolderId !== undefined) payload.workspaceFolderId = workspaceFolderId;
+    void window.catbuddy?.gatewaySubscribeSession(payload);
   }
 }

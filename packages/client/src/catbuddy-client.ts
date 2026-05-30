@@ -183,7 +183,10 @@ export class catbuddyClient {
     const id = bareChatId(chatId);
     this.knownChats.add(id);
     this._activeChatId = id;
-    this.transport.ensureSession?.(id, workspaceFolderId ?? null);
+    this.transport.ensureSession?.(
+      id,
+      arguments.length >= 2 ? workspaceFolderId : undefined,
+    );
   }
 
   sendMessage(
@@ -191,13 +194,14 @@ export class catbuddyClient {
     content: string,
     media?: OutboundMedia[],
     _options?: { imageGeneration?: OutboundImageGeneration },
+    workspaceFolderId?: string | null,
   ): void {
     const id = bareChatId(chatId);
     this.knownChats.add(id);
     this._activeChatId = id;
 
     const mediaUrls = media?.map((m) => m.data_url) ?? [];
-    this.transport.sendMessage(id, content, mediaUrls);
+    this.transport.sendMessage(id, content, mediaUrls, workspaceFolderId);
   }
 
   private _emitSessionHandshake(): void {

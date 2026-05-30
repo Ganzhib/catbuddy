@@ -76,6 +76,7 @@
     "sidebarTitle": "文件夹",
     "loading": "正在加载工作空间…",
     "emptyHint": "在对话框上传文件夹后，会在这里显示该工作空间及其对话记录。",
+    "defaultWorkspace": "默认工作空间",
     "folderEmpty": "该工作空间还没有对话。",
     "expandMore": "展开更多 ({{count}})",
     "chatHistoryTitle": "聊天记录",

@@ -461,6 +461,7 @@ export function useCatbuddyStream(
   initialMessages: UIMessage[] = [],
   hasPendingToolCalls = false,
   onTurnEnd?: () => void,
+  workspaceFolderId?: string | null,
 ): {
   messages: UIMessage[];
   isStreaming: boolean;
@@ -1019,13 +1020,9 @@ export function useCatbuddyStream(
       // right away, before the first delta arrives from the server.
       setIsStreaming(true);
       const wireMedia = hasImages ? images!.map((i) => i.media) : undefined;
-      if (options) {
-        client.sendMessage(chatId, content, wireMedia, options);
-      } else {
-        client.sendMessage(chatId, content, wireMedia);
-      }
+      client.sendMessage(chatId, content, wireMedia, options, workspaceFolderId ?? null);
     },
-    [chatId, clearActivitySegment, client, flushPendingStreamEvents],
+    [chatId, clearActivitySegment, client, flushPendingStreamEvents, workspaceFolderId],
   );
 
   const stop = useCallback(() => {
@@ -1040,8 +1037,8 @@ export function useCatbuddyStream(
       return prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m));
     });
     suppressStreamUntilTurnEndRef.current = false;
-    client.sendMessage(chatId, "/stop");
-  }, [chatId, clearActivitySegment, client, flushPendingStreamEvents]);
+    client.sendMessage(chatId, "/stop", undefined, undefined, workspaceFolderId ?? null);
+  }, [chatId, clearActivitySegment, client, flushPendingStreamEvents, workspaceFolderId]);
 
   return {
     messages,

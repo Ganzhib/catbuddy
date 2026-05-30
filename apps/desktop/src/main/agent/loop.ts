@@ -151,6 +151,7 @@ export class AgentLoop implements RuntimeState {
 
   readonly bus: MessageBus | null;
   readonly fileStateStore = new FileStateStore();
+  private readonly _sessionManagersByKey = new Map<string, SessionManager>();
   memoryStore: LayeredMemoryStore | null = null;
   dream: Dream | null = null;
   autoCompact: AutoCompact | null = null;
@@ -570,6 +571,14 @@ export class AgentLoop implements RuntimeState {
     }
   }
 
+  bindSessionManager(sessionKey: string, manager: SessionManager): void {
+    this._sessionManagersByKey.set(sessionKey, manager);
+  }
+
+  private sessionManagerFor(sessionKey: string): SessionManager {
+    return this._sessionManagersByKey.get(sessionKey) ?? this.sessions;
+  }
+
   // ═══ process：直接调用（cron / heartbeat / bus 内 _dispatch） ═══
   async process(
     msg: InboundMessage,
@@ -682,14 +691,15 @@ export class AgentLoop implements RuntimeState {
   // ═══ 状态处理器 ═══
 
   private async _state_restore(ctx: TurnCtx): Promise<string> {
-    this.sessions.getOrCreate(ctx.sessionKey);
+    this.sessionManagerFor(ctx.sessionKey).getOrCreate(ctx.sessionKey);
     return "ok";
   }
 
   private async _state_compact(ctx: TurnCtx): Promise<string> {
     if (isHeartbeatMessage(ctx.msg)) return "ok";
 
-    const allMessages = this.sessions.getHistory(ctx.sessionKey, {
+    const sessionManager = this.sessionManagerFor(ctx.sessionKey);
+    const allMessages = sessionManager.getHistory(ctx.sessionKey, {
       maxMessages: 9999,
     });
 
@@ -755,11 +765,12 @@ export class AgentLoop implements RuntimeState {
   }
 
   private async _state_build(ctx: TurnCtx): Promise<string> {
-    const history = this.sessions.getHistory(ctx.sessionKey, {
+    const sessionManager = this.sessionManagerFor(ctx.sessionKey);
+    const history = sessionManager.getHistory(ctx.sessionKey, {
       maxMessages: this.maxMessages,
     });
 
-    const session = this.sessions.getOrCreate(ctx.sessionKey);
+    const session = sessionManager.getOrCreate(ctx.sessionKey);
     let sessionSummary: string | null =
       this.autoCompact?.prepareSession(ctx.sessionKey).summary ?? null;
     const lastSummary = session.metadata?._last_summary as {
@@ -789,8 +800,9 @@ export class AgentLoop implements RuntimeState {
     ctx: TurnCtx,
     cbs?: StreamCallbacks,
   ): Promise<string> {
+    const sessionManager = this.sessionManagerFor(ctx.sessionKey);
     if (!isHeartbeatMessage(ctx.msg)) {
-      this.sessions.addMessage(ctx.sessionKey, {
+      sessionManager.addMessage(ctx.sessionKey, {
         role: "user",
         content: ctx.msg.content,
         media: ctx.msg.media,
@@ -859,10 +871,11 @@ export class AgentLoop implements RuntimeState {
     if (isHeartbeatMessage(ctx.msg)) return "ok";
 
     const now = new Date().toISOString()
+    const sessionManager = this.sessionManagerFor(ctx.sessionKey);
 
     for (const msg of ctx.allMessages.slice(ctx.persistFromIndex)) {
       if (msg.role === "assistant" && msg.toolCalls?.length) {
-        this.sessions.addMessage(ctx.sessionKey, {
+        sessionManager.addMessage(ctx.sessionKey, {
           role: "assistant",
           content: typeof msg.content === "string" ? msg.content : "",
           toolCalls: msg.toolCalls,
@@ -871,7 +884,7 @@ export class AgentLoop implements RuntimeState {
         });
       }
       if (msg.role === "tool") {
-        this.sessions.addMessage(ctx.sessionKey, {
+        sessionManager.addMessage(ctx.sessionKey, {
           role: "tool",
           content: typeof msg.content === "string"
             ? msg.content
@@ -884,7 +897,7 @@ export class AgentLoop implements RuntimeState {
     }
 
     if (ctx.finalContent && ctx.stopReason !== "empty_final_response") {
-      this.sessions.addMessage(ctx.sessionKey, {
+      sessionManager.addMessage(ctx.sessionKey, {
         role: "assistant",
         content: ctx.finalContent,
         timestamp: now,

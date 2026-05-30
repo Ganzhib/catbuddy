@@ -19,6 +19,16 @@ function storePath(homeCatbuddyDir: string): string {
   return path.join(homeCatbuddyDir, STORE_FILE);
 }
 
+function projectsDir(homeCatbuddyDir: string): string {
+  return path.join(homeCatbuddyDir, "projects");
+}
+
+function ensureProjectDataDir(homeCatbuddyDir: string, folderId: string): string {
+  const dataDir = path.join(projectsDir(homeCatbuddyDir), folderId);
+  fs.mkdirSync(path.join(dataDir, "sessions"), { recursive: true });
+  return dataDir;
+}
+
 function readStore(homeCatbuddyDir: string): WorkspaceFolderStore {
   const fp = storePath(homeCatbuddyDir);
   if (!fs.existsSync(fp)) return defaultStore();
@@ -34,6 +44,7 @@ function readStore(homeCatbuddyDir: string): WorkspaceFolderStore {
           createdAt: f.createdAt,
           projectRoot: f.projectRoot,
           catbuddyDir: f.catbuddyDir ?? path.join(f.projectRoot, ".catbuddy"),
+          dataDir: f.dataDir ?? path.join(projectsDir(homeCatbuddyDir), f.id),
         })),
     };
   } catch {
@@ -103,7 +114,10 @@ export function removeWorkspaceFolder(
   return store;
 }
 
-/** Register a workspace folder at `sourcePath` and create `.catbuddy` inside it. */
+/** Register a workspace folder at `sourcePath`.
+ * - Creates `.catbuddy` in the project root (memory/skills anchor).
+ * - Creates `~/.catbuddy/projects/<id>/sessions/` for session data.
+ */
 export function createWorkspaceFolderFromPath(
   homeCatbuddyDir: string,
   sourcePath: string,
@@ -119,20 +133,38 @@ export function createWorkspaceFolderFromPath(
   );
 
   if (existing) {
+    if (!existing.dataDir) {
+      existing.dataDir = ensureProjectDataDir(homeCatbuddyDir, existing.id);
+      writeStore(homeCatbuddyDir, store);
+    }
     store.activeFolderId = existing.id;
     writeStore(homeCatbuddyDir, store);
     return { store, folder: existing, created: false };
   }
 
+  const id = uniqueFolderId(name, store.folders);
+  const dataDir = ensureProjectDataDir(homeCatbuddyDir, id);
+
   const folder: WorkspaceFolder = {
-    id: uniqueFolderId(name, store.folders),
+    id,
     name,
     createdAt: new Date().toISOString(),
     projectRoot: anchor.projectRoot,
     catbuddyDir: anchor.catbuddyDir,
+    dataDir,
   };
   store.folders.unshift(folder);
   store.activeFolderId = folder.id;
   writeStore(homeCatbuddyDir, store);
   return { store, folder, created: true };
+}
+
+/** Get the sessions directory for a workspace folder. */
+export function getProjectSessionsDir(
+  homeCatbuddyDir: string,
+  folderId: string,
+): string {
+  const dataDir = path.join(projectsDir(homeCatbuddyDir), folderId);
+  fs.mkdirSync(path.join(dataDir, "sessions"), { recursive: true });
+  return path.join(dataDir, "sessions");
 }

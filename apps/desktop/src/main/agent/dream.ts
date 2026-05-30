@@ -13,7 +13,7 @@
 
 import type { LLMProvider } from '../providers'
 import { LayeredMemoryStore } from './layered-memory.js'
-import { memoryExtractionPrompt } from './layered-memory.js'
+import type { TemplateLoader } from './context/template-loader.js'
 
 // ── 格式常量 ────────────────────────────────────────────────
 const REQUIRED_HEADERS = ['## User Profile', '## Project Context']
@@ -54,21 +54,18 @@ function validateFormat(output: string): ValidationResult {
   return { valid: true }
 }
 
-function buildRetryPrompt(raw: string): string {
-  return `Your previous output did not follow the required format.
+// ── 格式指令后缀（与 layered-memory.ts 一致） ──────────────
+const FORMAT_SUFFIX = `
 
-REQUIRED FORMAT (use exactly these headers):
+Return TWO markdown sections using these exact headers:
+
 ## User Profile
-(put user information here as bullet points)
+Facts about the person (name, preferences, communication style, timezone, role) that apply across all projects.
 
 ## Project Context
-(put project context here as bullet points)
+Facts specific to this project (tech stack, repo structure, tasks, code decisions).
 
-Your previous output (which was rejected):
-${raw.slice(0, 2000)}
-
-Now please regenerate with BOTH headers and meaningful content.`
-}
+If a section has nothing new, write "(nothing)" under that header.`
 
 export class Dream {
   private _cursor = 0
@@ -78,6 +75,7 @@ export class Dream {
     private store: LayeredMemoryStore,
     private provider: LLMProvider,
     private model: string,
+    private templates: TemplateLoader,
   ) {
     // 初始化时读取项目游标，避免重复处理
     this._cursor = this._loadCursorFromEntries()
@@ -130,9 +128,9 @@ export class Dream {
     const existingUser = this.store.project.readUser() || '(none)'
     const existingSoul = this.store.project.readSoul() || '(none)'
 
-    // 构建提示词
-    const prompt = memoryExtractionPrompt(
-      `Extract and update memory from the following conversation history.
+    // 构建提示词 — 使用 dream_phase1 模板 + 格式指令
+    const extractionGuidance = this.templates.renderDreamPhase1(90)
+    const prompt = `${extractionGuidance}
 
 Existing MEMORY.md:
 ${existingMemory.slice(0, 3000)}
@@ -145,20 +143,7 @@ ${existingSoul.slice(0, 1000)}
 
 New conversation entries (up to 30):
 ${newEntries.slice(-30).map(e => `- ${e.content.slice(0, 1000)}`).join('\n')}
-
-Return updated structured memory with these sections:
-## User Profile
-- Important decisions made
-- User preferences discovered
-- Facts / information learned
-
-## Project Context
-- Ongoing projects and their status
-- Technical stack and architecture notes
-- Important events or changes
-
-Fill in with meaningful content. If nothing new to add, state what is already known.`,
-    )
+${FORMAT_SUFFIX}`
 
     // ── 首次调用 ────────────────────────────────────────
     let raw = await this._callLLM(prompt)
@@ -168,7 +153,13 @@ Fill in with meaningful content. If nothing new to add, state what is already kn
     // ── 重试（格式不合法时） ────────────────────────────
     if (!validation.valid) {
       process.stderr.write(`[Dream] format invalid (${validation.reason}), retrying...\n`)
-      const retryRaw = await this._callLLM(buildRetryPrompt(raw))
+      const retryPrompt = `${this.templates.renderDreamPhase2()}
+
+Your previous output (which was rejected):
+${raw.slice(0, 2000)}
+
+Now please regenerate following the instructions above.`
+      const retryRaw = await this._callLLM(retryPrompt)
       retried = true
       const retryValidation = validateFormat(retryRaw)
       if (retryValidation.valid) {

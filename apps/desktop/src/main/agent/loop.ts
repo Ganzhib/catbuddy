@@ -231,6 +231,7 @@ export class AgentLoop implements RuntimeState {
       globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.consolidationRatio ?? 0.5,
+      templates: this.context.templateLoader,
     });
 
     if (opts.config) {
@@ -241,7 +242,7 @@ export class AgentLoop implements RuntimeState {
         this.consolidator,
         opts.sessionTtlMinutes ?? 0,
       );
-      this.dream = new Dream(this.memoryStore, opts.provider, this.model);
+      this.dream = new Dream(this.memoryStore, opts.provider, this.model, this.context.templateLoader);
       if (opts.bus) {
         this.subagents = new SubagentManager(
           opts.provider,
@@ -251,6 +252,7 @@ export class AgentLoop implements RuntimeState {
           this.maxToolResultChars,
           this.maxIterations,
           restrict,
+          this.context.templateLoader,
           projectRoot,
           catbuddyDir,
         );
@@ -311,7 +313,7 @@ export class AgentLoop implements RuntimeState {
 
     this.memoryStore = new LayeredMemoryStore(projectWorkspace, globalWorkspace);
     if (this.provider) {
-      this.dream = new Dream(this.memoryStore, this.provider, this.model);
+      this.dream = new Dream(this.memoryStore, this.provider, this.model, this.context.templateLoader);
     }
 
     (this as { consolidator: Consolidator }).consolidator = new Consolidator({
@@ -322,6 +324,7 @@ export class AgentLoop implements RuntimeState {
       globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: this._config?.agents?.defaults?.consolidationRatio ?? 0.5,
+      templates: this.context.templateLoader,
     });
 
     if (this.autoCompact) {
@@ -847,6 +850,7 @@ export class AgentLoop implements RuntimeState {
           retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
           onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
           onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
+          maxIterationsMessage: this.context.templateLoader.renderMaxIterationsMessage(this.maxIterations),
         });
       });
     } finally {

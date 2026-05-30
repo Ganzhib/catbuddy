@@ -10,6 +10,7 @@ import {
   memoryExtractionPrompt,
 } from './layered-memory.js'
 import { getGlobalProfileWorkspace } from '../services/global-profile.js'
+import type { TemplateLoader } from './context/template-loader.js'
 
 export interface ConsolidatorOpts {
   provider: LLMProvider
@@ -20,6 +21,7 @@ export interface ConsolidatorOpts {
   contextWindowTokens: number
   consolidationRatio?: number
   maxCompletionTokens?: number
+  templates: TemplateLoader
 }
 
 export class Consolidator {
@@ -31,6 +33,7 @@ export class Consolidator {
   private contextWindowTokens: number
   private consolidationRatio: number
   private maxCompletionTokens: number
+  private templates: TemplateLoader
   private _compacting = new Set<string>()
 
   constructor(opts: ConsolidatorOpts) {
@@ -42,6 +45,7 @@ export class Consolidator {
     this.contextWindowTokens = opts.contextWindowTokens
     this.consolidationRatio = opts.consolidationRatio ?? 0.5
     this.maxCompletionTokens = opts.maxCompletionTokens ?? 2048
+    this.templates = opts.templates
   }
 
   setProvider(provider: LLMProvider, model: string, contextWindowTokens: number) {
@@ -77,12 +81,7 @@ export class Consolidator {
         .map(m => `[${m.role}] ${(m.content || '').slice(0, 300)}`)
         .join('\n')
 
-      const compactPrompt = memoryExtractionPrompt(`Extract key facts from this conversation. Return ONLY a compact bullet list covering:
-- Important decisions made
-- User preferences discovered
-- Facts / information learned
-- Tasks completed
-- Pending / unresolved items
+      const compactPrompt = memoryExtractionPrompt(`${this.templates.renderConsolidatorArchive()}
 
 Conversation:
 ${conversationText}`)

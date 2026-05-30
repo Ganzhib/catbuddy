@@ -31,6 +31,8 @@ export interface RunSpec {
   onStream?: (delta: string) => Promise<void>
   onReasoning?: (delta: string) => Promise<void>
   llmTimeoutS?: number
+  /** 达到最大迭代次数时注入的消息（渲染后的模板） */
+  maxIterationsMessage?: string
 }
 
 // ═══ 常量 ═══
@@ -256,6 +258,12 @@ export class AgentRunner {
       }
       stopReason = response.finishReason
       break
+    }
+
+    // ── 循环耗尽：达到最大迭代次数但未完成 ──
+    if (spec.maxIterationsMessage && !finalContent) {
+      finalContent = spec.maxIterationsMessage
+      stopReason = 'max_iterations'
     }
 
     return {

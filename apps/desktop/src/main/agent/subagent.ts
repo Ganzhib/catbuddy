@@ -13,6 +13,7 @@ import { AgentHook, type AgentHookContext } from './hook'
 import { ToolRegistry } from './tools'
 import { builtinToolFactories } from './tools/builtin'
 import { FileStates, runWithFileStates } from './tools/file_state'
+import type { TemplateLoader } from './context/template-loader.js'
 
 export interface SubagentStatus {
   taskId: string
@@ -57,6 +58,7 @@ export class SubagentManager {
   private _projectRoot: string
   private _catbuddyDir: string
   private _restrictToWorkspace: boolean
+  private templates: TemplateLoader
 
   constructor(
     private provider: LLMProvider,
@@ -66,6 +68,7 @@ export class SubagentManager {
     private readonly maxToolResultChars: number,
     private readonly maxIterations: number,
     restrictToWorkspace: boolean,
+    templates: TemplateLoader,
     projectRoot?: string,
     catbuddyDir?: string,
   ) {
@@ -75,6 +78,7 @@ export class SubagentManager {
     this._catbuddyDir =
       catbuddyDir ?? path.join(this._projectRoot, '.catbuddy')
     this._restrictToWorkspace = restrictToWorkspace
+    this.templates = templates
     this.runner = new AgentRunner(provider)
   }
 
@@ -187,8 +191,12 @@ export class SubagentManager {
     try {
       const tools = this._buildTools()
       const fileStates = new FileStates()
+      const subagentSystem = this.templates.renderSubagentSystem({
+        timeCtx: `Current time: ${new Date().toISOString()}`,
+        workspace: this._projectRoot,
+      })
       const context: Context = {
-        system: `You are a subagent working in project root ${this._projectRoot}. Complete the task and return a concise final answer.`,
+        system: subagentSystem,
         messages: [{ role: 'user', content: task }],
         metadata: {},
       }
@@ -207,6 +215,7 @@ export class SubagentManager {
           providerRetryMode: 'standard',
           temperature,
           hook: new SubagentHook(status),
+          maxIterationsMessage: this.templates.renderMaxIterationsMessage(this.maxIterations),
         }),
       )
 
@@ -238,12 +247,12 @@ export class SubagentManager {
     status: 'ok' | 'error',
   ): Promise<void> {
     const statusText = status === 'ok' ? 'completed successfully' : 'failed'
-    const content = [
-      `[Subagent ${label} ${statusText}]`,
-      `Task: ${task}`,
-      '',
+    const content = this.templates.renderSubagentAnnounce({
+      label,
+      statusText,
+      task,
       result,
-    ].join('\n')
+    })
 
     const msg: InboundMessage = {
       channel: 'system',

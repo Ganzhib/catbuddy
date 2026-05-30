@@ -29,6 +29,10 @@ export class ContextBuilder {
   private skills: SkillLoader
   private promptBuilder: PromptBuilder
 
+  get templateLoader(): TemplateLoader {
+    return this.templates
+  }
+
   constructor(workspace: string, opts: ContextBuilderOpts = {}) {
     this.workspace = workspace
     this.globalWorkspace = opts.globalWorkspace ?? getGlobalProfileWorkspace()

@@ -4,17 +4,17 @@
 
 ## 已完成
 
-- [x] 七阶段状态机（`loop.ts`）
-- [x] Bus 驱动 + `desktop` 通道
-- [x] `AgentRunner` + `AgentHook` / `CompositeHook`（`hook.ts`）
-- [x] 内置工具 + `exec_session`、`my`、`spawn`、`mcp_reload`
-- [x] `FileStates` / `FileStateStore`（`tools/file_state.ts`）
-- [x] `security/network.ts` — SSRF + 安全重定向（`web_fetch`）
-- [x] `model_presets.ts` — `ProviderSnapshot` 热切换
-- [x] `AutoCompact`（`autocompact.ts`）
-- [x] `MemoryStore` + `Dream`（简化 Phase 1，`memory-store.ts` / `dream.ts`）
-- [x] `SubagentManager` + `spawn` 工具
-- [x] `McpManager` + `connectMcpServers`（`@modelcontextprotocol/sdk` stdio）
+- [X] 七阶段状态机（`loop.ts`）
+- [X] Bus 驱动 + `desktop` 通道
+- [X] `AgentRunner` + `AgentHook` / `CompositeHook`（`hook.ts`）
+- [X] 内置工具 + `exec_session`、`my`、`spawn`、`mcp_reload`
+- [X] `FileStates` / `FileStateStore`（`tools/file_state.ts`）
+- [X] `security/network.ts` — SSRF + 安全重定向（`web_fetch`）
+- [X] `model_presets.ts` — `ProviderSnapshot` 热切换
+- [X] `AutoCompact`（`autocompact.ts`）
+- [X] `MemoryStore` + `Dream`（简化 Phase 1，`memory-store.ts` / `dream.ts`）
+- [X] `SubagentManager` + `spawn` 工具
+- [X] `McpManager` + `connectMcpServers`（`@modelcontextprotocol/sdk` stdio）
 
 ## AgentLoop 并发与取消（待实现）
 

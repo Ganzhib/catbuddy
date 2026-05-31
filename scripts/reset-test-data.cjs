@@ -25,7 +25,6 @@ function run(command, args, opts = {}) {
   execFileSync(command, args, {
     cwd: ROOT,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
     ...opts,
   })
 }
@@ -125,7 +124,7 @@ function resetRemoteGateway() {
   const command = [
     `cd ${shQuote(remoteDir)}`,
     'docker compose --env-file .env.production -f docker-compose.yml down -v',
-    'docker volume rm gateway_gateway_mysql_data 2>/dev/null || true',
+    '(docker volume rm gateway_gateway_mysql_data 2>/dev/null || true)',
     'docker compose --env-file .env.production -f docker-compose.yml up -d',
   ].join(' && ')
   run('ssh', sshArgs(config, command))

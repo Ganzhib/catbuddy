@@ -109,6 +109,16 @@ export interface UIFileEdit {
   pending?: boolean;
 }
 
+export interface UIDiagramEvent {
+  type: "display" | "save" | "error";
+  path: string;
+  absolutePath?: string;
+  xml?: string;
+  title?: string;
+  callId?: string;
+  error?: string;
+}
+
 export interface ChatSummary {
   /** Server-side session key, e.g. ``websocket:abcd-...``. */
   key: string;
@@ -295,6 +305,11 @@ export type InboundEvent =
       event: "file_edit";
       chat_id: string;
       edits: UIFileEdit[];
+    }
+  | {
+      event: "diagram_event";
+      chat_id: string;
+      diagram: UIDiagramEvent;
     }
   | {
       event: "delta";

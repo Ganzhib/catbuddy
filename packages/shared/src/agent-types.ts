@@ -109,6 +109,16 @@ export interface FileEditEvent {
   pending?: boolean
 }
 
+export interface DiagramUiEvent {
+  type: 'display' | 'save' | 'error'
+  path: string
+  absolutePath?: string
+  xml?: string
+  title?: string
+  callId?: string
+  error?: string
+}
+
 // ── Session ──
 export interface SessionInfo {
   key: string

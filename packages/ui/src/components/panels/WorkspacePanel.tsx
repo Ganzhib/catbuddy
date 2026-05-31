@@ -51,7 +51,7 @@ export function WorkspacePanel({
       } else if (store.activeFolderId) {
         await selectFolder(null);
       }
-      onSelectChat(key);
+      onSelectChat(key, workspaceFolderId ?? null);
     },
     [onSelectChat, selectFolder, store.activeFolderId],
   );

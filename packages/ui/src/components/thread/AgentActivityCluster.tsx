@@ -3,6 +3,7 @@ import { AlertCircle, ChevronRight, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { FileReferenceChip } from "@/components/FileReferenceChip";
+import type { DiagramEditorTarget } from "@/components/diagram/DiagramEditorOverlay";
 import { ReasoningBubble, StreamingLabelSheen, TraceGroup } from "@/components/MessageBubble";
 import { cn } from "@/lib/utils";
 import type { UIFileEdit, UIMessage } from "@catbuddy/shared";
@@ -102,6 +103,7 @@ interface AgentActivityClusterProps {
   /** True while the session turn is still running (drives “Working…” copy + header sheen). */
   isTurnStreaming: boolean;
   hasBodyBelow: boolean;
+  onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
 }
 
 /**
@@ -112,6 +114,7 @@ export function AgentActivityCluster({
   messages,
   isTurnStreaming,
   hasBodyBelow,
+  onOpenDiagramEditor,
 }: AgentActivityClusterProps) {
   const { t } = useTranslation();
   const fileEdits = useMemo(
@@ -351,7 +354,9 @@ export function AgentActivityCluster({
                 }
                 return null;
               })}
-              {fileEdits.length ? <FileEditGroup edits={fileEdits} /> : null}
+              {fileEdits.length ? (
+                <FileEditGroup edits={fileEdits} onOpenDiagramEditor={onOpenDiagramEditor} />
+              ) : null}
             </div>
           </div>
         </div>
@@ -501,14 +506,23 @@ function summarizeFileEdits(edits: UIFileEdit[], active: boolean): FileEditSumma
   });
 }
 
-function FileEditGroup({ edits }: { edits: FileEditSummary[] }) {
+function FileEditGroup({
+  edits,
+}: {
+  edits: FileEditSummary[];
+  onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
+}) {
   if (edits.length === 0) return null;
+  const visibleEdits = edits.filter((edit) => edit.path);
+  if (visibleEdits.length === 0) return null;
   return (
-    <ul className="space-y-1 border-l border-muted-foreground/15 pl-3">
-      {edits.map((edit) => (
-        <FileEditRow key={edit.key} edit={edit} />
-      ))}
-    </ul>
+    <div className="space-y-2">
+      <ul className="space-y-1 border-l border-muted-foreground/15 pl-3">
+        {visibleEdits.map((edit) => (
+          <FileEditRow key={edit.key} edit={edit} />
+        ))}
+      </ul>
+    </div>
   );
 }
 

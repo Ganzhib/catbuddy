@@ -107,6 +107,13 @@ export class ChannelManager {
       );
       return;
     }
+    if (meta._diagram_event && meta._diagram_event_data) {
+      await channel.sendDiagramEvent?.(
+        msg.chatId,
+        meta._diagram_event_data as import("@catbuddy/shared").DiagramUiEvent,
+      );
+      return;
+    }
     if (meta._turn_complete && meta._turn_data) {
       await channel.sendTurnComplete?.(
         msg.chatId,

@@ -11,6 +11,7 @@ import { ArrowDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ThreadMessages } from "@/components/thread/ThreadMessages";
+import type { DiagramEditorTarget } from "@/components/diagram/DiagramEditorOverlay";
 import { isAgentActivityMember } from "@/components/thread/AgentActivityCluster";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ interface ThreadViewportProps {
   scrollToBottomSignal?: number;
   conversationKey?: string | null;
   showScrollToBottomButton?: boolean;
+  onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
 }
 
 const NEAR_BOTTOM_PX = 48;
@@ -53,6 +55,7 @@ export function ThreadViewport({
   scrollToBottomSignal = 0,
   conversationKey = null,
   showScrollToBottomButton = true,
+  onOpenDiagramEditor,
 }: ThreadViewportProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -279,6 +282,7 @@ export function ThreadViewport({
                   isStreaming={isStreaming}
                   hiddenMessageCount={hiddenMessageCount}
                   onLoadEarlier={loadEarlierMessages}
+                  onOpenDiagramEditor={onOpenDiagramEditor}
                 />
               </div>
             </div>

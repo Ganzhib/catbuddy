@@ -23,7 +23,8 @@ export function createWriteFileTool(ctx: ToolContext): Tool {
     },
     execute: async (call) => {
       const { path: fp, content } = call.arguments as Record<string, unknown>
-      const resolved = ctx.resolvePath(String(fp))
+      if (typeof fp !== 'string' || !fp.trim()) return 'Error: path required'
+      const resolved = ctx.resolvePath(fp)
       const display = ctx.displayPath(resolved)
       const base = {
         call_id: call.id,
@@ -39,10 +40,19 @@ export function createWriteFileTool(ctx: ToolContext): Tool {
         added: 0,
         deleted: 0,
       })
+      const after = String(content ?? '')
+      if (display.toLowerCase().endsWith('.drawio')) {
+        void ctx.notifyDiagramEvent?.({
+          type: 'display',
+          path: display,
+          absolutePath: resolved,
+          xml: after,
+          callId: call.id,
+        })
+      }
       try {
         const before = fs.existsSync(resolved) ? fs.readFileSync(resolved, 'utf-8') : ''
         fs.mkdirSync(path.dirname(resolved), { recursive: true })
-        const after = String(content)
         fs.writeFileSync(resolved, after, 'utf-8')
         currentFileStates(ctx.fileStates).recordWrite(resolved)
         const { added, deleted } = ctx.lineDelta(before, after)

@@ -27,6 +27,7 @@ function createCatbuddyApi() {
     onReasoningEnd: (cb) => subscribeVoid(IPC.REASONING_END, cb),
     onToolProgress: (cb) => subscribe(IPC.TOOL_PROGRESS, cb),
     onFileEdit: (cb) => subscribe(IPC.FILE_EDIT, cb),
+    onDiagramEvent: (cb) => subscribe(IPC.DIAGRAM_EVENT, cb),
     onRetryWait: (cb) => subscribe(IPC.RETRY_WAIT, cb),
     onTurnComplete: (cb) => subscribe(IPC.TURN_COMPLETE, cb),
     onSystemMessage: (cb) => subscribe(IPC.SYSTEM_MESSAGE, cb),
@@ -58,6 +59,17 @@ function createCatbuddyApi() {
     openWorkspaceFile: (filePath, absolutePath) =>
       ipcRenderer.invoke(IPC.WORKSPACE_OPEN_FILE, {
         path: filePath,
+        absolute_path: absolutePath,
+      }),
+    readWorkspaceFile: (filePath, absolutePath) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_READ_FILE, {
+        path: filePath,
+        absolute_path: absolutePath,
+      }),
+    writeWorkspaceFile: (filePath, content, absolutePath) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_WRITE_FILE, {
+        path: filePath,
+        content,
         absolute_path: absolutePath,
       }),
     getWorkspaceProjectInfo: () => ipcRenderer.invoke(IPC.WORKSPACE_PROJECT_INFO),

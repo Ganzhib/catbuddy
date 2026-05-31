@@ -24,7 +24,8 @@ export function createEditFileTool(ctx: ToolContext): Tool {
     },
     execute: async (call) => {
       const { path: fp, old_string, new_string } = call.arguments as Record<string, unknown>
-      const resolved = ctx.resolvePath(String(fp))
+      if (typeof fp !== 'string' || !fp.trim()) return 'Error: path required'
+      const resolved = ctx.resolvePath(fp)
       const display = ctx.displayPath(resolved)
       const base = {
         call_id: call.id,

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useClient } from "@/providers/ClientProvider";
 import { toMediaAttachment } from "@/lib/media";
-import { linesFromToolProgress, upsertToolProgress } from "@catbuddy/client";
+import { linesFromToolProgress, toolProgressKey, upsertToolProgress } from "@catbuddy/client";
 import type { ToolProgressEvent, TokenUsage } from "@catbuddy/shared";
 import type { StreamError } from "@catbuddy/client";
 import type {
@@ -274,28 +274,45 @@ function mergeFileEditIntoTrace(
   });
 }
 
+function findToolProgressTraceIndex(
+  prev: UIMessage[],
+  incoming: ToolProgressEvent,
+  segmentId: string,
+): number | null {
+  const key = toolProgressKey(incoming);
+  for (let i = prev.length - 1; i >= 0; i -= 1) {
+    const candidate = prev[i];
+    if (candidate.role === "user") break;
+    if (candidate.kind !== "trace") continue;
+    if (candidate.toolProgress?.[key]) return i;
+  }
+  for (let i = prev.length - 1; i >= 0; i -= 1) {
+    const candidate = prev[i];
+    if (candidate.role === "user") break;
+    if (candidate.kind !== "trace") continue;
+    if (candidate.activitySegmentId === segmentId) return i;
+  }
+  return null;
+}
+
 function appendToolProgressTrace(
   prev: UIMessage[],
   toolEvent: ToolProgressEvent,
   segmentId: string,
 ): UIMessage[] {
-  const last = prev[prev.length - 1];
-  if (
-    last
-    && last.kind === "trace"
-    && !last.isStreaming
-    && (!last.activitySegmentId || last.activitySegmentId === segmentId)
-  ) {
-    const toolProgress = upsertToolProgress(last.toolProgress, toolEvent);
+  const targetIndex = findToolProgressTraceIndex(prev, toolEvent, segmentId);
+  if (targetIndex !== null) {
+    const target = prev[targetIndex];
+    const toolProgress = upsertToolProgress(target.toolProgress, toolEvent);
     const traces = linesFromToolProgress(toolProgress);
     const merged: UIMessage = {
-      ...last,
+      ...target,
       toolProgress,
       traces,
-      content: traces[traces.length - 1] ?? last.content,
-      activitySegmentId: last.activitySegmentId ?? segmentId,
+      content: traces[traces.length - 1] ?? target.content,
+      activitySegmentId: target.activitySegmentId ?? segmentId,
     };
-    return [...prev.slice(0, -1), merged];
+    return replaceMessageAt(prev, targetIndex, merged);
   }
 
   const toolProgress = upsertToolProgress(undefined, toolEvent);
@@ -348,7 +365,9 @@ function fileEditKey(edit: Pick<UIFileEdit, "call_id" | "tool" | "path">): strin
 }
 
 function normalizeFileEdit(edit: UIFileEdit): UIFileEdit | null {
-  if (!edit || !edit.tool || (!edit.path && !edit.pending)) return null;
+  const pathValue = typeof edit.path === "string" ? edit.path.trim() : "";
+  const hasUsablePath = !!pathValue && pathValue !== "undefined" && pathValue !== "null";
+  if (!edit || !edit.tool || (!hasUsablePath && !edit.pending)) return null;
   const inferredStatus =
     edit.phase === "error"
       ? "error"
@@ -357,14 +376,15 @@ function normalizeFileEdit(edit: UIFileEdit): UIFileEdit | null {
         : "editing";
   const normalized: UIFileEdit = {
     ...edit,
-    call_id: edit.call_id || `${edit.tool}:${edit.path}`,
+    path: hasUsablePath ? pathValue : "",
+    call_id: edit.call_id || `${edit.tool}:${pathValue || "pending"}`,
     added: Number.isFinite(edit.added) ? Math.max(0, Math.round(edit.added)) : 0,
     deleted: Number.isFinite(edit.deleted) ? Math.max(0, Math.round(edit.deleted)) : 0,
     status: edit.status === "error" || edit.status === "done" || edit.status === "editing"
       ? edit.status
       : inferredStatus,
   };
-  if (edit.pending && !edit.path) normalized.pending = true;
+  if (edit.pending && !hasUsablePath) normalized.pending = true;
   return normalized;
 }
 
@@ -462,6 +482,7 @@ export function useCatbuddyStream(
   hasPendingToolCalls = false,
   onTurnEnd?: () => void,
   workspaceFolderId?: string | null,
+  onDiagramEvent?: (diagram: import("@catbuddy/shared").UIDiagramEvent) => void,
 ): {
   messages: UIMessage[];
   isStreaming: boolean;
@@ -795,6 +816,11 @@ export function useCatbuddyStream(
         return;
       }
 
+      if (ev.event === "diagram_event") {
+        onDiagramEvent?.(ev.diagram);
+        return;
+      }
+
       if (ev.event === "turn_end") {
         if ("goal_state" in ev && ev.goal_state != null && typeof ev.goal_state === "object") {
           setGoalState(ev.goal_state);
@@ -987,6 +1013,7 @@ export function useCatbuddyStream(
     ensureActivitySegmentId,
     flushPendingStreamEvents,
     onTurnEnd,
+    onDiagramEvent,
     schedulePendingStreamFlush,
   ]);
 

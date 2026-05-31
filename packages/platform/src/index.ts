@@ -15,7 +15,7 @@ export {
   resolveDesktopDownloadUrl,
   shouldOfferDesktopDownload,
 } from './desktop-download'
-export { openWorkspaceFile } from './workspace-file'
+export { openWorkspaceFile, readWorkspaceFile, writeWorkspaceFile } from './workspace-file'
 export {
   fetchWorkspaceFolders,
   setActiveWorkspaceFolder,

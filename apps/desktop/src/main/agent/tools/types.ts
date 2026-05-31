@@ -1,4 +1,4 @@
-import type { FileEditEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
+import type { FileEditEvent, DiagramUiEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
 import type { FileStates } from './file_state'
 
 /** A single agent tool: schema + executor. */
@@ -19,6 +19,7 @@ export interface ToolContext {
   resolvePath(inputPath: string): string
   displayPath(resolved: string): string
   notifyFileEdit(edit: FileEditEvent): Promise<void>
+  notifyDiagramEvent?(event: DiagramUiEvent): Promise<void>
   lineDelta(before: string, after: string): { added: number; deleted: number }
 }
 

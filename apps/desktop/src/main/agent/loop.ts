@@ -42,6 +42,7 @@ import type {
   OutboundMessage,
   SkillInfo,
   FileEditEvent,
+  DiagramUiEvent,
   ToolEvent,
   TurnCompleteData,
 } from "@catbuddy/shared";
@@ -91,6 +92,7 @@ export interface StreamCallbacks {
   onReasoningEnd?: () => void;
   onToolProgress?: (event: ToolEvent) => void;
   onFileEdit?: (edit: FileEditEvent) => void;
+  onDiagramEvent?: (event: DiagramUiEvent) => void;
   onRetryWait?: (message: string) => void;
   onTurnComplete?: (data: TurnCompleteData) => void;
   onSystemMessage?: (text: string) => void;
@@ -118,6 +120,7 @@ interface TurnCtx {
   startedAt: number;
   onToolProgress?: (ev: ToolEvent) => Promise<void>;
   onFileEdit?: (edit: FileEditEvent) => Promise<void>;
+  onDiagramEvent?: (event: DiagramUiEvent) => Promise<void>;
   onRetryWait?: (msg: string) => Promise<void>;
   onSystemMessage?: (text: string) => Promise<void>;
   onAssistantMessage?: (text: string) => Promise<void>;
@@ -481,6 +484,14 @@ export class AgentLoop implements RuntimeState {
           metadata: { _file_edit: true, _file_edit_event: edit },
         });
       },
+      onDiagramEvent: (event) => {
+        this.bus!.publishOutbound({
+          channel: msg.channel, chatId: msg.chatId,
+          content: "",
+          media: [], buttons: [],
+          metadata: { _diagram_event: true, _diagram_event_data: event },
+        });
+      },
       onTurnComplete: (data) => {
         this.bus!.publishOutbound({
           channel: msg.channel, chatId: msg.chatId,
@@ -611,6 +622,8 @@ export class AgentLoop implements RuntimeState {
         streamCallbacks.onToolProgress?.(event);
       turn.onFileEdit = async (edit) =>
         streamCallbacks.onFileEdit?.(edit);
+      turn.onDiagramEvent = async (event) =>
+        streamCallbacks.onDiagramEvent?.(event);
       turn.onRetryWait = async (message) =>
         streamCallbacks.onRetryWait?.(message);
       turn.onSystemMessage = async (text) =>
@@ -825,6 +838,11 @@ export class AgentLoop implements RuntimeState {
         ? async (edit) => { await cbs.onFileEdit!(edit) }
         : undefined,
     );
+    this.tools.setDiagramEventCallback(
+      cbs?.onDiagramEvent
+        ? async (event) => { await cbs.onDiagramEvent!(event) }
+        : undefined,
+    );
     if (!ctx.context) {
       throw new Error("RUN called without BUILD context");
     }
@@ -855,6 +873,7 @@ export class AgentLoop implements RuntimeState {
       });
     } finally {
       this.tools.setFileEditCallback(undefined);
+      this.tools.setDiagramEventCallback(undefined);
     }
 
     ctx.finalContent = result.finalContent;

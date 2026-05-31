@@ -39,6 +39,9 @@ export interface BaseChannel {
   /** 鏂囦欢缂栬緫杩涘害锛坵rite_file / edit_file锛?*/
   sendFileEdit?(chatId: string, edit: import("@catbuddy/shared").FileEditEvent): Promise<void>;
 
+  /** 图表事件（display_diagram / edit_diagram 等） */
+  sendDiagramEvent?(chatId: string, event: import("@catbuddy/shared").DiagramUiEvent): Promise<void>;
+
   /** 鏁磋疆瀵硅瘽缁撴潫锛堝墠绔嵁姝ゅ仠姝?loading锛?*/
   sendTurnComplete?(chatId: string, data: import("@catbuddy/shared").TurnCompleteData): Promise<void>;
 }

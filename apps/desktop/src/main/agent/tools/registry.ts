@@ -4,7 +4,7 @@
  * To add a tool: create `tools/my-tool.ts`, export `createMyTool`, append to `builtinToolFactories`.
  */
 import * as path from 'path'
-import type { FileEditEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
+import type { FileEditEvent, DiagramUiEvent, ToolCallRequest, ToolDefinition } from '@catbuddy/shared'
 import { createPathGuard, PathGuard } from '../../security/index.js'
 import { CATBUDDY_DIR_NAME } from '../../services/workspace-project.js'
 import { builtinToolFactories } from './builtin'
@@ -19,6 +19,7 @@ export class ToolRegistry {
   private _restrictWorkspace: boolean = false
   private _pathGuard?: PathGuard
   private _fileEditCallback?: (edit: FileEditEvent) => Promise<void>
+  private _diagramEventCallback?: (event: DiagramUiEvent) => Promise<void>
   private readonly _defaultFileStates = new FileStates()
 
   setWorkspace(dir: string, restrict: boolean = false): void {
@@ -51,16 +52,25 @@ export class ToolRegistry {
     this._fileEditCallback = cb
   }
 
+  setDiagramEventCallback(cb?: (event: DiagramUiEvent) => Promise<void>): void {
+    this._diagramEventCallback = cb
+  }
+
   /** Shared runtime passed into each tool factory. */
   createToolContext(): ToolContext {
-    const guard = this._pathGuard!
+    const thisRegistry = this
     return {
-      workRoot: guard.workRoot,
-      workspace: guard.workspace,
+      get workRoot() {
+        return thisRegistry._pathGuard!.workRoot
+      },
+      get workspace() {
+        return thisRegistry._pathGuard!.workspace
+      },
       fileStates: this._defaultFileStates,
       resolvePath: (input) => this.resolvePath(input),
-      displayPath: (resolved) => guard.displayPath(resolved),
+      displayPath: (resolved) => this._pathGuard!.displayPath(resolved),
       notifyFileEdit: (edit) => this.notifyFileEdit(edit),
+      notifyDiagramEvent: (event) => this.notifyDiagramEvent(event),
       lineDelta: (before, after) => this.lineDelta(before, after),
     }
   }
@@ -155,5 +165,9 @@ export class ToolRegistry {
 
   private async notifyFileEdit(edit: FileEditEvent): Promise<void> {
     await this._fileEditCallback?.(edit)
+  }
+
+  private async notifyDiagramEvent(event: DiagramUiEvent): Promise<void> {
+    await this._diagramEventCallback?.(event)
   }
 }

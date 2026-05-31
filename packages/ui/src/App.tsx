@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/BrandMark'
 import { DeleteConfirm } from '@/components/DeleteConfirm'
+import { DiagramEditorOverlay, type DiagramEditorTarget } from '@/components/diagram/DiagramEditorOverlay'
 import { Sidebar } from '@/components/Sidebar'
 import { McpMarketplacePanel } from '@/components/panels/McpMarketplacePanel'
 import { SkillMarketplacePanel } from '@/components/panels/SkillMarketplacePanel'
@@ -67,6 +68,7 @@ function Shell({
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(readSidebarOpen)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ key: string; label: string } | null>(null)
+  const [diagramEditorTarget, setDiagramEditorTarget] = useState<DiagramEditorTarget | null>(null)
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartToast, setRestartToast] = useState<string | null>(null)
 
@@ -265,23 +267,41 @@ function Shell({
         </Sheet>
 
         <main className="relative flex h-full min-w-0 flex-1 flex-col">
-          <div className={cn('absolute inset-0 flex flex-col', !showChatMain && 'invisible pointer-events-none')}>
-            <ThreadShell
-              session={activeSession}
-              title={headerTitle}
-              onToggleSidebar={toggleSidebar}
-              onNewChat={onNewChat}
-              onCreateChat={onCreateChat}
-              draftWorkspaceFolderId={draftWorkspaceFolderId}
-              onDraftWorkspaceFolderIdChange={(folderId) => {
-                setDraftWorkspaceFolderId(folderId)
-                setDraftWorkspaceCleared(folderId === null)
-              }}
-              onTurnEnd={onTurnEnd}
-              theme={theme}
-              onToggleTheme={toggle}
-              hideSidebarToggleOnDesktop={desktopSidebarOpen}
-            />
+          <div className={cn(
+            'absolute inset-0 flex min-h-0 min-w-0 flex-col xl:flex-row',
+            !showChatMain && 'invisible pointer-events-none',
+          )}>
+            <div className={cn(
+              'flex min-h-0 min-w-0 flex-1 flex-col transition-[width] duration-300',
+              diagramEditorTarget && 'xl:basis-[44%] xl:border-r xl:border-border/70',
+            )}>
+              <ThreadShell
+                session={activeSession}
+                title={headerTitle}
+                onToggleSidebar={toggleSidebar}
+                onNewChat={onNewChat}
+                onCreateChat={onCreateChat}
+                draftWorkspaceFolderId={draftWorkspaceFolderId}
+                onDraftWorkspaceFolderIdChange={(folderId) => {
+                  setDraftWorkspaceFolderId(folderId)
+                  setDraftWorkspaceCleared(folderId === null)
+                }}
+                onTurnEnd={onTurnEnd}
+                onOpenDiagramEditor={setDiagramEditorTarget}
+                theme={theme}
+                onToggleTheme={toggle}
+                hideSidebarToggleOnDesktop={desktopSidebarOpen}
+              />
+            </div>
+            {diagramEditorTarget ? (
+              <div className="min-h-0 min-w-0 flex-1 border-t border-border/70 xl:basis-[56%] xl:border-t-0">
+                <DiagramEditorOverlay
+                  target={diagramEditorTarget}
+                  onClose={() => setDiagramEditorTarget(null)}
+                  embedded
+                />
+              </div>
+            ) : null}
           </div>
           {view === 'mcp' && (
             <div className="absolute inset-0 flex flex-col">

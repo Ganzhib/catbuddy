@@ -4,7 +4,7 @@
  * 从 bus.outbound 消费 Agent 响应，通过 webContents.send 投送到渲染进程。
  */
 import { BrowserWindow } from "electron";
-import type { FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "@catbuddy/shared";
+import type { DiagramUiEvent, FileEditEvent, OutboundMessage, ToolEvent, TurnCompleteData } from "@catbuddy/shared";
 import type { BaseChannel } from "./base";
 
 export class DesktopChannel implements BaseChannel {
@@ -74,6 +74,10 @@ export class DesktopChannel implements BaseChannel {
 
   async sendFileEdit(chatId: string, edit: FileEditEvent): Promise<void> {
     this.sendIpc("agent:file-edit", chatId, { ...edit });
+  }
+
+  async sendDiagramEvent(chatId: string, event: DiagramUiEvent): Promise<void> {
+    this.sendIpc("agent:diagram-event", chatId, { ...event });
   }
 
   async sendTurnComplete(chatId: string, data: TurnCompleteData): Promise<void> {

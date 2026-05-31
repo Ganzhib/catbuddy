@@ -2,11 +2,13 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MessageBubble } from "@/components/MessageBubble";
+import { DiagramResultCard, type DiagramFileReference, isDrawioPath } from "@/components/diagram/DiagramResultCard";
+import type { DiagramEditorTarget } from "@/components/diagram/DiagramEditorOverlay";
 import {
   AgentActivityCluster,
   isAgentActivityMember,
 } from "@/components/thread/AgentActivityCluster";
-import type { UIMessage } from "@catbuddy/shared";
+import type { UIFileEdit, UIMessage } from "@catbuddy/shared";
 
 interface ThreadMessagesProps {
   messages: UIMessage[];
@@ -14,11 +16,13 @@ interface ThreadMessagesProps {
   isStreaming?: boolean;
   hiddenMessageCount?: number;
   onLoadEarlier?: () => void;
+  onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
 }
 
 export type DisplayUnit =
   | { type: "cluster"; messages: UIMessage[] }
-  | { type: "single"; message: UIMessage };
+  | { type: "single"; message: UIMessage }
+  | { type: "diagram"; diagrams: DiagramFileReference[] };
 
 /** True when this unit index is the last assistant text slice before the next user message (or end of thread). */
 export function isFinalAssistantSliceBeforeNextUser(
@@ -79,6 +83,53 @@ export function buildDisplayUnits(messages: UIMessage[]): DisplayUnit[] {
     }
     out.push({ type: "single", message: m });
     i += 1;
+  }
+  return appendDiagramResultUnits(out);
+}
+
+function appendDiagramResultUnits(units: DisplayUnit[]): DisplayUnit[] {
+  const result: DisplayUnit[] = [];
+  let pending = new Map<string, DiagramFileReference>();
+
+  const flush = () => {
+    if (pending.size === 0) return;
+    result.push({ type: "diagram", diagrams: [...pending.values()] });
+    pending = new Map<string, DiagramFileReference>();
+  };
+
+  for (const unit of units) {
+    if (unit.type === "single" && unit.message.role === "user") {
+      flush();
+      result.push(unit);
+      continue;
+    }
+    collectDiagramReferences(unit).forEach((diagram) => {
+      pending.set(diagram.absolutePath || diagram.path, diagram);
+    });
+    result.push(unit);
+  }
+
+  flush();
+  return result;
+}
+
+function collectDiagramReferences(unit: DisplayUnit): DiagramFileReference[] {
+  const edits: UIFileEdit[] = [];
+  if (unit.type === "cluster") {
+    for (const message of unit.messages) {
+      if (message.fileEdits?.length) edits.push(...message.fileEdits);
+    }
+  } else if (unit.type === "single" && unit.message.fileEdits?.length) {
+    edits.push(...unit.message.fileEdits);
+  }
+  const out: DiagramFileReference[] = [];
+  const seen = new Set<string>();
+  for (const edit of edits) {
+    if (edit.status === "error" || !edit.path || !isDrawioPath(edit.path)) continue;
+    const key = edit.absolute_path || edit.path;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ path: edit.path, absolutePath: edit.absolute_path });
   }
   return out;
 }
@@ -151,6 +202,9 @@ export function assistantCopyFlags(units: DisplayUnit[]): boolean[] {
       hasLaterUnitBeforeUser = false;
       continue;
     }
+    if (unit.type === "diagram") {
+      continue;
+    }
     if (unit.type === "single" && unit.message.role === "assistant") {
       flags[i] = !hasLaterUnitBeforeUser;
     }
@@ -164,6 +218,7 @@ export function ThreadMessages({
   isStreaming = false,
   hiddenMessageCount = 0,
   onLoadEarlier,
+  onOpenDiagramEditor,
 }: ThreadMessagesProps) {
   const { t } = useTranslation();
   const units = useMemo(() => buildDisplayUnits(messages), [messages]);
@@ -208,7 +263,18 @@ export function ThreadMessages({
                 messages={unit.messages}
                 isTurnStreaming={index === liveActivityClusterIndex}
                 hasBodyBelow={hasBodyBelow}
+                onOpenDiagramEditor={onOpenDiagramEditor}
               />
+            ) : unit.type === "diagram" ? (
+              <div className="space-y-3">
+                {unit.diagrams.map((diagram) => (
+                  <DiagramResultCard
+                    key={diagram.absolutePath || diagram.path}
+                    diagram={diagram}
+                    onOpenEditor={onOpenDiagramEditor}
+                  />
+                ))}
+              </div>
             ) : (
               <MessageBubble
                 message={unit.message}
@@ -227,8 +293,13 @@ export function ThreadMessages({
 }
 
 function currentActivityClusterIndex(units: DisplayUnit[]): number {
-  const last = units.length - 1;
-  return units[last]?.type === "cluster" ? last : -1;
+  for (let i = units.length - 1; i >= 0; i -= 1) {
+    const unit = units[i];
+    if (!unit) continue;
+    if (unit.type === "cluster") return i;
+    if (unit.type === "single" && unit.message.role === "user") break;
+  }
+  return -1;
 }
 
 function unitKey(unit: DisplayUnit, index: number): string {
@@ -236,11 +307,14 @@ function unitKey(unit: DisplayUnit, index: number): string {
     const anchor = unit.messages[0]?.id;
     return anchor != null ? `cluster-${anchor}` : `cluster-idx-${index}`;
   }
+  if (unit.type === "diagram") {
+    return `diagram-${unit.diagrams.map((diagram) => diagram.absolutePath || diagram.path).join("|")}-${index}`;
+  }
   return unit.message.id;
 }
 
 function marginAfterPrevUnit(prev: DisplayUnit): string {
-  if (prev.type === "cluster") {
+  if (prev.type === "cluster" || prev.type === "diagram") {
     return "mt-4";
   }
   const p = prev.message;

@@ -2,6 +2,7 @@ import type {
   AgentStatus,
   ChannelStatus,
   FileEditEvent,
+  DiagramUiEvent,
   catbuddyConfig,
   ModelPresetConfig,
   SessionDetail,
@@ -22,6 +23,7 @@ export interface CatbuddyPreloadApi {
   onReasoningEnd(cb: (data: { chatId: string }) => void): () => void
   onToolProgress(cb: (data: ToolEvent & { chatId: string }) => void): () => void
   onFileEdit(cb: (data: FileEditEvent & { chatId: string }) => void): () => void
+  onDiagramEvent?(cb: (data: DiagramUiEvent & { chatId: string }) => void): () => void
   onRetryWait(cb: (data: { chatId: string; message: string }) => void): () => void
   onTurnComplete(cb: (data: TurnCompleteData & { chatId: string }) => void): () => void
   onSystemMessage(cb: (data: { chatId: string; text: string }) => void): () => void
@@ -56,6 +58,15 @@ export interface CatbuddyPreloadApi {
   getWorkspace(): Promise<string>
   openWorkspaceFile(
     path: string,
+    absolutePath?: string,
+  ): Promise<{ ok: boolean; path?: string; error?: string }>
+  readWorkspaceFile?(
+    path: string,
+    absolutePath?: string,
+  ): Promise<{ ok: boolean; path?: string; content?: string; error?: string }>
+  writeWorkspaceFile?(
+    path: string,
+    content: string,
     absolutePath?: string,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
   getWorkspaceProjectInfo?(): Promise<import('@catbuddy/shared').WorkspaceProjectInfo>

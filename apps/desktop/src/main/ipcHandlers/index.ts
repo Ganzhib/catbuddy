@@ -380,6 +380,61 @@ export function registerIpcHandlers(
     },
   )
 
+  const resolveWorkspaceTextFile = (
+    filePath: string,
+    absolutePath?: string,
+  ): { ok: true; target: string } | { ok: false; error: string } => {
+    const projectRoot = path.resolve(agentLoop.projectRoot)
+    const rawPath = (filePath ?? '').trim()
+    const rawAbsolute = absolutePath?.trim()
+    const target = rawAbsolute
+      ? path.resolve(rawAbsolute)
+      : path.resolve(projectRoot, rawPath)
+    const relative = path.relative(projectRoot, target)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return { ok: false, error: 'outside_project_root' }
+    }
+    const ext = path.extname(target).toLowerCase()
+    if (ext !== '.drawio' && ext !== '.xml') {
+      return { ok: false, error: 'unsupported_file_type' }
+    }
+    return { ok: true, target }
+  }
+
+  ipcMain.handle(
+    'workspace:read-file',
+    async (
+      _event,
+      { path: filePath, absolute_path }: { path: string; absolute_path?: string },
+    ) => {
+      const resolved = resolveWorkspaceTextFile(filePath, absolute_path)
+      if (!resolved.ok) return { ok: false as const, error: resolved.error }
+      if (!fs.existsSync(resolved.target)) {
+        return { ok: false as const, error: 'file_not_found', path: resolved.target }
+      }
+      const content = await fs.promises.readFile(resolved.target, 'utf8')
+      return { ok: true as const, path: resolved.target, content }
+    },
+  )
+
+  ipcMain.handle(
+    'workspace:write-file',
+    async (
+      _event,
+      {
+        path: filePath,
+        content,
+        absolute_path,
+      }: { path: string; content: string; absolute_path?: string },
+    ) => {
+      const resolved = resolveWorkspaceTextFile(filePath, absolute_path)
+      if (!resolved.ok) return { ok: false as const, error: resolved.error }
+      await fs.promises.mkdir(path.dirname(resolved.target), { recursive: true })
+      await fs.promises.writeFile(resolved.target, content, 'utf8')
+      return { ok: true as const, path: resolved.target }
+    },
+  )
+
   ipcMain.handle('workspace:project-info', async () => {
     return {
       projectRoot: agentLoop.projectRoot,

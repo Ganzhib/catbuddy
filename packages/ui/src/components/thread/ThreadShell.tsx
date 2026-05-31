@@ -14,11 +14,12 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { EmptyThreadGreeting } from "@/components/thread/EmptyThreadGreeting";
+import type { DiagramEditorTarget } from "@/components/diagram/DiagramEditorOverlay";
 import { ThreadComposer } from "@/components/thread/ThreadComposer";
 import { ThreadHeader } from "@/components/thread/ThreadHeader";
 import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
-import { useCatbuddyStream, type SendImage } from "@/hooks/useCatbuddyStream";
+import { useCatbuddyStream, type SendImage, type SendOptions } from "@/hooks/useCatbuddyStream";
 import { useSessionHistory } from "@/hooks/useSessions";
 import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway } from "@catbuddy/platform";
 import type { ChatSummary, SlashCommand, UIMessage } from "@catbuddy/shared";
@@ -41,6 +42,7 @@ interface ThreadShellProps {
   draftWorkspaceFolderId?: string | null;
   onDraftWorkspaceFolderIdChange?: (workspaceFolderId: string | null) => void;
   onTurnEnd?: () => void;
+  onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
   hideSidebarToggleOnDesktop?: boolean;
@@ -86,6 +88,7 @@ export function ThreadShell({
   draftWorkspaceFolderId = null,
   onDraftWorkspaceFolderIdChange,
   onTurnEnd,
+  onOpenDiagramEditor,
   theme = "light",
   onToggleTheme = () => {},
   hideSidebarToggleOnDesktop = false,
@@ -141,6 +144,14 @@ export function ThreadShell({
     hasPendingToolCalls,
     handleTurnEnd,
     session?.workspaceFolderId ?? draftWorkspaceFolderId ?? null,
+    (diagram) => {
+      if (diagram.type !== "display") return;
+      onOpenDiagramEditor?.({
+        path: diagram.path,
+        absolutePath: diagram.absolutePath,
+        xml: diagram.xml,
+      });
+    },
   );
 
   useEffect(() => {
@@ -430,6 +441,7 @@ export function ThreadShell({
         scrollToBottomSignal={scrollToBottomSignal}
         conversationKey={historyKey}
         showScrollToBottomButton={!!session}
+        onOpenDiagramEditor={onOpenDiagramEditor}
       />
     </section>
   );

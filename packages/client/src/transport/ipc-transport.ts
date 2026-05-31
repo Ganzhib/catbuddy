@@ -24,6 +24,9 @@ type ToolProgressPayload = Parameters<
 type FileEditPayload = Parameters<
   Parameters<NonNullable<CatbuddyPreloadApi["onFileEdit"]>>[0]
 >[0];
+type DiagramEventPayload = Parameters<
+  Parameters<NonNullable<CatbuddyPreloadApi["onDiagramEvent"]>>[0]
+>[0];
 type RetryWaitPayload = Parameters<
   Parameters<NonNullable<CatbuddyPreloadApi["onRetryWait"]>>[0]
 >[0];
@@ -131,6 +134,16 @@ export class IpcTransport implements AgentTransport {
         );
       }),
 
+      api.onDiagramEvent?.((data: DiagramEventPayload) => {
+        const chat_id = chatIdFromPayload(data, activeChatId);
+        const { chatId: _c, ...diagram } = data;
+        callbacks.onEvent({
+          event: "diagram_event",
+          chat_id,
+          diagram,
+        });
+      }),
+
       api.onRetryWait?.((data: RetryWaitPayload) => {
         callbacks.onEvent({
           event: "message",
@@ -186,7 +199,7 @@ export class IpcTransport implements AgentTransport {
 
     callbacks.onStatus("open");
     return () => {
-      for (const fn of unsubs) fn();
+      for (const fn of unsubs) fn?.();
     };
   }
 

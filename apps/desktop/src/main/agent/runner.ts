@@ -43,6 +43,40 @@ const MICROCOMPACT_KEEP_RECENT = 10
 const COMPACTABLE_TOOLS = new Set(['read_file', 'exec', 'grep', 'web_search', 'web_fetch', 'list_dir'])
 const MAX_EXTERNAL_LOOKUPS = 2
 
+function looksLikeDrawioXml(xml: string): boolean {
+  const trimmed = xml.trim()
+  return trimmed.startsWith('<mxfile')
+    || trimmed.startsWith('<mxGraphModel')
+    || trimmed.startsWith('<mxCell')
+}
+
+function toolCallPreflightError(call: ToolCallRequest): string | null {
+  const args = call.arguments ?? {}
+  const retryInstruction = 'This is a recoverable tool-argument error. Do not stop or answer the user yet. Continue the next model turn by generating the missing valid Draw.io XML/arguments and call the correct diagram tool again.'
+  if (call.name === 'display_diagram') {
+    const xml = args.xml
+    if (typeof xml !== 'string' || !xml.trim()) {
+      return `Error: display_diagram requires a non-empty xml string. ${retryInstruction}`
+    }
+    if (!looksLikeDrawioXml(xml)) {
+      return `Error: display_diagram.xml must be actual Draw.io XML starting with <mxfile>, <mxGraphModel>, or <mxCell>. Do not pass Markdown, ASCII diagrams, Mermaid, or plain text. ${retryInstruction}`
+    }
+  }
+  if (call.name === 'append_diagram') {
+    const xml = args.xml
+    const path = args.path
+    if (typeof path !== 'string' || !path.trim()) return `Error: append_diagram requires path. ${retryInstruction}`
+    if (typeof xml !== 'string' || !xml.trim()) return `Error: append_diagram requires non-empty xml. ${retryInstruction}`
+  }
+  if (call.name === 'edit_diagram') {
+    const path = args.path
+    const operations = args.operations
+    if (typeof path !== 'string' || !path.trim()) return `Error: edit_diagram requires path. ${retryInstruction}`
+    if (!Array.isArray(operations) || operations.length === 0) return `Error: edit_diagram requires non-empty operations. ${retryInstruction}`
+  }
+  return null
+}
+
 /** 粗略估算 message 的 token 数 */
 function estimateTokens(content: unknown): number {
   if (typeof content === 'string') return Math.ceil(content.length / 3)
@@ -185,6 +219,17 @@ export class AgentRunner {
             name: toolCall.name,
             callId: toolCall.id,
             arguments: toolCall.arguments,
+          }
+          const preflightError = toolCallPreflightError(toolCall)
+          if (preflightError) {
+            messages.push({
+              role: 'tool',
+              toolCallId: toolCall.id,
+              name: toolCall.name,
+              content: preflightError,
+            })
+            hookCtx.toolResults.push(preflightError)
+            continue
           }
           spec.progressCallback?.({ ...base, status: 'started' })
 

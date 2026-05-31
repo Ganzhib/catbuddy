@@ -1,165 +1,219 @@
-# catbuddy (pnpm monorepo)
+<p align="center">
+  <picture>
+    <source srcset="apps/desktop/public/brand/logo.webp" type="image/webp">
+    <img src="apps/desktop/public/brand/logo.png" alt="catbuddy" width="520">
+  </picture>
+</p>
 
-Web + 桌面共用 UI 与客户端协议，分应用打包。详见 [docs/MONOREPO_MIGRATION.md](./docs/MONOREPO_MIGRATION.md)。
+<p align="center">
+  <strong>🐱 你的本地 AI 伙伴 — 控制文件、调用工具、跨端协同，全部在你的机器上运行。</strong>
+</p>
 
-旧 nanobot `**webui/**` 前端已废弃，见 [docs/WEBUI_DEPRECATED.md](./docs/WEBUI_DEPRECATED.md)。
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="#"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform"></a>
+  <a href="#"><img src="https://img.shields.io/badge/electron-33-9feaf9" alt="Electron"></a>
+  <a href="#"><img src="https://img.shields.io/badge/react-18-61dafb" alt="React"></a>
+</p>
 
-## 结构
+---
 
-```text
+## ✨ 为什么选择 catbuddy？
 
-catbuddy/
+catbuddy 是一个**桌面优先**的 AI 编程助手。与其他 AI 工具不同：
 
-├── apps/
+- 🔒 **Agent 始终在你本地运行** — 文件从不出你的机器
+- 🌐 **Web 遥控器模式** — 手机/平板也能控制桌面 Agent
+- 📁 **工作空间安全隔离** — 每个文件夹独立授权，AI 不会乱翻文件
+- 🧩 **MCP + Skill 双生态** — 连接外部工具，一键安装技能包
+- 🔑 **自带 API Key** — 用你自己的 AI 提供商，数据你说了算
 
-│   ├── desktop/     # @catbuddy/desktop — Electron + 本地 Agent
+---
 
-│   └── web/         # @catbuddy/web — 浏览器 SPA
+## 🎯 核心功能
 
-├── packages/
+<table>
+  <tr>
+    <td width="50%">
+      <h4>💬 智能对话</h4>
+      <p>Plan · Analyze · Brainstorm · Code · Summarize — 六种快速操作，从规划到编码一气呵成。</p>
+    </td>
+    <td width="50%">
+      <h4>🎨 图像生成</h4>
+      <p>Icon · Sticker · Poster · Product · Portrait — AI 创作从图标到海报。</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h4>🔌 MCP 市场</h4>
+      <p>一键接入 GitHub 等 MCP 服务，粘贴 JSON 配置即时生效，无需重启。</p>
+    </td>
+    <td>
+      <h4>🧠 Skill 市场</h4>
+      <p>一键安装技能包，启用/禁用热重载，下一条消息即可生效。</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h4>📁 工作空间</h4>
+      <p>上传文件夹 → 自动创建 <code>.catbuddy</code> 配置 → AI 安全操作该目录。</p>
+    </td>
+    <td>
+      <h4>📱 跨端协同</h4>
+      <p>桌面运行 Agent，浏览器/手机远程控制 — 同一邮箱自动配对。</p>
+    </td>
+  </tr>
+</table>
 
-│   ├── shared/      # 协议与类型
+---
 
-│   ├── client/      # catbuddyClient + transport（IPC / WS / gateway）
+## 🚀 快速开始
 
-│   ├── platform/    # bootstrap / REST·IPC API
+### 环境要求
 
-│   └── ui/          # React 应用主体
+- **Node.js** ≥ 20
+- **pnpm** ≥ 10（`npm i -g pnpm`）
+- **Docker**（仅 Gateway 模式需要 MySQL）
 
-├── gateway/         # Web↔桌面 Gateway（packages: common, gateway, sdk-web, sdk-desktop）
-
-└── scripts/         # 品牌资源等工具脚本
-
-```
-
-## 开发
-
-在 `catbuddy/` 目录安装依赖并配置环境：
+### 安装与启动
 
 ```bash
+# 1. 克隆仓库
+git clone https://github.com/your-org/catbuddy.git
+cd catbuddy
+
+# 2. 安装依赖
 pnpm install
-cp .env.example .env          # 本地开发（Gateway + Desktop + Web）
-# cp .env.production.example .env.production   # 生产 / Docker / 打包
+
+# 3. 配置环境变量
+cp .env.example .env
+# 编辑 .env：填入 AI Key 和邮箱
 ```
 
-| 命令 | 说明 |
-
-|------|------|
-
-| `pnpm dev` / `pnpm dev:desktop` | 桌面 Electron（`apps/desktop`） |
-
-| `pnpm dev:web` | Web SPA（需已运行 `pnpm gateway:dev`） |
-| `pnpm dev:web:full` | **一键**：gateway + Web 同启 |
-
-| `pnpm gateway:dev` | 启动 `gateway`（`:18765`，Fastify） |
-
-| `pnpm build:desktop` | 桌面 NSIS 安装包 |
-| `pnpm build:desktop:verbose` | 同上，分阶段 + electron-builder 详细日志 |
-| `pnpm build:web` | 拷贝桌面安装包 + Web 静态资源（需先 `build:desktop`） |
-| `pnpm build:web:only` | 仅 Vite 构建 Web（不拷贝安装包） |
-| `pnpm build:release` | 桌面安装包 + Web 一键发布构建 |
-| `pnpm build:all` | Gateway + Desktop + Web |
-
-| `pnpm lint` | 全 workspace TypeScript 检查 |
-| `pnpm clean:packages` | 删除 `packages/*/src`、`apps/*/src` 下误生成的 `.js` / `.map` / `.d.ts` |
-
-### Web 开发（catbuddy Gateway，推荐）
-
-无需本地 `nanobot gateway`。Web UI 通过 **catbuddy/gateway** 连桌面 Electron 执行 Agent。详见 [docs/GATEWAY.md](./docs/GATEWAY.md)、[docs/CROSS_DEVICE_GATEWAY.md](./docs/CROSS_DEVICE_GATEWAY.md)、[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
-
-#### `CATBUDDY_DEV_MODE=remote`（连线上 Gateway，最简单）
-
-根目录 `.env` 设 `CATBUDDY_DEV_MODE=remote`，**无需** `pnpm gateway:dev`：
+### 启动桌面应用
 
 ```bash
-pnpm dev:desktop    # 桌面 + 内置 UI（http://localhost:5173）
-# 可选：pnpm dev:web   # 单独浏览器开 Web
-```
-
-启动日志应含：`[catbuddy/desktop] dev_mode=remote gateway → https://gateway.ganzhibin.icu`
-
-桌面 **设置 → 远程控制** 打开；须与 Web **同一邮箱** 登录。
-
-若出现 `ENOTFOUND gateway.ganzhibin.icu`：本机 DNS/网络问题（非配置错误）。可试 `ipconfig /flushdns`、关 VPN，或改回 `local` 模式。
-
-#### `CATBUDDY_DEV_MODE=local`（本机 Gateway，三终端）
-
-```bash
-# 1) Gateway
-pnpm gateway:dev
-
-# 2) 桌面
+# 远程模式（推荐，无需本地 Gateway）
 pnpm dev:desktop
 
-# 3) Web（可选）
-pnpm dev:web
+# 或本地全栈模式
+pnpm gateway:dev    # 终端1：启动 Gateway
+pnpm dev:desktop    # 终端2：启动桌面应用
+pnpm dev:web        # 终端3（可选）：浏览器访问 http://localhost:5173
 ```
 
-浏览器打开 `http://127.0.0.1:5173/`。邮箱登录后由 `AuthGate` + `GatewayTransport` 连 Gateway，消息由桌面 Agent 处理。
-
-### Web 开发（nanobot gateway，可选）
-
-在 `apps/web/.env.development` 中设置 `VITE_USE_GATEWAY=false`，并启动 nanobot：
+### 启动 Web 端
 
 ```bash
-
-nanobot gateway   # 默认 http://127.0.0.1:8765，且 channels.websocket.enabled=true
-
-pnpm dev:web
-
+# 一键启动 Gateway + Web
+pnpm dev:web:full
 ```
 
-### 环境变量
+---
 
-根目录 **一个开关** 控制三端（Gateway / Desktop / Web）：
+## 🏗️ 架构
 
+```
+┌─────────────┐     HTTP/WS      ┌──────────────┐      WS       ┌────────────────┐
+│  浏览器/手机  │ ◄─────────────► │   Gateway    │ ◄───────────► │  Desktop App   │
+│  (apps/web)  │                 │  (Fastify)   │               │  (Electron)    │
+│              │                 │   :18765     │               │                │
+│  仅 UI 展示  │                 │  MySQL+SMTP  │               │  Agent Loop    │
+│  无本地权限  │                 │  鉴权+中继    │               │  本地文件操作   │
+└─────────────┘                 └──────────────┘               └────────────────┘
+```
 
-| `CATBUDDY_DEV_MODE` | 说明                                                     |
-| ------------------- | ------------------------------------------------------ |
-| `local`             | 本机 `pnpm gateway:dev`，Desktop/Web 走 `127.0.0.1:18765`  |
-| `remote`            | Desktop/Web 连 `gateway.ganzhibin.icu`，**无需**本地 Gateway |
+- **Desktop**：Electron 应用，Agent 引擎真正执行推理和文件操作
+- **Web**：React SPA，纯 UI 层，通过 Gateway 远程控制桌面
+- **Gateway**：Fastify + WebSocket，负责鉴权、消息路由、会话持久化
 
+### Monorepo 结构
+
+```
+catbuddy/
+├── apps/
+│   ├── desktop/        # Electron 主进程 + Agent + 安装包
+│   └── web/            # 浏览器 SPA 入口
+├── packages/
+│   ├── ui/             # React 应用主体（共享 UI）
+│   ├── client/         # catbuddyClient + 传输层（IPC/WS/HTTP）
+│   ├── platform/       # IPC/HTTP bootstrap & API
+│   └── shared/         # 类型与协议定义
+├── gateway/            # 跨端中继服务
+├── deploy/             # 部署脚本
+├── scripts/            # 工具脚本
+└── docs/               # 文档
+```
+
+---
+
+## 🛠️ 技术栈
+
+| 层面 | 技术 |
+|------|------|
+| **前端** | React 18 · Tailwind CSS 3 · Radix UI · Lucide Icons |
+| **桌面** | Electron 33 · Vite 5 |
+| **后端** | Fastify · WebSocket · MySQL |
+| **AI** | Anthropic SDK · OpenAI SDK · MCP Protocol |
+| **语言** | TypeScript 5.7 |
+| **工程** | pnpm workspace · Zod · react-i18next |
+| **打包** | electron-builder (NSIS/DMG/AppImage) · Docker Compose |
+
+---
+
+## ⚙️ 环境变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `CATBUDDY_DEV_MODE` | `local` / `remote` | `local` |
+| `GATEWAY_ACCOUNT_EMAIL` | 登录邮箱 | — |
+| `DEEPSEEK_KEY` | AI 模型 API Key | — |
+| `GATEWAY_PORT` | Gateway 端口 | `18765` |
+
+更多配置见 [docs/GATEWAY.md](./docs/GATEWAY.md)。
+
+---
+
+## 📦 打包与部署
 
 ```bash
-cp .env.example .env
-# 改 CATBUDDY_DEV_MODE、GATEWAY_ACCOUNT_EMAIL、DEEPSEEK_KEY 即可
+# 桌面安装包（Windows NSIS / macOS DMG / Linux AppImage）
+pnpm build:desktop
+
+# Web 静态资源
+pnpm build:web
+
+# 一键发布构建
+pnpm build:release
+
+# Docker 部署 Gateway
+docker compose -f gateway/docker-compose.yml up -d
 ```
 
+详见 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)。
 
-| 用途      | 模板                        | 复制为               |
-| ------- | ------------------------- | ----------------- |
-| 开发      | `.env.example`            | `.env`            |
-| 生产 / 打包 | `.env.production.example` | `.env.production` |
+---
 
+## 🤝 贡献
 
-### 环境变量（`apps/web`）
+欢迎提交 Issue 和 Pull Request！
 
+1. Fork 本仓库
+2. 创建特性分支：`git checkout -b feat/amazing-feature`
+3. 提交改动：`git commit -m 'feat: add amazing feature'`
+4. 推送分支：`git push origin feat/amazing-feature`
+5. 提交 Pull Request
 
-| 变量                      | 说明                                                                                 |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `VITE_USE_GATEWAY`      | 根目录 `.env`；`true`（dev 默认）→ catbuddy gateway                                        |
-| `VITE_GATEWAY_URL`      | nanobot HTTP（`VITE_USE_GATEWAY=false` 时，默认 `http://127.0.0.1:8765`）                |
-| `VITE_GATEWAY_HTTP_URL` | catbuddy gateway HTTP（dev 默认 `http://127.0.0.1:18765`；生产建议 `/gateway-api` 或公网 URL） |
+开发前请阅读 [PROJECT_PLAN.md](./PROJECT_PLAN.md) 了解项目现状。
 
+---
 
-详见 [docs/GATEWAY.md](./docs/GATEWAY.md)。
+## 📄 协议
 
-### 首次上手（约 30 分钟）
+[MIT License](./LICENSE) © catbuddy
 
-1. `pnpm install` 后 `cp .env.example .env`（若 `sharp` 安装失败，可 `pnpm install --ignore-scripts`，桌面开发通常仍可运行）
-2. **remote 模式（推荐先试）**：`.env` 设 `CATBUDDY_DEV_MODE=remote` + `GATEWAY_ACCOUNT_EMAIL` + `DEEPSEEK_KEY` → `pnpm dev:desktop`
-3. **local 模式**：`.env` 设 `CATBUDDY_DEV_MODE=local` → `pnpm gateway:dev` + `pnpm dev:desktop` +（可选）`pnpm dev:web`
+---
 
-## `packages/` 与 `apps/*/src/` 不要出现编译产物
-
-`packages/`* 与 `apps/web` 等只放 **TypeScript 源码**，由 Vite 直接引用（`noEmit: true`）。若在 `src/` 里看到成对的 `Foo.ts` + `Foo.js` + `Foo.js.map`，是误跑了 `tsc`（或 IDE「编译项目」）生成的，可执行： 
-
-```bash
-pnpm clean:packages
-```
-
-**不要**在 `packages` 目录单独执行不带 `--noEmit` 的 `tsc`；构建请用 `apps/desktop` / `apps/web` 的 `pnpm build`。
-
-## 包依赖方向
-
-`ui` → `client`, `platform`, `shared` · `client` → `shared` · `platform` → `shared` · `apps/`* → 上述包
+<p align="center">
+  <sub>Built with ❤️ for developers who want AI on their own terms.</sub>
+</p>

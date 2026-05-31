@@ -13,7 +13,7 @@ export function EmptyThreadGreeting({ token }: { token: string }) {
     <div className="flex w-full justify-center animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
       <div className="inline-flex max-w-full items-center justify-center gap-3 sm:gap-4">
         <BrandMark
-          className="h-10 w-10 shrink-0 object-contain opacity-95 sm:h-11 sm:w-11"
+          className="block h-12 w-12 shrink-0 object-contain transition-all duration-300 ease-out hover:scale-105 sm:h-14 sm:w-14"
           alt=""
         />
         <h1 className="min-w-0 text-balance text-[32px] font-normal leading-tight tracking-[-0.045em] text-foreground sm:text-[40px] lg:text-[48px]">

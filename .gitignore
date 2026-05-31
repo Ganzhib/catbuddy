@@ -33,7 +33,7 @@ apps/*/src/**/*.js
 apps/*/src/**/*.js.map
 apps/*/src/**/*.d.ts
 apps/*/src/**/*.d.ts.map
-
+example
 # relay-server — stray shell/node eval artifacts
 relay-server/console.log*
 relay-server/r.json*

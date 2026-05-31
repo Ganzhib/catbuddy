@@ -331,29 +331,29 @@
         }
       },
       "imageQuickActions": {
-        "icon": {
-          "title": "Design an app icon",
-          "prompt": "Generate a clean 1:1 app icon for catbuddy: friendly robot, simple vector style, soft blue and white palette, no text."
+        "system": {
+          "title": "System architecture",
+          "prompt": "Draw a system architecture diagram showing the main components, their interactions, and data flow. Use a clean, modern style."
         },
-        "sticker": {
-          "title": "Make a sticker",
-          "prompt": "Generate a cute sticker-style image of a tiny robot assistant, transparent-looking background, expressive and playful."
+        "microservices": {
+          "title": "Microservices",
+          "prompt": "Draw a microservices architecture diagram with service boundaries, APIs, and messaging between services."
         },
-        "poster": {
-          "title": "Create a poster",
-          "prompt": "Generate a polished poster concept for a personal AI assistant, modern composition, strong visual hierarchy, suitable for a landing page."
+        "dataflow": {
+          "title": "Data flow",
+          "prompt": "Draw a data flow diagram showing how data moves through the system, including sources, transformations, and storage."
         },
-        "product": {
-          "title": "Product mockup",
-          "prompt": "Generate a clean product mockup image for a conversational AI web app, minimal interface, premium lighting, realistic device frame."
+        "deployment": {
+          "title": "Deployment",
+          "prompt": "Draw a deployment architecture diagram showing servers, containers, load balancers, and network topology."
         },
-        "portrait": {
-          "title": "Stylized portrait",
-          "prompt": "Generate a stylized portrait of a friendly AI companion, soft lighting, detailed but approachable, modern illustration style."
+        "module": {
+          "title": "Module map",
+          "prompt": "Draw a module/class relationship diagram for the current project, showing key entities and their dependencies."
         },
-        "edit": {
-          "title": "Edit an image",
-          "prompt": "Help me edit an image. Ask me to upload or reference the image first, then generate the edited result."
+        "more": {
+          "title": "More diagrams",
+          "prompt": "Help me draw an architecture diagram. Ask me what type of diagram I need first."
         }
       }
     },
@@ -383,11 +383,11 @@
       "folderImportFailed": "Could not import folder. Try again.",
       "clearFolder": "Clear selected workspace folder",
       "imageMode": {
-        "label": "Image Generation",
-        "toggle": "Toggle image generation mode",
-        "placeholder": "Describe or edit an image…",
-        "aspectAria": "Image aspect ratio",
-        "aspectLabel": "Image aspect",
+        "label": "Diagram",
+        "toggle": "Toggle architecture diagram mode",
+        "placeholder": "Describe the architecture diagram you want…",
+        "aspectAria": "Diagram aspect ratio",
+        "aspectLabel": "Diagram aspect",
         "aspect": {
           "auto": "Auto",
           "1_1": "Square 1:1",

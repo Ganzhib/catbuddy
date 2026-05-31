@@ -39,8 +39,8 @@ catbuddy 是一个**桌面优先**的 AI 编程助手。与其他 AI 工具不�
       <p>Plan · Analyze · Brainstorm · Code · Summarize — 六种快速操作，从规划到编码一气呵成。</p>
     </td>
     <td width="50%">
-      <h4>🎨 图像生成</h4>
-      <p>Icon · Sticker · Poster · Product · Portrait — AI 创作从图标到海报。</p>
+      <h4>📐 画架构图</h4>
+      <p>System · Microservices · Data Flow · Deployment · Module — AI 分析代码自动生成 Draw.io 架构图。</p>
     </td>
   </tr>
   <tr>

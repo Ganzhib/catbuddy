@@ -4,12 +4,12 @@ import {
   BookOpen,
   ChevronRight,
   Code2,
-  ImageIcon,
+  Layers,
   LayoutGrid,
   Lightbulb,
   MoreHorizontal,
-  Palette,
-  Sparkles,
+  Network,
+  Server,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -18,7 +18,7 @@ import { ThreadComposer } from "@/components/thread/ThreadComposer";
 import { ThreadHeader } from "@/components/thread/ThreadHeader";
 import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
-import { useCatbuddyStream, type SendImage, type SendOptions } from "@/hooks/useCatbuddyStream";
+import { useCatbuddyStream, type SendImage } from "@/hooks/useCatbuddyStream";
 import { useSessionHistory } from "@/hooks/useSessions";
 import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway } from "@catbuddy/platform";
 import type { ChatSummary, SlashCommand, UIMessage } from "@catbuddy/shared";
@@ -64,12 +64,12 @@ const QUICK_ACTION_KEYS = [
 ] as const;
 
 const IMAGE_QUICK_ACTION_KEYS = [
-  { key: "icon", icon: ImageIcon, tone: "text-[#4f9de8]" },
-  { key: "sticker", icon: Sparkles, tone: "text-[#f25b8f]" },
-  { key: "poster", icon: Palette, tone: "text-[#eba45d]" },
-  { key: "product", icon: LayoutGrid, tone: "text-[#53c59d]" },
-  { key: "portrait", icon: ImageIcon, tone: "text-[#a877e7]" },
-  { key: "edit", icon: MoreHorizontal, tone: "text-muted-foreground/65" },
+  { key: "system", icon: Network, tone: "text-[#4f9de8]" },
+  { key: "microservices", icon: Layers, tone: "text-[#f25b8f]" },
+  { key: "dataflow", icon: BarChart3, tone: "text-[#53c59d]" },
+  { key: "deployment", icon: Server, tone: "text-[#eba45d]" },
+  { key: "module", icon: Code2, tone: "text-[#a877e7]" },
+  { key: "more", icon: MoreHorizontal, tone: "text-muted-foreground/65" },
 ] as const;
 
 interface PendingFirstMessage {
@@ -313,11 +313,11 @@ export function ThreadShell({
 
   const handleQuickAction = useCallback(
     (prompt: string) => {
-      const options: SendOptions | undefined = heroImageMode
-        ? { imageGeneration: { enabled: true, aspect_ratio: null } }
-        : undefined;
+      const content = heroImageMode
+        ? `[架构图模式] 基于当前工作空间的代码和文件内容，帮我画架构图。${prompt}`
+        : prompt;
       // 卡片点击始终创建新对话（桌面版行为）
-      void handleWelcomeSend(prompt, undefined, options);
+      void handleWelcomeSend(content, undefined, undefined);
     },
     [handleWelcomeSend, heroImageMode],
   );

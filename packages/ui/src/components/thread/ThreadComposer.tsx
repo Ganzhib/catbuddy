@@ -25,6 +25,7 @@ import {
   ImageIcon,
   Loader2,
   Moon,
+  Network,
   Plus,
   RotateCw,
   ScrollText,
@@ -735,15 +736,14 @@ export function ThreadComposer({
             preview: { url: img.dataUrl, name: img.file.name },
           }))
         : undefined;
-    const options: SendOptions | undefined = imageMode
-      ? {
-          imageGeneration: {
-            enabled: true,
-            aspect_ratio: imageAspectRatio === "auto" ? null : imageAspectRatio,
-          },
-        }
-      : undefined;
-    onSend(trimmed, payload, options);
+    // In diagram mode, prepend an instruction so the agent analyses the
+    // workspace and produces an architecture diagram.  The imageGeneration
+    // option is no longer sent — the backend agent already has workspace
+    // access and will use its tools to read files.
+    const content = imageMode
+      ? `[架构图模式] 基于当前工作空间的代码和文件内容，帮我画架构图。${trimmed}`
+      : trimmed;
+    onSend(content, payload, undefined);
     setValue("");
     setInlineError(null);
     // Bubble owns the data URL copy; safe to revoke every staged blob
@@ -751,7 +751,7 @@ export function ThreadComposer({
     clear();
     setSlashMenuDismissed(false);
     resizeTextarea();
-  }, [canSend, clear, imageAspectRatio, imageMode, onSend, readyImages, resizeTextarea, value]);
+  }, [canSend, clear, imageMode, onSend, readyImages, resizeTextarea, value]);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (showSlashMenu) {
@@ -1047,7 +1047,7 @@ export function ThreadComposer({
                     : "bg-card text-muted-foreground hover:bg-card hover:text-foreground",
                 )}
               >
-                <ImageIcon className={cn(isHero ? "h-4 w-4 sm:mr-1.5" : "h-3.5 w-3.5 sm:mr-1.5")} />
+                <Network className={cn(isHero ? "h-4 w-4 sm:mr-1.5" : "h-3.5 w-3.5 sm:mr-1.5")} />
                 <span className="hidden sm:inline">{t("thread.composer.imageMode.label")}</span>
               </Button>
               {imageMode ? (

@@ -29,7 +29,7 @@ interface SidebarProps {
   activePanel: SidebarPanel;
   loading: boolean;
   onNewChat: () => void;
-  onCreateChat: (workspaceFolderId: string | null) => unknown;
+  onCreateChat: (workspaceFolderId: string | null | "default") => unknown;
   onSelect: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
   onSelectPanel: (panel: SidebarPanel) => void;
@@ -112,7 +112,7 @@ export function Sidebar(props: SidebarProps) {
   };
 
   const createWorkspaceChat = (folderId: string) => {
-    return props.onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId);
+    return props.onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? "default" : folderId);
   };
 
   return (

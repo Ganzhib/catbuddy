@@ -118,11 +118,13 @@ function Shell({
     }
   }, [])
 
-  const onCreateChat = useCallback(async (workspaceFolderId?: string | null) => {
+  const onCreateChat = useCallback(async (workspaceFolderId?: string | null | 'default') => {
     try {
-      const activeFolderId = workspaceFolderId !== undefined
-        ? workspaceFolderId
-        : await getActiveWorkspaceFolderId()
+      const activeFolderId = workspaceFolderId === 'default'
+        ? null
+        : workspaceFolderId !== undefined
+          ? workspaceFolderId
+          : await getActiveWorkspaceFolderId()
       const chatId = await createChat(activeFolderId)
       setActiveKey(toSessionKey(chatId))
       setDraftWorkspaceFolderId(null)
@@ -178,7 +180,7 @@ function Shell({
 
   useEffect(() => {
     const id = activeSession?.chatId
-    if (id) client.attach(id, activeSession.workspaceFolderId ?? null)
+    if (id) client.attach(id, activeSession.workspaceFolderId)
   }, [activeSession?.chatId, activeSession?.workspaceFolderId, client])
 
   // Desktop 新建/切换对话并发消息时，跟随到对应 sessionKey（见 session_updated scope=focus）
@@ -282,6 +284,7 @@ function Shell({
                 onNewChat={onNewChat}
                 onCreateChat={onCreateChat}
                 draftWorkspaceFolderId={draftWorkspaceFolderId}
+                draftWorkspaceCleared={draftWorkspaceCleared}
                 onDraftWorkspaceFolderIdChange={(folderId) => {
                   setDraftWorkspaceFolderId(folderId)
                   setDraftWorkspaceCleared(folderId === null)

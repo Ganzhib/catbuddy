@@ -38,8 +38,9 @@ interface ThreadShellProps {
   onToggleSidebar: () => void;
   onGoHome?: () => void;
   onNewChat?: () => void;
-  onCreateChat?: (workspaceFolderId?: string | null) => Promise<string | null>;
+  onCreateChat?: (workspaceFolderId?: string | null | "default") => Promise<string | null>;
   draftWorkspaceFolderId?: string | null;
+  draftWorkspaceCleared?: boolean;
   onDraftWorkspaceFolderIdChange?: (workspaceFolderId: string | null) => void;
   onTurnEnd?: () => void;
   onOpenDiagramEditor?: (target: DiagramEditorTarget) => void;
@@ -86,6 +87,7 @@ export function ThreadShell({
   onToggleSidebar,
   onCreateChat,
   draftWorkspaceFolderId = null,
+  draftWorkspaceCleared = false,
   onDraftWorkspaceFolderIdChange,
   onTurnEnd,
   onOpenDiagramEditor,
@@ -128,6 +130,12 @@ export function ThreadShell({
   const handleTurnEnd = useCallback(() => {
     onTurnEnd?.();
   }, [onTurnEnd]);
+  const resolvedStreamWorkspaceFolderId = session
+    ? session.workspaceFolderId
+    : draftWorkspaceCleared
+      ? null
+      : draftWorkspaceFolderId ?? undefined;
+
   const {
     messages,
     isStreaming,
@@ -143,7 +151,7 @@ export function ThreadShell({
     initial,
     hasPendingToolCalls,
     handleTurnEnd,
-    session?.workspaceFolderId ?? draftWorkspaceFolderId ?? null,
+    resolvedStreamWorkspaceFolderId,
     (diagram) => {
       if (diagram.type !== "display") return;
       onOpenDiagramEditor?.({
@@ -160,14 +168,14 @@ export function ThreadShell({
 
   useEffect(() => {
     if (!chatId) return;
-    client.attach(chatId, session?.workspaceFolderId ?? null);
+    client.attach(chatId, session?.workspaceFolderId);
   }, [chatId, session?.workspaceFolderId, client]);
 
   useEffect(() => {
     if (!historyKey || !window.catbuddy?.gatewaySubscribeSession) return;
     void window.catbuddy.gatewaySubscribeSession({
       sessionKey: historyKey,
-      workspaceFolderId: session?.workspaceFolderId ?? null,
+      workspaceFolderId: session?.workspaceFolderId,
     });
   }, [historyKey, session?.workspaceFolderId]);
 
@@ -305,13 +313,15 @@ export function ThreadShell({
       if (booting) return;
       setBooting(true);
       pendingFirstRef.current = { content, images, options };
-      const newId = await onCreateChat?.(draftWorkspaceFolderId);
+      const newId = await onCreateChat?.(
+        draftWorkspaceCleared ? "default" : (draftWorkspaceFolderId ?? undefined),
+      );
       if (!newId) {
         pendingFirstRef.current = null;
         setBooting(false);
       }
     },
-    [booting, draftWorkspaceFolderId, onCreateChat],
+    [booting, draftWorkspaceCleared, draftWorkspaceFolderId, onCreateChat],
   );
 
   const handleThreadSend = useCallback(
@@ -327,10 +337,13 @@ export function ThreadShell({
       const content = heroImageMode
         ? `[架构图模式] 基于当前工作空间的代码和文件内容，帮我画架构图。${prompt}`
         : prompt;
-      // 卡片点击始终创建新对话（桌面版行为）
+      if (session) {
+        handleThreadSend(content, undefined, undefined);
+        return;
+      }
       void handleWelcomeSend(content, undefined, undefined);
     },
-    [handleWelcomeSend, heroImageMode],
+    [handleThreadSend, handleWelcomeSend, heroImageMode, session],
   );
 
   const quickActionItems = heroImageMode ? IMAGE_QUICK_ACTION_KEYS : QUICK_ACTION_KEYS;

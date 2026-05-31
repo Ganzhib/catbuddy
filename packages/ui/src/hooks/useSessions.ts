@@ -26,7 +26,7 @@ export function useSessions(): {
   loading: boolean;
   error: string | null;
   refresh: (replace?: boolean) => Promise<void>;
-  createChat: (workspaceFolderId?: string | null) => Promise<string>;
+  createChat: (workspaceFolderId?: string | null | "default") => Promise<string>;
   deleteChat: (key: string) => Promise<void>;
 } {
   const { client, token } = useClient();
@@ -93,10 +93,11 @@ export function useSessions(): {
     });
   }, [client, refresh]);
 
-  const createChat = useCallback(async (workspaceFolderId?: string | null): Promise<string> => {
-    const created = await apiCreateSession(tokenRef.current, undefined, undefined, workspaceFolderId);
+  const createChat = useCallback(async (workspaceFolderId?: string | null | "default"): Promise<string> => {
+    const resolvedWorkspaceFolderId = workspaceFolderId === "default" ? null : workspaceFolderId;
+    const created = await apiCreateSession(tokenRef.current, undefined, undefined, resolvedWorkspaceFolderId);
     const row = normalizeChatSummary(created);
-    client.attach(row.chatId, row.workspaceFolderId ?? workspaceFolderId ?? null);
+    client.attach(row.chatId, row.workspaceFolderId ?? resolvedWorkspaceFolderId);
     setSessions((prev) => [
       row,
       ...prev.filter((s) => toSessionKey(s.key) !== row.key),

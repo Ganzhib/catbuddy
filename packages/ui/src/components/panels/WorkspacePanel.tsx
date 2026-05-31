@@ -15,7 +15,7 @@ interface WorkspacePanelProps {
   activeKey: string | null;
   onSelectChat: (key: string | null, workspaceFolderId?: string | null) => void;
   onRequestDelete: (key: string, label: string) => void;
-  onCreateChat: (workspaceFolderId: string | null) => unknown;
+  onCreateChat: (workspaceFolderId: string | null | "default") => unknown;
   onBackToChat: () => void;
 }
 
@@ -67,7 +67,7 @@ export function WorkspacePanel({
   );
 
   const createWorkspaceChat = useCallback(
-    (folderId: string) => onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? null : folderId),
+    (folderId: string) => onCreateChat(folderId === DEFAULT_WORKSPACE_FOLDER_ID ? "default" : folderId),
     [onCreateChat],
   );
 

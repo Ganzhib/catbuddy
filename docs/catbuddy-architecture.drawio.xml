@@ -1,0 +1,206 @@
+<mxCell id="2" value="🌐 Web App&lt;br&gt;Vite + React 18" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;verticalAlign=top;align=center;" vertex="1" parent="1">
+  <mxGeometry x="20" y="10" width="200" height="95" as="geometry"/>
+</mxCell>
+<mxCell id="3" value="React UI&lt;br&gt;(@catbuddy/ui)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="2">
+  <mxGeometry x="15" y="28" width="170" height="28" as="geometry"/>
+</mxCell>
+<mxCell id="4" value="catbuddyClient + SDK-Web" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="2">
+  <mxGeometry x="15" y="60" width="170" height="28" as="geometry"/>
+</mxCell>
+
+<mxCell id="5" value="🔗 Gateway 中继服务&lt;br&gt;Fastify :18765" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;verticalAlign=top;align=center;" vertex="1" parent="1">
+  <mxGeometry x="300" y="10" width="200" height="95" as="geometry"/>
+</mxCell>
+<mxCell id="6" value="HTTP API + WebSocket /ws" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;fontSize=11;" vertex="1" parent="5">
+  <mxGeometry x="15" y="28" width="170" height="28" as="geometry"/>
+</mxCell>
+<mxCell id="7" value="Auth (OTP) + MySQL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#82b366;fontSize=11;" vertex="1" parent="5">
+  <mxGeometry x="15" y="60" width="170" height="28" as="geometry"/>
+</mxCell>
+
+<mxCell id="8" value="🖥️ Desktop App&lt;br&gt;Electron 33 + Agent" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;verticalAlign=top;align=center;" vertex="1" parent="1">
+  <mxGeometry x="580" y="10" width="200" height="95" as="geometry"/>
+</mxCell>
+<mxCell id="9" value="MainProcess (index.ts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4e4;strokeColor=#b85450;fontSize=11;" vertex="1" parent="8">
+  <mxGeometry x="15" y="28" width="170" height="28" as="geometry"/>
+</mxCell>
+<mxCell id="10" value="MessageBus + ChannelManager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="8">
+  <mxGeometry x="15" y="60" width="170" height="28" as="geometry"/>
+</mxCell>
+
+<mxCell id="11" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#6c8ebf;fontSize=10;fontColor=#555555;" edge="1" parent="1" source="2" target="5">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="12" value="WebSocket&lt;br&gt;GATEWAY_SECRET" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#82b366;fontSize=10;fontColor=#555555;" edge="1" parent="1" source="5" target="8">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- ============ Agent Engine Container ============ -->
+<mxCell id="13" value="⭐ Desktop Agent 引擎 (per-turn)" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;strokeWidth=2;fontStyle=1;fontSize=13;verticalAlign=top;align=left;spacingLeft=12;" vertex="1" parent="1">
+  <mxGeometry x="20" y="125" width="760" height="465" as="geometry"/>
+</mxCell>
+
+<!-- ============ 7-Stage FSM ============ -->
+<mxCell id="14" value="① RESTORE&lt;br&gt;恢复Session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="20" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="15" value="② COMPACT&lt;br&gt;上下文压缩" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="125" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="16" value="③ COMMAND&lt;br&gt;命令检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="230" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="17" value="④ BUILD&lt;br&gt;构建上下文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="335" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="18" value="⑤ RUN&lt;br&gt;LLM+Tool执行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="440" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="19" value="⑥ SAVE&lt;br&gt;持久化消息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="545" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+<mxCell id="20" value="⑦ RESPOND&lt;br&gt;组装输出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="650" y="25" width="90" height="40" as="geometry"/>
+</mxCell>
+
+<mxCell id="21" value="DONE" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="13">
+  <mxGeometry x="555" y="92" width="70" height="32" as="geometry"/>
+</mxCell>
+
+<!-- FSM Edges -->
+<mxCell id="22" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="14" target="15">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="23" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="15" target="16">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="24" value="dispatch" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="16" target="17">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<mxCell id="25" value="shortcut (命令直接返回)" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#9673a6;strokeWidth=1;dashed=1;fontSize=9;fontColor=#9673a6;" edge="1" parent="13" source="16" target="21">
+  <mxGeometry relative="1" as="geometry">
+    <mxPoint as="sourcePoint"/>
+    <mxPoint as="targetPoint"/>
+    <Array as="points">
+      <mxPoint x="275" y="82"/>
+      <mxPoint x="590" y="82"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<mxCell id="26" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="17" target="18">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="27" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="18" target="19">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="28" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="19" target="20">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="29" value="ok" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#d6b656;fontSize=9;fontColor=#888888;" edge="1" parent="13" source="20" target="21">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- ============ AgentRunner Loop ============ -->
+<mxCell id="30" value="🔄 ⑤ RUN 内部 — AgentRunner 执行循环" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;verticalAlign=top;align=left;spacingLeft=10;spacingTop=2;" vertex="1" parent="13">
+  <mxGeometry x="20" y="145" width="720" height="135" as="geometry"/>
+</mxCell>
+
+<mxCell id="31" value="组装Messages&lt;br&gt;System+History" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+  <mxGeometry x="18" y="22" width="95" height="36" as="geometry"/>
+</mxCell>
+<mxCell id="32" value="LLM API 调用&lt;br&gt;Anthropic/OpenAI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede7f6;strokeColor=#7e57c2;fontSize=10;" vertex="1" parent="30">
+  <mxGeometry x="135" y="22" width="100" height="36" as="geometry"/>
+</mxCell>
+<mxCell id="33" value="响应&lt;br&gt;类型?" style="shape=diamond;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="30">
+  <mxGeometry x="258" y="18" width="72" height="44" as="geometry"/>
+</mxCell>
+<mxCell id="34" value="执行 Tool Call&lt;br&gt;(并发调用)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+  <mxGeometry x="358" y="22" width="105" height="36" as="geometry"/>
+</mxCell>
+<mxCell id="35" value="Tool 结果注入&lt;br&gt;到上下文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+  <mxGeometry x="490" y="22" width="105" height="36" as="geometry"/>
+</mxCell>
+<mxCell id="36" value="输出最终回复" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="30">
+  <mxGeometry x="258" y="86" width="72" height="34" as="geometry"/>
+</mxCell>
+
+<!-- AgentRunner Edges -->
+<mxCell id="37" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#9673a6;" edge="1" parent="30" source="31" target="32">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="38" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#9673a6;" edge="1" parent="30" source="32" target="33">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="39" value="tool_use" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#d79b00;fontSize=9;fontColor=#d79b00;" edge="1" parent="30" source="33" target="34">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="40" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;strokeColor=#9673a6;" edge="1" parent="30" source="34" target="35">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<mxCell id="41" value="迭代循环 (≤50次)" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.3;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#7e57c2;strokeWidth=1;dashed=1;fontSize=9;fontColor=#7e57c2;" edge="1" parent="30" source="35" target="32">
+  <mxGeometry relative="1" as="geometry">
+    <mxPoint as="sourcePoint"/>
+    <mxPoint as="targetPoint"/>
+    <Array as="points">
+      <mxPoint x="480" y="33"/>
+      <mxPoint x="480" y="8"/>
+      <mxPoint x="185" y="8"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<mxCell id="42" value="text / stop" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#82b366;fontSize=9;fontColor=#82b366;" edge="1" parent="30" source="33" target="36">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- ============ Tools ============ -->
+<mxCell id="43" value="🔧 ToolRegistry 内置工具集" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=11;verticalAlign=top;align=left;spacingLeft=10;" vertex="1" parent="13">
+  <mxGeometry x="20" y="305" width="720" height="145" as="geometry"/>
+</mxCell>
+<mxCell id="44" value="📁 文件系统&lt;br&gt;read_file / write_file&lt;br&gt;edit_file / list_dir" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="15" y="22" width="105" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="45" value="🖥️ exec&lt;br&gt;命令执行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="133" y="22" width="95" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="46" value="🔍 搜索&lt;br&gt;grep / web_search&lt;br&gt;web_fetch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="241" y="22" width="105" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="47" value="🔌 MCP 协议&lt;br&gt;外部工具服务器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="359" y="22" width="105" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="48" value="👶 spawn&lt;br&gt;启动子Agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="477" y="22" width="100" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="49" value="🎨 generate_image&lt;br&gt;图像生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="590" y="22" width="110" height="48" as="geometry"/>
+</mxCell>
+
+<!-- Memory + Support -->
+<mxCell id="50" value="🧠 记忆系统&lt;br&gt;Consolidator / Dream&lt;br&gt;MemoryStore / AutoCompact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#7986cb;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="110" y="85" width="160" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="51" value="📋 SessionManager&lt;br&gt;会话持久化" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#7986cb;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="290" y="85" width="130" height="48" as="geometry"/>
+</mxCell>
+<mxCell id="52" value="📝 ContextBuilder&lt;br&gt;Prompt/Template/Skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#7986cb;fontSize=9;" vertex="1" parent="43">
+  <mxGeometry x="440" y="85" width="150" height="48" as="geometry"/>
+</mxCell>
+
+<!-- Connection: Runner → Tools -->
+<mxCell id="53" value="调用工具" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#9673a6;dashed=1;fontSize=9;fontColor=#9673a6;" edge="1" parent="13" source="30" target="43">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- Connection: Agent → Runner -->
+<mxCell id="54" value="" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#d79b00;dashed=1;" edge="1" parent="13" source="18" target="30">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- Connection: Desktop Container → Agent Container -->
+<mxCell id="55" value="Agent 运行在 Desktop 内" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;endArrow=classic;strokeColor=#b85450;dashed=1;strokeWidth=1;fontSize=9;fontColor=#b85450;" edge="1" parent="1" source="8" target="13">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>

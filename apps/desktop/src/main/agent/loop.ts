@@ -523,6 +523,13 @@ export class AgentLoop implements RuntimeState {
       },
     };
 
+    // Create AbortController so /stop and stop button can cancel this turn
+    const controller = new AbortController();
+    const existing = this._activeTasks.get(key) ?? [];
+    existing.push(controller);
+    this._activeTasks.set(key, existing);
+    msg._abortSignal = controller.signal;
+
     try {
       turnLog.step("process");
       const response = await this.process(msg, cbs);
@@ -582,7 +589,13 @@ export class AgentLoop implements RuntimeState {
           }},
         });
       }
-    }
+    } finally {
+    // Remove this controller from active tasks
+    delete msg._abortSignal;
+    const remaining = (this._activeTasks.get(key) ?? []).filter(c => c !== controller);
+    if (remaining.length > 0) this._activeTasks.set(key, remaining);
+    else this._activeTasks.delete(key);
+  }
   }
 
   bindSessionManager(sessionKey: string, manager: SessionManager): void {
@@ -864,6 +877,7 @@ export class AgentLoop implements RuntimeState {
           sessionKey: ctx.sessionKey,
           contextWindowTokens: this.contextWindowTokens,
           providerRetryMode: this.providerRetryMode,
+          abortSignal: ctx.msg._abortSignal,
           progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
           retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
           onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),

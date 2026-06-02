@@ -51,6 +51,10 @@ export class AnthropicProvider extends LLMProvider {
         tools: opts.tools?.map(this.toAnthropicTool),
       })
 
+      // Abort the stream if signal is fired
+      const onAbort = () => { try { stream.abort() } catch {} }
+      opts.signal?.addEventListener('abort', onAbort, { once: true })
+
       let content = ''
       const toolCalls: ToolCallRequest[] = []
 
@@ -60,6 +64,7 @@ export class AnthropicProvider extends LLMProvider {
       })
 
       const final = await stream.finalMessage()
+      opts.signal?.removeEventListener('abort', onAbort)
       return this.parseResponse(final)
     } catch (err: any) {
       return this.errorResponse(err)

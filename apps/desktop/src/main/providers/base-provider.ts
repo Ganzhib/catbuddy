@@ -17,6 +17,8 @@ export interface ChatStreamOpts {
   toolChoice?: 'auto' | 'required' | 'none'
   onContentDelta?: (delta: string) => Promise<void>
   onThinkingDelta?: (delta: string) => Promise<void>
+  /** AbortSignal for cancelling in-flight requests. */
+  signal?: AbortSignal
 }
 
 export interface ChatStreamWithRetryOpts extends ChatStreamOpts {
@@ -54,6 +56,7 @@ export abstract class LLMProvider {
           temperature: opts.temperature,
           onContentDelta: opts.onContentDelta,
           onThinkingDelta: opts.onThinkingDelta,
+          signal: opts.signal,
         })
 
         if (response.finishReason !== 'error') return response

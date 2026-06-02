@@ -106,6 +106,8 @@ export class OpenAICompatProvider extends LLMProvider {
         temperature: opts.temperature ?? this.generation.temperature,
         stream: true,
         ...(this.supportsStreamUsage ? { stream_options: { include_usage: true } } : {}),
+      }, {
+        signal: opts.signal,
       })
 
       for await (const chunk of stream) {

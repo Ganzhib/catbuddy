@@ -33,6 +33,8 @@ export interface RunSpec {
   llmTimeoutS?: number
   /** 达到最大迭代次数时注入的消息（渲染后的模板） */
   maxIterationsMessage?: string
+  /** AbortSignal for cancelling in-flight LLM/tool calls. */
+  abortSignal?: AbortSignal
 }
 
 // ═══ 常量 ═══
@@ -170,7 +172,15 @@ export class AgentRunner {
         onThinkingDelta: spec.onReasoning ? onThinkingDelta : undefined,
         onRetryWait: spec.retryWaitCallback,
         timeout: spec.llmTimeoutS,
+        signal: spec.abortSignal,
       })
+
+      // Check if task was cancelled during LLM call
+      if (spec.abortSignal?.aborted) {
+        stopReason = 'cancelled'
+        finalContent = 'Task was cancelled.'
+        break
+      }
 
       hookCtx.response = {
         content: response.content,

@@ -22,6 +22,8 @@ export interface InboundMessage {
   media: string[]
   metadata: MetadataBag
   sessionKeyOverride?: string
+  /** Runtime AbortSignal — not persisted, used by agent loop to cancel in-flight tasks. */
+  _abortSignal?: AbortSignal
 }
 
 export interface OutboundMessage {

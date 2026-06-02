@@ -14,6 +14,7 @@ dist-electron
 release-fresh/
 release/
 release-build-*/
+release-build/
 # Claude / AI assistant artifacts
 docs/superpowers/
 docs/plans/

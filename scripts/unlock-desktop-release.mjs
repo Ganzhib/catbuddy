@@ -15,6 +15,30 @@ const desktopRoot = path.resolve(
 );
 
 const PREFERRED_OUTPUT_DIRS = ['release', 'release-fresh'];
+const SINGLE_FALLBACK = 'release-build';
+
+/** Remove stale release-build-TIMESTAMP dirs and .bak backups from previous builds. */
+function cleanStaleBuildDirs() {
+  for (const entry of fs.readdirSync(desktopRoot, { withFileTypes: true })) {
+    const name = entry.name;
+    if (!entry.isDirectory()) continue;
+    // Old timestamped build dirs
+    if (name.startsWith('release-build-') && name !== SINGLE_FALLBACK) {
+      const full = path.join(desktopRoot, name);
+      try { tryRm(full); } catch {}
+      if (fs.existsSync(full)) {
+        if (process.platform === 'win32') tryRmdirWindows(full);
+        if (fs.existsSync(full)) log(`warning: could not remove ${name}`);
+      }
+    }
+    // Stale .bak backups from rename operations
+    if (name.includes('win-unpacked.bak.')) {
+      const full = path.join(desktopRoot, name);
+      try { tryRm(full); } catch {}
+    }
+  }
+  log('cleaned stale build directories');
+}
 
 function log(msg) {
   console.log(`[unlock-release] ${msg}`);
@@ -85,6 +109,9 @@ export function pickElectronBuilderOutputDir() {
     return forced;
   }
 
+  // Clean up stale timestamped builds before choosing a directory
+  cleanStaleBuildDirs();
+
   for (const name of PREFERRED_OUTPUT_DIRS) {
     const unpacked = path.join(desktopRoot, name, 'win-unpacked');
     if (tryClearUnpacked(unpacked)) {
@@ -93,9 +120,10 @@ export function pickElectronBuilderOutputDir() {
     }
   }
 
-  const stamp = `release-build-${Date.now()}`;
-  log(`release & release-fresh locked → output dir: ${stamp}`);
-  return stamp;
+  // Both release/ and release-fresh/ are locked (app is running).
+  // Use a single fallback dir — old builds here get overwritten each time.
+  log(`release & release-fresh locked → output dir: ${SINGLE_FALLBACK}`);
+  return SINGLE_FALLBACK;
 }
 
 function main() {

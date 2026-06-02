@@ -53,7 +53,7 @@ function looksLikeDrawioXml(xml: string): boolean {
 function toolCallPreflightError(call: ToolCallRequest): string | null {
   const args = call.arguments ?? {}
   const retryInstruction = 'This is a recoverable tool-argument error. Do not stop or answer the user yet. Continue the next model turn by generating the missing valid Draw.io XML/arguments and call the correct diagram tool again.'
-  const xmlRetryHint = 'Generate valid Draw.io XML (starting with <mxfile>, <mxGraphModel>, or <mxCell>) and call display_diagram again. Never use Markdown, ASCII, Mermaid, or plain text for diagrams.'
+  const xmlRetryHint = 'Generate ONLY bare <mxCell> elements (no wrapper tags). wrapper is auto-added. Never use Markdown, ASCII, Mermaid, or plain text for diagrams.'
   if (call.name === 'display_diagram') {
     const xml = args.xml
     if (typeof xml !== 'string' || !xml.trim()) {

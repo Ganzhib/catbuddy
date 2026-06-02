@@ -14,6 +14,18 @@ import { attachGatewaySessionWebSocket } from './ws-session.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '../../../..')
 
+// Process-level error handling (desktop app has the same in apps/desktop/src/main/index.ts)
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason)
+  console.error('[gateway] unhandledRejection:', msg)
+})
+
+process.on('uncaughtException', (err) => {
+  console.error('[gateway] uncaughtException:', err.message)
+  // Best-effort graceful shutdown — close WS, HTTP, then DB pool
+  process.exitCode = 1
+})
+
 async function main() {
   const { pool, state, auth } = await createGatewayServices()
 
@@ -23,7 +35,12 @@ async function main() {
 
   const port = gatewayEnv.port
   await app.listen({ port, host: '0.0.0.0' })
-  const wss = new WebSocketServer({ server: app.server, path: '/ws' })
+  const wss = new WebSocketServer({
+    server: app.server,
+    path: '/ws',
+    maxPayload: 1024 * 1024, // 1MB — prevent memory DoS from oversized messages
+    perMessageDeflate: false, // disable compression to reduce CPU attack surface
+  })
   attachGatewaySessionWebSocket(wss, state, auth, (msg) => app.log.info(msg))
 
   console.log(`[gateway] http://127.0.0.1:${port}  ws://127.0.0.1:${port}/ws`)

@@ -1,4 +1,4 @@
-import type { McpServerConfig, TokenUsage } from './agent-types.js'
+import type { McpServerConfig, TokenUsage, FileEditEvent, DiagramUiEvent } from './agent-types.js'
 
 export type Role = "user" | "assistant" | "tool" | "system";
 
@@ -100,34 +100,12 @@ export interface ToolProgressEvent {
  * `absolute_path`). Do not rename to camelCase without updating the desktop
  * IPC bridge and all transports.
  *
- * NOTE: UIDiagramEvent uses camelCase — this inconsistency should be resolved
- * in a future protocol version.
+ * This is a re-export of the canonical `FileEditEvent` from agent-types.
  */
-export interface UIFileEdit {
-  version?: number;
-  call_id: string;
-  tool: string;
-  path: string;
-  absolute_path?: string;
-  phase?: "start" | "end" | "error" | string;
-  added: number;
-  deleted: number;
-  approximate?: boolean;
-  status: "editing" | "done" | "error";
-  binary?: boolean;
-  error?: string;
-  pending?: boolean;
-}
+export type UIFileEdit = FileEditEvent;
 
-export interface UIDiagramEvent {
-  type: "display" | "save" | "error";
-  path: string;
-  absolutePath?: string;
-  xml?: string;
-  title?: string;
-  callId?: string;
-  error?: string;
-}
+/** Re-export of the canonical `DiagramUiEvent` from agent-types. */
+export type UIDiagramEvent = DiagramUiEvent;
 
 export interface ChatSummary {
   /** Server-side session key, e.g. ``websocket:abcd-...``. */
@@ -290,90 +268,143 @@ export type ConnectionStatus =
   | "closed"
   | "error";
 
+// ── InboundEvent: sub-type groupings ──
+
+/** Live delta/reasoning stream events from the agent. */
+export type StreamEvents =
+  | InboundDelta
+  | InboundStreamEnd
+  | InboundReasoningDelta
+  | InboundReasoningEnd;
+
+/** Session lifecycle events (turn boundaries, goal state). */
+export type SessionEvents =
+  | InboundTurnEnd
+  | InboundGoalStatus
+  | InboundGoalState
+  | InboundSessionUpdated;
+
+/** Agent output events (non-streamed messages, file edits, diagrams). */
+export type AgentOutputEvents =
+  | InboundAgentMessage
+  | InboundFileEdit
+  | InboundDiagramEvent;
+
+// ── Individual event shapes ──
+
+export type InboundMeta = { event: "ready"; chat_id: string; client_id: string }
+  | { event: "attached"; chat_id: string };
+
+/** User message injected from Web via Gateway (desktop did not send locally). */
+export type InboundUserInput = { event: "user_inbound"; chat_id: string; text: string };
+
+export type InboundAgentMessage = {
+  event: "message";
+  chat_id: string;
+  text: string;
+  reply_to?: string;
+  media?: string[];
+  media_urls?: Array<{ url: string; name?: string }>;
+  tool_events?: ToolProgressEvent[];
+  kind?: "tool_hint" | "progress" | "reasoning";
+  latency_ms?: number;
+  agent_ui?: AgentUIBlob;
+};
+
+export type InboundFileEdit = {
+  event: "file_edit";
+  chat_id: string;
+  edits: UIFileEdit[];
+};
+
+export type InboundDiagramEvent = {
+  event: "diagram_event";
+  chat_id: string;
+  diagram: UIDiagramEvent;
+};
+
+export type InboundDelta = {
+  event: "delta";
+  chat_id: string;
+  text: string;
+  stream_id?: string;
+};
+
+export type InboundStreamEnd = {
+  event: "stream_end";
+  chat_id: string;
+  stream_id?: string;
+};
+
+export type InboundReasoningDelta = {
+  event: "reasoning_delta";
+  chat_id: string;
+  text: string;
+  stream_id?: string;
+};
+
+export type InboundReasoningEnd = {
+  event: "reasoning_end";
+  chat_id: string;
+  stream_id?: string;
+};
+
+export type InboundRuntimeModel = {
+  event: "runtime_model_updated";
+  model_name: string;
+  model_preset?: string | null;
+};
+
+export type InboundTurnEnd = {
+  event: "turn_end";
+  chat_id: string;
+  latency_ms?: number;
+  usage?: TokenUsage;
+  tools_used?: string[];
+  goal_state?: GoalStateWsPayload;
+};
+
+export type InboundGoalStatus = {
+  event: "goal_status";
+  chat_id: string;
+  status: "running" | "idle";
+  started_at?: number;
+};
+
+export type InboundGoalState = {
+  event: "goal_state";
+  chat_id: string;
+  goal_state: GoalStateWsPayload;
+};
+
+export type InboundSessionUpdated = {
+  event: "session_updated";
+  chat_id: string;
+  scope?: "metadata" | "thread" | string;
+};
+
+export type InboundError = {
+  event: "error";
+  chat_id?: string;
+  detail?: string;
+};
+
 export type InboundEvent =
-  | { event: "ready"; chat_id: string; client_id: string }
-  | { event: "attached"; chat_id: string }
-  /** User message injected from Web via Gateway (desktop did not send locally). */
-  | { event: "user_inbound"; chat_id: string; text: string }
-  | {
-      event: "message";
-      chat_id: string;
-      text: string;
-      reply_to?: string;
-      media?: string[];
-      media_urls?: Array<{ url: string; name?: string }>;
-      tool_events?: ToolProgressEvent[];
-      /** Present when the frame is an agent breadcrumb (e.g. tool hint,
-       * generic progress line) rather than a conversational reply. */
-      kind?: "tool_hint" | "progress" | "reasoning";
-      /** Server-measured turn wall time when this frame finishes an assistant reply. */
-      latency_ms?: number;
-      /** Optional structured payload on progress frames (channel-specific). */
-      agent_ui?: AgentUIBlob;
-    }
-  | {
-      event: "file_edit";
-      chat_id: string;
-      edits: UIFileEdit[];
-    }
-  | {
-      event: "diagram_event";
-      chat_id: string;
-      diagram: UIDiagramEvent;
-    }
-  | {
-      event: "delta";
-      chat_id: string;
-      text: string;
-      stream_id?: string;
-    }
-  | {
-      event: "stream_end";
-      chat_id: string;
-      stream_id?: string;
-    }
-  | {
-      event: "reasoning_delta";
-      chat_id: string;
-      text: string;
-      stream_id?: string;
-    }
-  | {
-      event: "reasoning_end";
-      chat_id: string;
-      stream_id?: string;
-    }
-  | {
-      event: "runtime_model_updated";
-      model_name: string;
-      model_preset?: string | null;
-    }
-  | {
-      event: "turn_end";
-      chat_id: string;
-      latency_ms?: number;
-      /** Aggregated LLM token usage for the completed turn (desktop IPC). */
-      usage?: TokenUsage;
-      /** Tools invoked during this turn (desktop IPC). */
-      tools_used?: string[];
-      /** Authoritative sustained-goal snapshot for this chat (same shape as ``goal_state`` events). */
-      goal_state?: GoalStateWsPayload;
-    }
-  | {
-      event: "goal_status";
-      chat_id: string;
-      /** Turn executing (user message through agent loop). */
-      status: "running" | "idle";
-      /** Server ``time.time()`` when ``status`` is ``running``. */
-      started_at?: number;
-    }
-  | {
-      event: "goal_state";
-      chat_id: string;
-      goal_state: GoalStateWsPayload;
-    }
-  | { event: "session_updated"; chat_id: string; scope?: "metadata" | "thread" | string }
-  | { event: "error"; chat_id?: string; detail?: string };
+  | InboundMeta
+  | InboundUserInput
+  | InboundAgentMessage
+  | InboundFileEdit
+  | InboundDiagramEvent
+  | InboundDelta
+  | InboundStreamEnd
+  | InboundReasoningDelta
+  | InboundReasoningEnd
+  | InboundRuntimeModel
+  | InboundTurnEnd
+  | InboundGoalStatus
+  | InboundGoalState
+  | InboundSessionUpdated
+  | InboundError;
 
 /** Base64-encoded image attached to an outbound ``message`` envelope.
  *

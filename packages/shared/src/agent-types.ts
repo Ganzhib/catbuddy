@@ -1,5 +1,16 @@
 
 
+// ── Semantic type aliases ──
+// Replace `Record<string, unknown>` with these where the intent is clear.
+
+/** Arbitrary JSON object (wire protocol / serialization boundary). */
+export type JsonObject = Record<string, unknown>;
+
+/** JSON Schema (e.g. OpenAI function parameters). */
+export type JsonSchema = Record<string, unknown>;
+
+/** Opaque session/agent metadata bag (reserved for future expansion). */
+export type MetadataBag = Record<string, unknown>;
 
 // ── 消息 ──
 export interface InboundMessage {
@@ -9,7 +20,7 @@ export interface InboundMessage {
   content: string
   timestamp: number
   media: string[]
-  metadata: Record<string, unknown>
+  metadata: MetadataBag
   sessionKeyOverride?: string
 }
 
@@ -19,7 +30,7 @@ export interface OutboundMessage {
   content: string
   replyTo?: string
   media: string[]
-  metadata: Record<string, unknown>
+  metadata: MetadataBag
   buttons: string[][]
 }
 
@@ -27,7 +38,7 @@ export interface OutboundMessage {
 export interface ToolCallRequest {
   id: string
   name: string
-  arguments: Record<string, unknown>
+  arguments: JsonObject
 }
 
 export interface LLMResponse {
@@ -37,7 +48,7 @@ export interface LLMResponse {
   usage: TokenUsage
   retryAfter?: number
   reasoningContent?: string
-  thinkingBlocks?: Record<string, unknown>[]
+  thinkingBlocks?: JsonObject[]
   errorStatusCode?: number
   errorKind?: string
   errorType?: string
@@ -65,7 +76,7 @@ export type LLMMessage = {
   toolCallId?: string
   name?: string
   reasoningContent?: string
-  thinkingBlocks?: Record<string, unknown>[]
+  thinkingBlocks?: JsonObject[]
 }
 
 export type ContentBlock =
@@ -78,7 +89,7 @@ export interface ToolDefinition {
   function: {
     name: string
     description: string
-    parameters: Record<string, unknown>
+    parameters: JsonSchema
   }
 }
 
@@ -87,7 +98,7 @@ export interface ToolEvent {
   status: 'started' | 'completed' | 'error'
   /** Provider tool call id — used to merge start/end into one UI row. */
   callId?: string
-  arguments?: Record<string, unknown>
+  arguments?: JsonObject
   detail?: string
   durationMs?: number
 }
@@ -127,7 +138,7 @@ export interface SessionInfo {
   createdAt: string
   updatedAt: string
   lastConsolidated: number
-  metadata: Record<string, unknown>
+  metadata: MetadataBag
 }
 
 export interface SessionDetail extends SessionInfo {

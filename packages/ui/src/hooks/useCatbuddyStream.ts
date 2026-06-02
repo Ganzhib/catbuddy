@@ -88,20 +88,10 @@ export function useCatbuddyStream(
     return id;
   }, []);
 
-  const freshActivitySegmentId = useCallback(
-    () => createActivitySegmentId(true),
-    [createActivitySegmentId],
-  );
-
-  const detachedActivitySegmentId = useCallback(
-    () => createActivitySegmentId(false),
-    [createActivitySegmentId],
-  );
-
   const ensureActivitySegmentId = useCallback(() => {
     if (activitySegmentRef.current) return activitySegmentRef.current;
-    return freshActivitySegmentId();
-  }, [freshActivitySegmentId]);
+    return createActivitySegmentId(true);
+  }, [createActivitySegmentId]);
 
   const clearActivitySegment = useCallback(() => {
     activitySegmentRef.current = null;

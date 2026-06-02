@@ -44,11 +44,6 @@ export class SessionCatalog {
     this.sessionWebSockets.get(sessionKey)?.delete(ws);
   }
 
-  hasWebSubscribers(sessionKey: string): boolean {
-    const set = this.sessionWebSockets.get(sessionKey);
-    return !!set && set.size > 0;
-  }
-
   getWebSubscribers(sessionKey: string): Set<WebSocket> | undefined {
     return this.sessionWebSockets.get(sessionKey);
   }
@@ -65,16 +60,6 @@ export class SessionCatalog {
 
   deleteCatalog(deviceId: string): void {
     this.sessionCatalogByDevice.delete(deviceId);
-  }
-
-  removeSessionFromAllCatalogs(sessionKey: string): void {
-    if (!sessionKey) return;
-    for (const [deviceId, rows] of this.sessionCatalogByDevice) {
-      const filtered = rows.filter((row) => row.key !== sessionKey);
-      if (filtered.length !== rows.length) {
-        this.sessionCatalogByDevice.set(deviceId, filtered);
-      }
-    }
   }
 
   // ── Tombstone (deleted sessions) ──
@@ -103,18 +88,17 @@ export class SessionCatalog {
     if (!key) return;
     this.sessionDesktop.delete(key);
     this.sessionWebSockets.delete(key);
-    this.removeSessionFromAllCatalogs(key);
+    // Remove from every device's catalog
+    for (const [deviceId, rows] of this.sessionCatalogByDevice) {
+      const filtered = rows.filter((row) => row.key !== key);
+      if (filtered.length !== rows.length) {
+        this.sessionCatalogByDevice.set(deviceId, filtered);
+      }
+    }
   }
 
   collectSessionKeys(): string[] {
     const keys = new Set(this.sessionDesktop.keys());
     return [...keys];
-  }
-
-  cleanupWebSubscriptionsForClient(ws: WebSocket): void {
-    for (const [key, set] of this.sessionWebSockets) {
-      set.delete(ws);
-      if (set.size === 0) this.sessionWebSockets.delete(key);
-    }
   }
 }

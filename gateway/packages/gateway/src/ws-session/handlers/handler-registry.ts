@@ -1,4 +1,4 @@
-import type { MessageHandler, WsMessage } from './types.js'
+import type { MessageHandler } from './types.js'
 import { handleSubscribe, handleUnsubscribe } from './subscribe-handler.js'
 import { handleUiEvent } from './ui-event-handler.js'
 import { handleSessionsSync } from './sessions-sync-handler.js'
@@ -17,11 +17,4 @@ export function createHandlerRegistry(): Map<string, MessageHandler> {
   handlers.set('session_delete', handleSessionDelete)
 
   return handlers
-}
-
-export function findHandler(
-  registry: Map<string, MessageHandler>,
-  msg: WsMessage,
-): MessageHandler | undefined {
-  return registry.get(String(msg.type || ''))
 }

@@ -29,10 +29,6 @@ export class AuthService {
     private readonly users: UserStore,
   ) {}
 
-  isEmailAuthRequired(): boolean {
-    return isWebLoginRequired()
-  }
-
   loginRequiredBody(): Record<string, unknown> {
     return { ok: false, requires_auth: true, gateway_mode: 'gateway' }
   }

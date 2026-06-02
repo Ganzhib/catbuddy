@@ -164,10 +164,6 @@ export function stampLastAssistantTurnStats(
   return prev;
 }
 
-export function stampLastAssistantLatency(prev: UIMessage[], latencyMs: number): UIMessage[] {
-  return stampLastAssistantTurnStats(prev, { latencyMs });
-}
-
 export function appendToolsUsedSummary(
   prev: UIMessage[],
   toolsUsed: string[],

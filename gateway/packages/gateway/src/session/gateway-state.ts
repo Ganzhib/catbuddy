@@ -1,6 +1,5 @@
 import type WebSocket from 'ws'
 import { isWebLoginRequired } from './auth/auth-policy.js'
-import { gatewayEnv } from './config/env.js'
 import { ConnectionRegistry } from './connection-registry.js'
 import { SessionCatalog } from './session-catalog.js'
 import { RpcBroker } from './rpc-broker.js'
@@ -58,14 +57,6 @@ export class GatewayStateService {
 
   pickDesktopForWebToken(webToken: string): GatewayClient | null {
     return this.connections.resolveDesktopForWebToken(webToken)
-  }
-
-  getDesktopSecret(): string {
-    return gatewayEnv.desktopSecret
-  }
-
-  getDevWebToken(): string {
-    return gatewayEnv.devWebToken
   }
 
   // ── Session key utilities ──
@@ -126,7 +117,12 @@ export class GatewayStateService {
     if (targeted) {
       for (const ws of targeted) {
         if (ws.readyState !== 1 || sent.has(ws)) continue
-        if (!(await this.webWsMayReceiveSession(ws, sessionKey))) continue
+        const sessDevice = this.catalog.getDesktopForSession(sessionKey)
+        if (sessDevice) {
+          if (!(await this.webWsMayReceiveFromDesktop(ws, sessDevice, sessionKey))) continue
+        } else if (isWebLoginRequired()) {
+          continue
+        }
         ws.send(payload)
         sent.add(ws)
       }
@@ -148,10 +144,6 @@ export class GatewayStateService {
   private autoSubscribeWebClient(client: GatewayClient, sessionKey: string): void {
     client.sessions.add(sessionKey)
     this.catalog.addWebSubscriber(sessionKey, client.ws)
-  }
-
-  private isSessionFocusEvent(event: Record<string, unknown>): boolean {
-    return event.event === 'session_updated' && event.scope === 'focus'
   }
 
   private async broadcastSessionFocus(
@@ -211,15 +203,6 @@ export class GatewayStateService {
       }
     }
     return this.countDesktops().online <= 1
-  }
-
-  private async webWsMayReceiveSession(ws: WebSocket, sessionKey: string): Promise<boolean> {
-    const deviceId = this.catalog.getDesktopForSession(sessionKey)
-    if (!deviceId) {
-      if (!isWebLoginRequired()) return true
-      return false
-    }
-    return this.webWsMayReceiveFromDesktop(ws, deviceId, sessionKey)
   }
 
   private async filterSessionsForDesktopDevice(
@@ -328,10 +311,6 @@ export class GatewayStateService {
 
   // ── Fetch sessions ──
 
-  async fetchSessionsFromDesktop(): Promise<GatewaySessionRow[]> {
-    return this.fetchSessionsForWeb('')
-  }
-
   async fetchSessionsForWeb(
     ownerEmail: string,
     webToken?: string,
@@ -401,12 +380,6 @@ export class GatewayStateService {
       return
     }
     if (!(await this.store.isSessionOwnedBy(key, email))) forbidden()
-  }
-
-  async tagSessionForWeb(ownerEmail: string, sessionKey: string): Promise<void> {
-    if (!sessionKey.trim() || !ownerEmail.trim()) return
-    await this.store.getOrCreate(sessionKey)
-    await this.store.setSessionOwner(sessionKey, ownerEmail)
   }
 
   // ── Delete ──
@@ -530,21 +503,6 @@ export class GatewayStateService {
     }
 
     return this.connections.getFirstOnlineDesktop()
-  }
-
-  private async fallbackSessionRows(): Promise<GatewaySessionRow[]> {
-    const fromStore = await this.store.listRows()
-    if (fromStore.length) return fromStore
-    const now = new Date().toISOString()
-    return this.collectSessionKeys().map((key) => ({
-      key,
-      channel: this.channelFromSessionKey(key),
-      chatId: this.chatIdFromSessionKey(key),
-      createdAt: now,
-      updatedAt: now,
-      title: '',
-      preview: '',
-    }))
   }
 
   // ── Create session ──
@@ -830,7 +788,7 @@ export class GatewayStateService {
       client.sessions.add(sk)
     }
     const cid = chatId || this.chatIdFromSessionKey(sessionKey)
-    if (this.isSessionFocusEvent(event)) {
+    if (event.event === 'session_updated' && event.scope === 'focus') {
       await this.broadcastSessionFocus(client.deviceId, sessionKey, cid, event)
       return
     }

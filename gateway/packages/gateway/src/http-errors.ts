@@ -23,7 +23,3 @@ export function forbidden(message = 'forbidden'): never {
 export function conflict(message: string): never {
   throw new HttpError(409, message, { ok: false, error: message })
 }
-
-export function serviceUnavailable(message: string): never {
-  throw new HttpError(503, message, { ok: false, error: message })
-}

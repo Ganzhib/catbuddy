@@ -151,12 +151,6 @@ export class ConnectionRegistry {
     }
   }
 
-  forEachWeb(fn: (client: GatewayClient) => void): void {
-    for (const c of this.clients.values()) {
-      if (c.role === 'web') fn(c);
-    }
-  }
-
   forEachWebOnline(fn: (client: GatewayClient) => void): void {
     for (const c of this.clients.values()) {
       if (c.role === 'web' && c.ws.readyState === 1) fn(c);

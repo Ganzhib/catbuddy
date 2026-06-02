@@ -53,26 +53,39 @@ function looksLikeDrawioXml(xml: string): boolean {
 function toolCallPreflightError(call: ToolCallRequest): string | null {
   const args = call.arguments ?? {}
   const retryInstruction = 'This is a recoverable tool-argument error. Do not stop or answer the user yet. Continue the next model turn by generating the missing valid Draw.io XML/arguments and call the correct diagram tool again.'
+  const xmlRetryHint = 'Generate valid Draw.io XML (starting with <mxfile>, <mxGraphModel>, or <mxCell>) and call display_diagram again. Never use Markdown, ASCII, Mermaid, or plain text for diagrams.'
   if (call.name === 'display_diagram') {
     const xml = args.xml
     if (typeof xml !== 'string' || !xml.trim()) {
-      return `Error: display_diagram requires a non-empty xml string. ${retryInstruction}`
+      return `Error: display_diagram requires a non-empty xml string with Draw.io XML. ${xmlRetryHint}`
     }
     if (!looksLikeDrawioXml(xml)) {
-      return `Error: display_diagram.xml must be actual Draw.io XML starting with <mxfile>, <mxGraphModel>, or <mxCell>. Do not pass Markdown, ASCII diagrams, Mermaid, or plain text. ${retryInstruction}`
+      return `Error: display_diagram.xml must be actual Draw.io XML starting with <mxfile>, <mxGraphModel>, or <mxCell>. Got: ${String(xml).slice(0, 80)}... ${xmlRetryHint}`
     }
   }
   if (call.name === 'append_diagram') {
     const xml = args.xml
     const path = args.path
-    if (typeof path !== 'string' || !path.trim()) return `Error: append_diagram requires path. ${retryInstruction}`
-    if (typeof xml !== 'string' || !xml.trim()) return `Error: append_diagram requires non-empty xml. ${retryInstruction}`
+    if (typeof path !== 'string' || !path.trim()) return `Error: append_diagram requires path. Provide the .drawio file path from the previous display_diagram call. ${retryInstruction}`
+    if (typeof xml !== 'string' || !xml.trim()) return `Error: append_diagram requires non-empty xml with complete mxCell elements. Continue generating Draw.io XML from where you left off. ${retryInstruction}`
   }
   if (call.name === 'edit_diagram') {
     const path = args.path
     const operations = args.operations
-    if (typeof path !== 'string' || !path.trim()) return `Error: edit_diagram requires path. ${retryInstruction}`
-    if (!Array.isArray(operations) || operations.length === 0) return `Error: edit_diagram requires non-empty operations. ${retryInstruction}`
+    if (typeof path !== 'string' || !path.trim()) return `Error: edit_diagram requires path. Provide the .drawio file path. ${retryInstruction}`
+    if (!Array.isArray(operations) || operations.length === 0) return `Error: edit_diagram requires non-empty operations array. Provide at least one valid operation. ${retryInstruction}`
+    // Check for valid operation shapes
+    for (let i = 0; i < operations.length; i++) {
+      const op = operations[i]
+      if (!op || typeof op !== 'object') return `Error: edit_diagram operation at index ${i} is not a valid object. ${retryInstruction}`
+      if (!['update', 'add', 'delete'].includes(String(op.operation))) return `Error: edit_diagram operation at index ${i} has invalid operation "${op.operation}". Use: update, add, or delete. ${retryInstruction}`
+    }
+  }
+  if (call.name === 'get_shape_library') {
+    const library = args.library
+    if (typeof library !== 'string' || !library.trim()) {
+      return 'Error: get_shape_library requires a library name. Available: aws4, kubernetes, flowchart. Call get_shape_library with a valid library name to discover icon shapes.'
+    }
   }
   return null
 }

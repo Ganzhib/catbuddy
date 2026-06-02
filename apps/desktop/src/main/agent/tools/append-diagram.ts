@@ -52,7 +52,18 @@ export function createAppendDiagramTool(ctx: ToolContext): Tool {
       type: 'function',
       function: {
         name: 'append_diagram',
-        description: 'Append complete Draw.io mxCell XML elements to an existing .drawio diagram, then refresh the UI editor. Use this for large diagrams generated in chunks.',
+        description: `Continue generating diagram XML when display_diagram output was truncated due to length limits.
+
+WHEN TO USE: Only call this after display_diagram was truncated — you will see an error about truncation.
+
+CRITICAL RULES:
+1. Do NOT include any wrapper tags — just continue the mxCell elements
+2. Continue from EXACTLY where your previous output stopped
+3. Complete the remaining mxCell elements
+4. If still truncated, call append_diagram again with the next fragment
+5. Each appended cell must have a unique id; do not include id="0" or id="1"
+
+EXAMPLE: If previous output ended with '<mxCell id="x" style="rounded=1', continue with ';" vertex="1" parent="1">...</mxCell>'`,
         parameters: {
           type: 'object',
           properties: {

@@ -152,7 +152,27 @@ export function createEditDiagramTool(ctx: ToolContext): Tool {
       type: 'function',
       function: {
         name: 'edit_diagram',
-        description: 'Edit an existing Draw.io .drawio diagram by applying id-based mxCell operations, then refresh the UI editor.',
+        description: `Edit an existing .drawio diagram by ID-based mxCell operations.
+
+OPERATIONS:
+- update: Replace a cell by id. Provide cell_id AND complete new_xml (full mxCell + mxGeometry).
+- add: Add a new cell. Provide cell_id (new unique id) and complete new_xml.
+- delete: Remove a cell by id. Cascade is automatic — children and referencing edges are auto-deleted.
+
+IMPORTANT:
+- new_xml must be a complete <mxCell> element including <mxGeometry>
+- Do NOT edit root cells id="0" or id="1"
+- Find cell IDs by reading the .drawio file with read_file first
+- If cell_id not found, check the XML for correct IDs
+
+EXAMPLE — Update a label:
+{"operations": [{"operation": "update", "cell_id": "3", "new_xml": "<mxCell id=\\"3\\" value=\\"New Label\\" style=\\"rounded=1;whiteSpace=wrap;html=1;\\" vertex=\\"1\\" parent=\\"1\\">\\n  <mxGeometry x=\\"100\\" y=\\"100\\" width=\\"120\\" height=\\"60\\" as=\\"geometry\\"/>\\n</mxCell>"}]}
+
+EXAMPLE — Add a shape:
+{"operations": [{"operation": "add", "cell_id": "new1", "new_xml": "<mxCell id=\\"new1\\" value=\\"New Box\\" style=\\"rounded=1;fillColor=#dae8fc;\\" vertex=\\"1\\" parent=\\"1\\">\\n  <mxGeometry x=\\"400\\" y=\\"200\\" width=\\"120\\" height=\\"60\\" as=\\"geometry\\"/>\\n</mxCell>"}]}
+
+EXAMPLE — Delete and auto-cleanup:
+{"operations": [{"operation": "delete", "cell_id": "5"}]}`,
         parameters: {
           type: 'object',
           properties: {

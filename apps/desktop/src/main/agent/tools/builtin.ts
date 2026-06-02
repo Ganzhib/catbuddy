@@ -5,6 +5,7 @@ import { createEditDiagramTool } from './edit-diagram'
 import { createEditFileTool } from './edit-file'
 import { createExecTool } from './exec'
 import { createGenerateImageTool } from './generate-image'
+import { createGetShapeLibraryTool } from './get-shape-library'
 import { createExecSessionTool } from './exec_session'
 import { createGrepTool } from './grep'
 import { createListDirTool } from './list-dir'
@@ -17,6 +18,7 @@ import { createWriteFileTool } from './write-file'
 export const builtinToolFactories: ToolFactory[] = [
   createReadFileTool,
   createDisplayDiagramTool,
+  createGetShapeLibraryTool,
   createAppendDiagramTool,
   createEditDiagramTool,
   createWriteFileTool,

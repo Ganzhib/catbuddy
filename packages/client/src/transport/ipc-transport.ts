@@ -68,7 +68,7 @@ export class IpcTransport implements AgentTransport {
 
     const activeChatId = () => callbacks.getActiveChatId();
 
-    const unsubs = [
+    const cleanupFns = [
       api.onStreamDelta((data: StreamDeltaPayload) => {
         callbacks.onEvent({
           event: "delta",
@@ -199,7 +199,7 @@ export class IpcTransport implements AgentTransport {
 
     callbacks.onStatus("open");
     return () => {
-      for (const fn of unsubs) fn?.();
+      for (const fn of cleanupFns) fn?.();
     };
   }
 

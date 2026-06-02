@@ -77,7 +77,7 @@ export function registerHttpRoutes(
       : undefined
     state.ensureWebSubscribedForToken(token, sessionKey)
     const chatId = state.chatIdFromSessionKey(sessionKey)
-    const result = await state.handleWebInboundForUser(
+    const result = await state.handleWebInbound(
       email,
       token,
       sessionKey,

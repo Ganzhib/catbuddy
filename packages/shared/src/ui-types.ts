@@ -93,6 +93,16 @@ export interface ToolProgressEvent {
   embeds?: unknown[];
 }
 
+/**
+ * File edit event from desktop IPC.
+ *
+ * Fields use snake_case to match the desktop wire protocol (e.g. `call_id`,
+ * `absolute_path`). Do not rename to camelCase without updating the desktop
+ * IPC bridge and all transports.
+ *
+ * NOTE: UIDiagramEvent uses camelCase — this inconsistency should be resolved
+ * in a future protocol version.
+ */
 export interface UIFileEdit {
   version?: number;
   call_id: string;

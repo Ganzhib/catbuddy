@@ -76,7 +76,7 @@ export function useCatbuddyStream(
   const activitySegmentRef = useRef<string | null>(null);
   const fileEditSegmentRef = useRef<string | null>(null);
   const activitySegmentCounterRef = useRef(0);
-  const suppressStreamUntilTurnEndRef = useRef(false);
+  const deferStreamDisplayRef = useRef(false);
   const streamEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismissStreamError = useCallback(() => setStreamError(null), []);
@@ -221,7 +221,7 @@ export function useCatbuddyStream(
     closedAssistantStreamIdsRef.current.clear();
     clearActivitySegment();
     clearPendingStreamWork();
-    suppressStreamUntilTurnEndRef.current = false;
+    deferStreamDisplayRef.current = false;
     if (streamEndTimerRef.current !== null) {
       clearTimeout(streamEndTimerRef.current);
       streamEndTimerRef.current = null;
@@ -259,7 +259,7 @@ export function useCatbuddyStream(
       }
 
       if (ev.event === "delta") {
-        if (suppressStreamUntilTurnEndRef.current) return;
+        if (deferStreamDisplayRef.current) return;
         const chunk = typeof ev.text === "string" ? ev.text : "";
         if (!chunk) return;
         setIsStreaming(true);
@@ -269,7 +269,7 @@ export function useCatbuddyStream(
       }
 
       if (ev.event === "reasoning_delta") {
-        if (suppressStreamUntilTurnEndRef.current) return;
+        if (deferStreamDisplayRef.current) return;
         const chunk = ev.text;
         if (!chunk) return;
         if (fileEditSegmentRef.current) clearActivitySegment();
@@ -281,14 +281,14 @@ export function useCatbuddyStream(
 
       if (ev.event === "stream_end") {
         flushPendingStreamEvents({ closeAnswerSegment: true });
-        if (suppressStreamUntilTurnEndRef.current) return;
+        if (deferStreamDisplayRef.current) return;
         return;
       }
 
       flushPendingStreamEvents();
 
       if (ev.event === "reasoning_end") {
-        if (suppressStreamUntilTurnEndRef.current) return;
+        if (deferStreamDisplayRef.current) return;
         setMessages((prev) => closeReasoningStream(prev));
         return;
       }
@@ -341,14 +341,14 @@ export function useCatbuddyStream(
           closedAssistantStreamIdsRef.current.clear();
           return finalized;
         });
-        suppressStreamUntilTurnEndRef.current = false;
+        deferStreamDisplayRef.current = false;
         onTurnEnd?.();
         return;
       }
 
       if (ev.event === "message") {
         if (
-          suppressStreamUntilTurnEndRef.current &&
+          deferStreamDisplayRef.current &&
           (ev.kind === "progress" || ev.kind === "reasoning")
         ) {
           return;
@@ -449,7 +449,7 @@ export function useCatbuddyStream(
           });
         });
         if (hasMedia) {
-          suppressStreamUntilTurnEndRef.current = true;
+          deferStreamDisplayRef.current = true;
         }
         return;
       }
@@ -541,7 +541,7 @@ export function useCatbuddyStream(
       clearActivitySegment();
       return prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m));
     });
-    suppressStreamUntilTurnEndRef.current = false;
+    deferStreamDisplayRef.current = false;
     client.sendMessage(chatId, "/stop", undefined, undefined, workspaceFolderId ?? null);
   }, [chatId, clearActivitySegment, client, flushPendingStreamEvents, workspaceFolderId]);
 

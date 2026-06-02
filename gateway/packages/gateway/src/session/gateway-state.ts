@@ -94,18 +94,26 @@ export class GatewayStateService {
     if (!webToken || !sessionKey) return
     const prefix = `web:${webToken}:`
     this.connections.forEachWebByTokenPrefix(prefix, (client) => {
-      client.sessions.add(sessionKey)
-      this.catalog.addWebSubscriber(sessionKey, client.ws)
+      this.autoSubscribeWebClient(client, sessionKey)
     })
   }
 
   // ── Broadcast ──
 
   broadcastUiEvent(sessionKey: string, chatId: string, event: Record<string, unknown>): void {
-    void this.broadcastUiEventAsync(sessionKey, chatId, event)
+    void this.broadcastAndEnsureSubscribed(sessionKey, chatId, event)
   }
 
-  private async broadcastUiEventAsync(
+  /**
+   * Send a UI event to all web clients that should receive it.
+   *
+   * Side-effect: unsubscribed web clients whose email matches the session's
+   * desktop are automatically subscribed so they receive future events.
+   * This is necessary because a web client may start a session via HTTP
+   * (without an explicit WS subscribe) and still expect to see streaming
+   * events from the desktop.
+   */
+  private async broadcastAndEnsureSubscribed(
     sessionKey: string,
     chatId: string,
     event: Record<string, unknown>,
@@ -131,9 +139,15 @@ export class GatewayStateService {
       if (sent.has(client.ws)) return
       if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) return
       client.ws.send(payload)
-      client.sessions.add(sessionKey)
-      this.catalog.addWebSubscriber(sessionKey, client.ws)
+      this.autoSubscribeWebClient(client, sessionKey)
     })
+  }
+
+  /** Register a web client as a session subscriber when it receives
+   * its first event (lazy subscription via broadcast). */
+  private autoSubscribeWebClient(client: GatewayClient, sessionKey: string): void {
+    client.sessions.add(sessionKey)
+    this.catalog.addWebSubscriber(sessionKey, client.ws)
   }
 
   private isSessionFocusEvent(event: Record<string, unknown>): boolean {
@@ -152,8 +166,7 @@ export class GatewayStateService {
     const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
     this.connections.forEachWebOnline(async (client) => {
       if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) return
-      client.sessions.add(sessionKey)
-      this.catalog.addWebSubscriber(sessionKey, client.ws)
+      this.autoSubscribeWebClient(client, sessionKey)
       client.ws.send(payload)
     })
     this.notifyWebClientsSessionListChanged(deviceId)
@@ -576,7 +589,8 @@ export class GatewayStateService {
 
   // ── Inbound messages ──
 
-  async handleWebInboundForUser(
+  /** Authenticated web inbound: asserts ownership, then routes to desktop. */
+  async handleWebInbound(
     ownerEmail: string,
     webToken: string,
     sessionKey: string,
@@ -586,10 +600,11 @@ export class GatewayStateService {
     source: 'web' | 'gateway',
   ): Promise<{ ok: boolean; queued?: boolean; offline?: boolean; error?: string }> {
     await this.assertWebOwnsSession(ownerEmail, sessionKey)
-    return this.handleWebInbound(sessionKey, chatId, content, media, source, webToken)
+    return this.routeInboundToDesktop(sessionKey, chatId, content, media, source, webToken)
   }
 
-  async handleWebInbound(
+  /** @deprecated Use handleWebInbound (ownerEmail is now required). */
+  async routeInboundToDesktop(
     sessionKey: string,
     chatId: string,
     content: string,
@@ -774,7 +789,7 @@ export class GatewayStateService {
     }
     client.sessions.add(sessionKey)
     if (client.role === 'web') {
-      this.catalog.addWebSubscriber(sessionKey, ws)
+      this.autoSubscribeWebClient(client, sessionKey)
     }
     if (client.role === 'desktop') {
       if (!(await this.desktopMayPublishSession(client.deviceId, sessionKey))) return

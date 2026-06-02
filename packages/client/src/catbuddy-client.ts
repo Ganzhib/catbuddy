@@ -255,10 +255,10 @@ export class catbuddyClient {
 
   private setStatus(status: ConnectionStatus): void {
     if (this.status_ === status) return;
-    const wasOpen = this.status_ === "open";
+    const wasPreviouslyConnected = this.status_ === "open";
     this.status_ = status;
     for (const h of this.statusHandlers) h(status);
-    if (status === "open" && !wasOpen) {
+    if (status === "open" && !wasPreviouslyConnected) {
       this._emitSessionHandshake();
     }
   }

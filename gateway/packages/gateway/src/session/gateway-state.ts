@@ -1,7 +1,10 @@
-import { randomBytes } from 'node:crypto'
 import type WebSocket from 'ws'
 import { isWebLoginRequired } from './auth/auth-policy.js'
 import { gatewayEnv } from './config/env.js'
+import { ConnectionRegistry } from './connection-registry.js'
+import { SessionCatalog } from './session-catalog.js'
+import { RpcBroker } from './rpc-broker.js'
+import { ThreadCacheManager } from './thread-cache-manager.js'
 import type { SessionStore } from './storage/ports/session-store.port.js'
 import type { GatewaySessionRow } from './storage/session-types.js'
 import { forbidden } from '../http-errors.js'
@@ -10,16 +13,6 @@ export const GATEWAY_OFFLINE_REPLY =
   '桌面端未连接或未开启「远程控制」，无法执行 Agent。请启动 catbuddy 桌面应用，在侧栏打开远程控制开关后重试。'
 
 export type { GatewaySessionRow }
-
-const DESKTOP_RPC_TIMEOUT_MS = 8_000
-/** Prevent deleted sessions from being resurrected via sessions_sync / thread_snapshot. */
-const DELETED_TOMBSTONE_MS = 7 * 24 * 60 * 60 * 1000
-
-type PendingRpc<T> = {
-  resolve: (value: T) => void
-  reject: (err: Error) => void
-  timer: ReturnType<typeof setTimeout>
-}
 
 export type GatewayClientRole = 'web' | 'desktop'
 
@@ -35,115 +28,36 @@ export interface GatewayClient {
 }
 
 export class GatewayStateService {
-  private readonly clients = new Map<string, GatewayClient>()
-  private readonly webTokens = new Set<string>()
-  private readonly webEmailByToken = new Map<string, string>()
-  /** Logged-in account email → online desktop `deviceId`. */
-  private readonly deviceIdByAccountEmail = new Map<string, string>()
-  private readonly sessionDesktop = new Map<string, string>()
-  private readonly sessionWebSockets = new Map<string, Set<WebSocket>>()
-  /** Latest session list from desktop client (deviceId → rows). */
-  private readonly sessionCatalogByDevice = new Map<string, GatewaySessionRow[]>()
-  private readonly pendingSessions = new Map<string, PendingRpc<GatewaySessionRow[]>>()
-  private readonly pendingThreads = new Map<
-    string,
-    PendingRpc<Record<string, unknown> | null>
-  >()
-  /** Web 拉历史时的缓存（由桌面 thread_snapshot / thread_response 写入）。 */
-  private readonly threadCache = new Map<string, Record<string, unknown>>()
-  /** Recently deleted session keys (blocks re-upload until TTL). */
-  private readonly deletedSessions = new Map<string, number>()
-  /** Web deleted while desktop offline — flushed on next desktop connect. */
-  private readonly pendingDesktopDeletesByEmail = new Map<string, Set<string>>()
+  private readonly connections: ConnectionRegistry
+  private readonly catalog: SessionCatalog
+  private readonly rpc: RpcBroker
+  private readonly threadCache: ThreadCacheManager
 
-  constructor(private readonly store: SessionStore) {}
+  constructor(private readonly store: SessionStore) {
+    this.connections = new ConnectionRegistry()
+    this.catalog = new SessionCatalog()
+    this.rpc = new RpcBroker()
+    this.threadCache = new ThreadCacheManager()
+  }
+
+  // ── Token ──
 
   registerWebToken(token: string, webEmail?: string): void {
-    if (!token) return
-    this.webTokens.add(token)
-    const email = webEmail?.trim().toLowerCase()
-    if (email?.includes('@')) this.webEmailByToken.set(token, email)
+    this.connections.registerWebToken(token, webEmail)
   }
 
   getWebEmailForToken(token: string): string | undefined {
-    return this.webEmailByToken.get(token)
-  }
-
-  private webTokenFromClientKey(clientKey: string): string {
-    if (!clientKey.startsWith('web:')) return ''
-    const rest = clientKey.slice('web:'.length)
-    const lastColon = rest.lastIndexOf(':')
-    return lastColon === -1 ? rest : rest.slice(0, lastColon)
+    return this.connections.getWebEmailForToken(token)
   }
 
   isWebAuthorized(token: string): boolean {
-    return !!token && this.webTokens.has(token)
+    return this.connections.isWebAuthorized(token)
   }
 
-  private normalizeEmail(email: string): string {
-    return email.trim().toLowerCase()
-  }
+  // ── Desktop resolution ──
 
-  private markSessionDeleted(sessionKey: string): void {
-    const key = sessionKey.trim()
-    if (!key) return
-    this.deletedSessions.set(key, Date.now())
-  }
-
-  private isSessionTombstoned(sessionKey: string): boolean {
-    const key = sessionKey.trim()
-    const ts = this.deletedSessions.get(key)
-    if (!ts) return false
-    if (Date.now() - ts > DELETED_TOMBSTONE_MS) {
-      this.deletedSessions.delete(key)
-      return false
-    }
-    return true
-  }
-
-  private queueDesktopDelete(ownerEmail: string, sessionKey: string): void {
-    const email = this.normalizeEmail(ownerEmail)
-    if (!email.includes('@')) return
-    const key = sessionKey.trim()
-    if (!key) return
-    let pending = this.pendingDesktopDeletesByEmail.get(email)
-    if (!pending) {
-      pending = new Set()
-      this.pendingDesktopDeletesByEmail.set(email, pending)
-    }
-    pending.add(key)
-  }
-
-  private flushPendingDesktopDeletes(ws: WebSocket, accountEmail: string): void {
-    const email = this.normalizeEmail(accountEmail)
-    if (!email.includes('@') || ws.readyState !== 1) return
-    const pending = this.pendingDesktopDeletesByEmail.get(email)
-    if (!pending?.size) return
-    for (const sessionKey of pending) {
-      ws.send(JSON.stringify({ type: 'delete_session', sessionKey }))
-    }
-    this.pendingDesktopDeletesByEmail.delete(email)
-  }
-
-  private findWebClientByWs(ws: WebSocket): GatewayClient | null {
-    for (const client of this.clients.values()) {
-      if (client.role === 'web' && client.ws === ws) return client
-    }
-    return null
-  }
-
-  /** Route Web traffic to the desktop registered with the same account email. */
   pickDesktopForWebToken(webToken: string): GatewayClient | null {
-    const email = this.getWebEmailForToken(webToken)
-    if (email?.includes('@')) {
-      const deviceId = this.deviceIdByAccountEmail.get(this.normalizeEmail(email))
-      if (!deviceId) return null
-      const client = this.getDesktopClient(deviceId)
-      if (client?.ws.readyState === 1) return client
-      return null
-    }
-    if (isWebLoginRequired()) return null
-    return this.pickOnlineDesktop()
+    return this.connections.resolveDesktopForWebToken(webToken)
   }
 
   getDesktopSecret(): string {
@@ -154,19 +68,7 @@ export class GatewayStateService {
     return gatewayEnv.devWebToken
   }
 
-  private getDesktopClient(deviceId: string): GatewayClient | null {
-    for (const c of this.clients.values()) {
-      if (c.role === 'desktop' && c.deviceId === deviceId) return c
-    }
-    return null
-  }
-
-  private pickOnlineDesktop(): GatewayClient | null {
-    const online = [...this.clients.values()].filter(
-      (c) => c.role === 'desktop' && c.ws.readyState === 1,
-    )
-    return online.length === 1 ? online[0] : online[0] ?? null
-  }
+  // ── Session key utilities ──
 
   channelFromSessionKey(sessionKey: string): string {
     const idx = sessionKey.indexOf(':')
@@ -179,30 +81,25 @@ export class GatewayStateService {
   }
 
   collectSessionKeys(): string[] {
-    const keys = new Set(this.sessionDesktop.keys())
-    for (const c of this.clients.values()) {
-      if (c.role === 'desktop') {
-        for (const sk of c.sessions) keys.add(sk)
-      }
-    }
-    return [...keys]
+    const keys = this.catalog.collectSessionKeys()
+    this.connections.forEachDesktop((c) => {
+      for (const sk of c.sessions) keys.push(sk)
+    })
+    return [...new Set(keys)]
   }
 
-  /** 将 web WS 记入 session，避免仅 HTTP 发消息时尚未 subscribe 而收不到流式事件。 */
+  // ── Web subscribe ──
+
   ensureWebSubscribedForToken(webToken: string, sessionKey: string): void {
     if (!webToken || !sessionKey) return
     const prefix = `web:${webToken}:`
-    for (const [clientKey, client] of this.clients.entries()) {
-      if (client.role !== 'web' || !clientKey.startsWith(prefix)) continue
+    this.connections.forEachWebByTokenPrefix(prefix, (client) => {
       client.sessions.add(sessionKey)
-      let set = this.sessionWebSockets.get(sessionKey)
-      if (!set) {
-        set = new Set()
-        this.sessionWebSockets.set(sessionKey, set)
-      }
-      set.add(client.ws)
-    }
+      this.catalog.addWebSubscriber(sessionKey, client.ws)
+    })
   }
+
+  // ── Broadcast ──
 
   broadcastUiEvent(sessionKey: string, chatId: string, event: Record<string, unknown>): void {
     void this.broadcastUiEventAsync(sessionKey, chatId, event)
@@ -214,7 +111,9 @@ export class GatewayStateService {
     event: Record<string, unknown>,
   ): Promise<void> {
     const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
-    const targeted = this.sessionWebSockets.get(sessionKey)
+
+    // Send to known subscribers
+    const targeted = this.catalog.getWebSubscribers(sessionKey)
     const sent = new Set<WebSocket>()
     if (targeted) {
       for (const ws of targeted) {
@@ -224,28 +123,23 @@ export class GatewayStateService {
         sent.add(ws)
       }
     }
-    const deviceId = this.sessionDesktop.get(sessionKey)
+
+    // Also send to unsubscribed web clients whose email matches
+    const deviceId = this.catalog.getDesktopForSession(sessionKey)
     if (!deviceId) return
-    for (const client of this.clients.values()) {
-      if (client.role !== 'web' || client.ws.readyState !== 1) continue
-      if (sent.has(client.ws)) continue
-      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) continue
+    this.connections.forEachWebOnline(async (client) => {
+      if (sent.has(client.ws)) return
+      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) return
       client.ws.send(payload)
       client.sessions.add(sessionKey)
-      let set = this.sessionWebSockets.get(sessionKey)
-      if (!set) {
-        set = new Set()
-        this.sessionWebSockets.set(sessionKey, set)
-      }
-      set.add(client.ws)
-    }
+      this.catalog.addWebSubscriber(sessionKey, client.ws)
+    })
   }
 
   private isSessionFocusEvent(event: Record<string, unknown>): boolean {
     return event.event === 'session_updated' && event.scope === 'focus'
   }
 
-  /** Desktop 切换/新建会话：仅推送给已与该 desktop 配对的 Web。 */
   private async broadcastSessionFocus(
     deviceId: string,
     sessionKey: string,
@@ -254,64 +148,60 @@ export class GatewayStateService {
   ): Promise<void> {
     if (!sessionKey) return
     await this.store.getOrCreate(sessionKey)
-    this.sessionDesktop.set(sessionKey, deviceId)
+    this.catalog.bindSessionToDesktop(sessionKey, deviceId)
     const payload = JSON.stringify({ type: 'ui_event', sessionKey, chatId, event })
-    for (const client of this.clients.values()) {
-      if (client.role !== 'web' || client.ws.readyState !== 1) continue
-      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) continue
+    this.connections.forEachWebOnline(async (client) => {
+      if (!(await this.webWsMayReceiveFromDesktop(client.ws, deviceId, sessionKey))) return
       client.sessions.add(sessionKey)
-      let set = this.sessionWebSockets.get(sessionKey)
-      if (!set) {
-        set = new Set()
-        this.sessionWebSockets.set(sessionKey, set)
-      }
-      set.add(client.ws)
+      this.catalog.addWebSubscriber(sessionKey, client.ws)
       client.ws.send(payload)
-    }
+    })
     this.notifyWebClientsSessionListChanged(deviceId)
   }
 
-  /** Multi-tenant: same account email as desktop + session owner rules. */
+  // ── Permission helpers ──
+
   private async webWsMayReceiveFromDesktop(
     ws: WebSocket,
     deviceId: string,
     sessionKey: string,
   ): Promise<boolean> {
-    const client = this.findWebClientByWs(ws)
-    if (!client) return false
-    const token = this.webTokenFromClientKey(client.clientKey)
-    const desktop = this.getDesktopClient(deviceId)
+    const webClient = this.connections.findWebClientByWs(ws)
+    if (!webClient) return false
+
+    const token = this.connections.webTokenFromClientKey(webClient.clientKey)
+    const desktop = this.connections.getDesktopClient(deviceId)
     if (!desktop) return false
 
     if (isWebLoginRequired()) {
-      const webEmail = this.normalizeEmail(
-        client.webEmail || this.getWebEmailForToken(token) || '',
+      const webEmail = this.connections.normalizeEmail(
+        webClient.webEmail || this.connections.getWebEmailForToken(token) || '',
       )
       const deskEmail = desktop.accountEmail
-        ? this.normalizeEmail(desktop.accountEmail)
+        ? this.connections.normalizeEmail(desktop.accountEmail)
         : ''
       if (!webEmail.includes('@') || !deskEmail.includes('@') || webEmail !== deskEmail) {
         return false
       }
       const owner = await this.store.getSessionOwner(sessionKey)
       if (!owner) {
-        const bound = this.sessionDesktop.get(sessionKey)
+        const bound = this.catalog.getDesktopForSession(sessionKey)
         return !bound || bound === deviceId
       }
       return await this.store.isSessionOwnedBy(sessionKey, webEmail)
     }
 
     if (desktop.accountEmail) {
-      const webEmail = client.webEmail || this.getWebEmailForToken(token) || ''
+      const webEmail = webClient.webEmail || this.connections.getWebEmailForToken(token) || ''
       if (webEmail.includes('@')) {
-        return this.normalizeEmail(webEmail) === this.normalizeEmail(desktop.accountEmail)
+        return this.connections.normalizeEmail(webEmail) === this.connections.normalizeEmail(desktop.accountEmail)
       }
     }
     return this.countDesktops().online <= 1
   }
 
   private async webWsMayReceiveSession(ws: WebSocket, sessionKey: string): Promise<boolean> {
-    const deviceId = this.sessionDesktop.get(sessionKey)
+    const deviceId = this.catalog.getDesktopForSession(sessionKey)
     if (!deviceId) {
       if (!isWebLoginRequired()) return true
       return false
@@ -319,22 +209,21 @@ export class GatewayStateService {
     return this.webWsMayReceiveFromDesktop(ws, deviceId, sessionKey)
   }
 
-  /** Drop sessions owned by another account before desktop merge / routing. */
   private async filterSessionsForDesktopDevice(
     deviceId: string,
     sessions: GatewaySessionRow[],
   ): Promise<GatewaySessionRow[]> {
-    const desktop = this.getDesktopClient(deviceId)
+    const desktop = this.connections.getDesktopClient(deviceId)
     const accountEmail = desktop?.accountEmail
     if (!accountEmail?.includes('@')) {
       if (isWebLoginRequired()) return []
       return sessions.filter((row) => !!row.key)
     }
-    const normalized = this.normalizeEmail(accountEmail)
+    const normalized = this.connections.normalizeEmail(accountEmail)
     const allowed: GatewaySessionRow[] = []
     for (const row of sessions) {
       if (!row.key) continue
-      if (this.isSessionTombstoned(row.key)) continue
+      if (this.catalog.isTombstoned(row.key)) continue
       const existing = await this.store.getSessionOwner(row.key)
       if (existing && existing !== normalized) continue
       allowed.push(row)
@@ -348,16 +237,18 @@ export class GatewayStateService {
   ): Promise<boolean> {
     const key = sessionKey.trim()
     if (!key) return true
-    const desktop = this.getDesktopClient(deviceId)
+    const desktop = this.connections.getDesktopClient(deviceId)
     const accountEmail = desktop?.accountEmail
     if (!accountEmail?.includes('@')) {
       return !isWebLoginRequired()
     }
-    const normalized = this.normalizeEmail(accountEmail)
+    const normalized = this.connections.normalizeEmail(accountEmail)
     const owner = await this.store.getSessionOwner(key)
     if (!owner) return true
     return owner === normalized
   }
+
+  // ── Sessions sync ──
 
   async applySessionsSync(
     deviceId: string,
@@ -365,11 +256,11 @@ export class GatewayStateService {
     options?: { notifyWebClients?: boolean },
   ): Promise<void> {
     const allowed = await this.filterSessionsForDesktopDevice(deviceId, sessions)
-    this.sessionCatalogByDevice.set(deviceId, allowed)
+    this.catalog.setCatalog(deviceId, allowed)
     await this.store.mergeSessionRows(allowed)
-    const ownerEmail = this.getDesktopClient(deviceId)?.accountEmail
+    const ownerEmail = this.connections.getDesktopClient(deviceId)?.accountEmail
     if (ownerEmail?.includes('@')) {
-      const normalized = this.normalizeEmail(ownerEmail)
+      const normalized = this.connections.normalizeEmail(ownerEmail)
       for (const row of allowed) {
         if (!row.key) continue
         const existing = await this.store.getSessionOwner(row.key)
@@ -378,7 +269,7 @@ export class GatewayStateService {
       }
     }
     for (const row of allowed) {
-      this.sessionDesktop.set(row.key, deviceId)
+      this.catalog.bindSessionToDesktop(row.key, deviceId)
     }
     if (options?.notifyWebClients) this.notifyWebClientsSessionListChanged(deviceId)
   }
@@ -388,35 +279,28 @@ export class GatewayStateService {
       type: 'ui_event',
       sessionKey: 'desktop:',
       chatId: 'metadata',
-      event: {
-        event: 'session_updated',
-        chat_id: 'metadata',
-        scope: 'metadata',
-      },
+      event: { event: 'session_updated', chat_id: 'metadata', scope: 'metadata' },
     })
-    for (const client of this.clients.values()) {
-      if (client.role !== 'web' || client.ws.readyState !== 1) continue
+    this.connections.forEachWebOnline((client) => {
       if (deviceId) {
-        const desktop = this.getDesktopClient(deviceId)
+        const desktop = this.connections.getDesktopClient(deviceId)
         const want = desktop?.accountEmail
         if (want) {
-          const token = this.webTokenFromClientKey(client.clientKey)
-          const webEmail = this.normalizeEmail(
-            client.webEmail || this.getWebEmailForToken(token) || '',
+          const token = this.connections.webTokenFromClientKey(client.clientKey)
+          const webEmail = this.connections.normalizeEmail(
+            client.webEmail || this.connections.getWebEmailForToken(token) || '',
           )
-          if (webEmail !== this.normalizeEmail(want)) continue
+          if (webEmail !== this.connections.normalizeEmail(want)) return
         }
       }
       client.ws.send(payload)
-    }
+    })
   }
 
+  // ── RPC ──
+
   resolveSessionsRpc(requestId: string, sessions: GatewaySessionRow[]): void {
-    const pending = this.pendingSessions.get(requestId)
-    if (!pending) return
-    clearTimeout(pending.timer)
-    this.pendingSessions.delete(requestId)
-    pending.resolve(sessions)
+    this.rpc.resolveSessions(requestId, sessions)
   }
 
   resolveThreadRpc(
@@ -424,46 +308,32 @@ export class GatewayStateService {
     payload: Record<string, unknown> | null,
     sessionKey?: string,
   ): void {
-    if (sessionKey && payload) this.putThreadCache(sessionKey, payload)
-    const pending = this.pendingThreads.get(requestId)
-    if (!pending) return
-    clearTimeout(pending.timer)
-    this.pendingThreads.delete(requestId)
-    pending.resolve(payload)
+    this.rpc.resolveThread(requestId, payload, sessionKey, (sk, p) =>
+      this.threadCache.put(sk, p),
+    )
   }
 
-  private requestSessionsRpc(exec: GatewayClient): Promise<GatewaySessionRow[] | null> {
-    const requestId = randomBytes(8).toString('hex')
-    return new Promise<GatewaySessionRow[]>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pendingSessions.delete(requestId)
-        reject(new Error('sessions_rpc_timeout'))
-      }, DESKTOP_RPC_TIMEOUT_MS)
-      this.pendingSessions.set(requestId, { resolve, reject, timer })
-      exec.ws.send(JSON.stringify({ type: 'request_sessions', requestId }))
-    }).catch(() => null)
-  }
+  // ── Fetch sessions ──
 
   async fetchSessionsFromDesktop(): Promise<GatewaySessionRow[]> {
     return this.fetchSessionsForWeb('')
   }
 
-  /** List sessions visible to a logged-in user (owner-tagged only when email auth is on). */
   async fetchSessionsForWeb(
     ownerEmail: string,
     webToken?: string,
   ): Promise<GatewaySessionRow[]> {
     const exec = webToken?.trim()
-      ? this.pickDesktopForWebToken(webToken.trim())
-      : this.pickOnlineDesktop()
+      ? this.connections.resolveDesktopForWebToken(webToken.trim())
+      : this.connections.getFirstOnlineDesktop()
 
     if (!isWebLoginRequired()) {
       if (exec) {
-        const cached = this.sessionCatalogByDevice.get(exec.deviceId)
+        const cached = this.catalog.getCatalog(exec.deviceId)
         if (cached?.length) {
           await this.applySessionsSync(exec.deviceId, cached, { notifyWebClients: false })
         } else {
-          const rows = await this.requestSessionsRpc(exec)
+          const rows = await this.rpc.requestSessions(exec.ws)
           if (rows?.length) {
             await this.applySessionsSync(exec.deviceId, rows, { notifyWebClients: false })
           }
@@ -476,19 +346,18 @@ export class GatewayStateService {
     if (!owner.includes('@')) return []
     if (!exec) return this.store.listRowsForOwner(owner)
 
-    let catalog = this.sessionCatalogByDevice.get(exec.deviceId)
+    let catalog = this.catalog.getCatalog(exec.deviceId)
     if (catalog?.length) {
       await this.applySessionsSync(exec.deviceId, catalog, { notifyWebClients: false })
-      catalog = this.sessionCatalogByDevice.get(exec.deviceId)
+      catalog = this.catalog.getCatalog(exec.deviceId)
     } else {
-      const rows = await this.requestSessionsRpc(exec)
+      const rows = await this.rpc.requestSessions(exec.ws)
       if (rows?.length) {
         await this.applySessionsSync(exec.deviceId, rows, { notifyWebClients: false })
-        catalog = this.sessionCatalogByDevice.get(exec.deviceId)
+        catalog = this.catalog.getCatalog(exec.deviceId)
       }
     }
 
-    // Include desktop-synced sessions (e.g. created in Electron) even before Web POST.
     const byKey = new Map<string, GatewaySessionRow>()
     for (const row of catalog ?? []) {
       if (!row.key) continue
@@ -505,10 +374,8 @@ export class GatewayStateService {
     )
   }
 
-  /**
-   * Email-auth: allow web client to use a session if unowned (e.g. created on desktop first),
-   * otherwise require matching owner in MySQL.
-   */
+  // ── Ownership ──
+
   async assertWebOwnsSession(ownerEmail: string, sessionKey: string): Promise<void> {
     if (!isWebLoginRequired()) return
     const key = sessionKey.trim()
@@ -529,29 +396,18 @@ export class GatewayStateService {
     await this.store.setSessionOwner(sessionKey, ownerEmail)
   }
 
-  private removeSessionFromRuntime(sessionKey: string): void {
-    const key = sessionKey.trim()
-    if (!key) return
-    this.sessionDesktop.delete(key)
-    this.threadCache.delete(key)
-    this.sessionWebSockets.delete(key)
-    for (const [deviceId, rows] of this.sessionCatalogByDevice) {
-      const filtered = rows.filter((row) => row.key !== key)
-      if (filtered.length !== rows.length) {
-        this.sessionCatalogByDevice.set(deviceId, filtered)
-      }
-    }
-    for (const client of this.clients.values()) {
-      client.sessions.delete(key)
-    }
-  }
+  // ── Delete ──
 
   async deleteSessionRecord(sessionKey: string): Promise<void> {
     const key = sessionKey.trim()
     if (!key) return
-    this.markSessionDeleted(key)
+    this.catalog.markDeleted(key)
     await this.store.deleteSession(key)
-    this.removeSessionFromRuntime(key)
+    this.catalog.removeSessionFromRuntime(key)
+    this.threadCache.delete(key)
+    this.connections.forEachDesktop((c) => {
+      c.sessions.delete(key)
+    })
   }
 
   private forwardDeleteToDesktop(
@@ -561,17 +417,16 @@ export class GatewayStateService {
     const key = sessionKey.trim()
     if (!key) return false
     const exec = options?.webToken?.trim()
-      ? this.pickDesktopForWebToken(options.webToken.trim())
+      ? this.connections.resolveDesktopForWebToken(options.webToken.trim())
       : options?.deviceId
-        ? this.getDesktopClient(options.deviceId)
-        : this.pickOnlineDesktop()
+        ? this.connections.getDesktopClient(options.deviceId)
+        : this.connections.getFirstOnlineDesktop()
     if (!exec || exec.ws.readyState !== 1) return false
     exec.sessions.delete(key)
     exec.ws.send(JSON.stringify({ type: 'delete_session', sessionKey: key }))
     return true
   }
 
-  /** Web 删除：Gateway 落库删除并通知桌面。 */
   async deleteSessionForWeb(
     ownerEmail: string,
     sessionKey: string,
@@ -584,16 +439,15 @@ export class GatewayStateService {
       const owner = await this.store.getSessionOwner(key)
       if (owner && owner !== email) forbidden()
     }
-    const deviceId = this.sessionDesktop.get(key)
+    const deviceId = this.catalog.getDesktopForSession(key)
     await this.deleteSessionRecord(key)
     const forwarded = this.forwardDeleteToDesktop(key, { webToken, deviceId })
     if (!forwarded && email.includes('@')) {
-      this.queueDesktopDelete(email, key)
+      this.threadCache.queueDeleteForDesktop(email, key)
     }
     this.notifyWebClientsSessionListChanged(deviceId)
   }
 
-  /** Desktop 删除：Gateway 落库删除并通知 Web。 */
   async deleteSessionFromDesktop(
     deviceId: string,
     sessionKey: string,
@@ -606,14 +460,14 @@ export class GatewayStateService {
     return true
   }
 
-  /** 仅写入 Gateway 缓存，不通知 Web（避免 webui-thread ↔ session_updated 死循环）。 */
+  // ── Thread cache ──
+
   putThreadCache(sessionKey: string, payload: Record<string, unknown> | null): void {
-    if (!sessionKey || !payload) return
-    this.threadCache.set(sessionKey, payload)
+    this.threadCache.put(sessionKey, payload)
   }
 
   getCachedThread(sessionKey: string): Record<string, unknown> | null {
-    return this.threadCache.get(sessionKey) ?? null
+    return this.threadCache.get(sessionKey)
   }
 
   async fetchThreadForWeb(
@@ -631,42 +485,38 @@ export class GatewayStateService {
     webToken?: string,
   ): Promise<Record<string, unknown> | null> {
     const persisted = await this.store.buildWebuiThread(sessionKey)
-    if (
-      persisted
-      && Array.isArray(persisted.messages)
-      && persisted.messages.length > 0
-    ) {
+    if (persisted && Array.isArray(persisted.messages) && persisted.messages.length > 0) {
       return persisted
     }
-    const cached = this.getCachedThread(sessionKey)
+    const cached = this.threadCache.get(sessionKey)
     if (cached) return cached
-    const exec = webToken?.trim()
-      ? this.pickDesktopForWebToken(webToken.trim())
-      : ownerEmail?.includes('@')
-        ? this.getDesktopClient(
-            this.deviceIdByAccountEmail.get(this.normalizeEmail(ownerEmail)) ?? '',
-          )
-        : this.pickOnlineDesktop()
+
+    const exec = this.resolveThreadExecutor(webToken, ownerEmail)
     if (!exec) return persisted
-    const requestId = randomBytes(8).toString('hex')
-    const fresh = await new Promise<Record<string, unknown> | null>(
-      (resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pendingThreads.delete(requestId)
-          reject(new Error('thread_rpc_timeout'))
-        }, DESKTOP_RPC_TIMEOUT_MS)
-        this.pendingThreads.set(requestId, { resolve, reject, timer })
-        exec.ws.send(
-          JSON.stringify({ type: 'request_thread', requestId, sessionKey }),
-        )
-      },
-    ).catch(() => null)
+
+    const fresh = await this.rpc.requestThread(exec.ws, sessionKey)
     if (fresh) {
-      this.putThreadCache(sessionKey, fresh)
+      this.threadCache.put(sessionKey, fresh)
       await this.store.importWebuiPayload(sessionKey, fresh)
       return fresh
     }
     return cached ?? persisted
+  }
+
+  private resolveThreadExecutor(
+    webToken?: string,
+    ownerEmail?: string,
+  ): GatewayClient | null {
+    const token = webToken?.trim()
+    if (token) return this.connections.resolveDesktopForWebToken(token)
+
+    const email = ownerEmail?.trim().toLowerCase()
+    if (email?.includes('@')) {
+      const deviceId = this.connections.getDesktopDeviceIdByEmail(email)
+      if (deviceId) return this.connections.getDesktopClient(deviceId)
+    }
+
+    return this.connections.getFirstOnlineDesktop()
   }
 
   private async fallbackSessionRows(): Promise<GatewaySessionRow[]> {
@@ -683,6 +533,8 @@ export class GatewayStateService {
       preview: '',
     }))
   }
+
+  // ── Create session ──
 
   async forwardCreateSessionToDesktop(
     sessionKey: string,
@@ -708,11 +560,11 @@ export class GatewayStateService {
       await this.store.setSessionOwner(sessionKey, ownerEmail)
     }
     const exec = webToken?.trim()
-      ? this.pickDesktopForWebToken(webToken.trim())
-      : this.pickOnlineDesktop()
+      ? this.connections.resolveDesktopForWebToken(webToken.trim())
+      : this.connections.getFirstOnlineDesktop()
     if (!exec) return { ok: true, offline: true }
     exec.sessions.add(sessionKey)
-    this.sessionDesktop.set(sessionKey, exec.deviceId)
+    this.catalog.bindSessionToDesktop(sessionKey, exec.deviceId)
     exec.ws.send(JSON.stringify({
       type: 'create_session',
       sessionKey,
@@ -721,6 +573,8 @@ export class GatewayStateService {
     }))
     return { ok: true }
   }
+
+  // ── Inbound messages ──
 
   async handleWebInboundForUser(
     ownerEmail: string,
@@ -735,7 +589,6 @@ export class GatewayStateService {
     return this.handleWebInbound(sessionKey, chatId, content, media, source, webToken)
   }
 
-  /** Web 发消息：先写 Gateway 存储，再转发桌面；无 desktop 在线时返回离线系统提示。 */
   async handleWebInbound(
     sessionKey: string,
     chatId: string,
@@ -748,14 +601,14 @@ export class GatewayStateService {
     await this.store.addUserMessage(sessionKey, content)
 
     const exec = webToken?.trim()
-      ? this.pickDesktopForWebToken(webToken.trim())
-      : this.pickOnlineDesktop()
+      ? this.connections.resolveDesktopForWebToken(webToken.trim())
+      : this.connections.getFirstOnlineDesktop()
     if (!exec) {
       await this.emitOfflineAssistantReply(sessionKey, chatId)
       return { ok: true, offline: true, queued: false }
     }
 
-    this.sessionDesktop.set(sessionKey, exec.deviceId)
+    this.catalog.bindSessionToDesktop(sessionKey, exec.deviceId)
     exec.sessions.add(sessionKey)
     const info = await this.store.get(sessionKey)
     const workspaceFolderId = typeof info?.metadata?.workspaceFolderId === 'string'
@@ -783,33 +636,20 @@ export class GatewayStateService {
     const text = GATEWAY_OFFLINE_REPLY
     await this.store.addAssistantMessage(sessionKey, text)
     this.broadcastUiEvent(sessionKey, chatId, {
-      event: 'message',
-      chat_id: chatId,
-      text,
+      event: 'message', chat_id: chatId, text,
     })
     this.broadcastUiEvent(sessionKey, chatId, {
-      event: 'turn_end',
-      chat_id: chatId,
-      latency_ms: 0,
+      event: 'turn_end', chat_id: chatId, latency_ms: 0,
     })
-    const deviceId = this.sessionDesktop.get(sessionKey)
+    const deviceId = this.catalog.getDesktopForSession(sessionKey)
     this.notifyWebClientsSessionListChanged(deviceId)
   }
 
-  async forwardInboundToDesktop(
-    sessionKey: string,
-    chatId: string,
-    content: string,
-    media: unknown[] | undefined,
-    source: 'web' | 'gateway',
-  ): Promise<{ ok: boolean; queued?: boolean; error?: string }> {
-    return this.handleWebInbound(sessionKey, chatId, content, media, source)
-  }
+  // ── Sync push ──
 
-  /** 桌面连接后：把 Gateway 会话推送给 desktop 合并（仅同账号 owner）。 */
   async pushSyncToDesktop(ws: WebSocket, accountEmail?: string): Promise<void> {
     if (ws.readyState !== 1) return
-    const email = accountEmail ? this.normalizeEmail(accountEmail) : ''
+    const email = accountEmail ? this.connections.normalizeEmail(accountEmail) : ''
     let sessions: GatewaySessionRow[]
     let threads: Record<string, Record<string, unknown>>
     if (email.includes('@')) {
@@ -831,21 +671,23 @@ export class GatewayStateService {
     deviceId?: string,
   ): Promise<void> {
     if (!sessionKey || !payload) return
-    if (this.isSessionTombstoned(sessionKey)) return
+    if (this.catalog.isTombstoned(sessionKey)) return
     const ownerEmail = deviceId
-      ? this.getDesktopClient(deviceId)?.accountEmail
+      ? this.connections.getDesktopClient(deviceId)?.accountEmail
       : undefined
     if (ownerEmail?.includes('@')) {
-      const normalized = this.normalizeEmail(ownerEmail)
+      const normalized = this.connections.normalizeEmail(ownerEmail)
       const existing = await this.store.getSessionOwner(sessionKey)
       if (existing && existing !== normalized) return
       if (!existing) await this.store.setSessionOwner(sessionKey, normalized)
     }
-    this.putThreadCache(sessionKey, payload)
+    this.threadCache.put(sessionKey, payload)
     await this.store.importWebuiPayload(sessionKey, payload)
-    const boundDevice = this.sessionDesktop.get(sessionKey) ?? deviceId
+    const boundDevice = this.catalog.getDesktopForSession(sessionKey) ?? deviceId
     this.notifyWebClientsSessionListChanged(boundDevice)
   }
+
+  // ── Desktop status ──
 
   sendDesktopStatus(
     online: boolean,
@@ -860,19 +702,22 @@ export class GatewayStateService {
       if (options.ws.readyState === 1) options.ws.send(payload)
       return
     }
-    const wantEmail = options?.accountEmail ? this.normalizeEmail(options.accountEmail) : ''
-    for (const client of this.clients.values()) {
-      if (client.role !== 'web' || client.ws.readyState !== 1) continue
+    const wantEmail = options?.accountEmail
+      ? this.connections.normalizeEmail(options.accountEmail)
+      : ''
+    this.connections.forEachWebOnline((client) => {
       if (wantEmail) {
-        const token = this.webTokenFromClientKey(client.clientKey)
-        const webEmail = this.normalizeEmail(
-          client.webEmail || this.getWebEmailForToken(token) || '',
+        const token = this.connections.webTokenFromClientKey(client.clientKey)
+        const webEmail = this.connections.normalizeEmail(
+          client.webEmail || this.connections.getWebEmailForToken(token) || '',
         )
-        if (webEmail !== wantEmail) continue
+        if (webEmail !== wantEmail) return
       }
       client.ws.send(payload)
-    }
+    })
   }
+
+  // ── Register / Disconnect ──
 
   registerDesktop(
     ws: WebSocket,
@@ -880,35 +725,15 @@ export class GatewayStateService {
     token: string,
     accountEmail?: string,
   ): { ok: boolean; error?: string } {
-    if (token !== gatewayEnv.desktopSecret) {
-      return { ok: false, error: 'unauthorized' }
-    }
-    const email = accountEmail ? this.normalizeEmail(accountEmail) : ''
-    if (isWebLoginRequired() && !email.includes('@')) {
-      return { ok: false, error: 'account_email_required' }
-    }
-    if (email) {
-      const prev = this.deviceIdByAccountEmail.get(email)
-      if (prev && prev !== deviceId) {
-        this.disconnect(`desktop:${prev}`)
-      }
-      this.deviceIdByAccountEmail.set(email, deviceId)
-    }
-    const clientKey = `desktop:${deviceId}`
-    this.clients.set(clientKey, {
-      ws,
-      role: 'desktop',
-      deviceId,
-      sessions: new Set(),
-      clientKey,
-      accountEmail: email || undefined,
-    })
+    const result = this.connections.registerDesktop(ws, deviceId, token, accountEmail)
+    if (!result.ok) return result
+
+    const email = accountEmail
+      ? this.connections.normalizeEmail(accountEmail)
+      : ''
     void this.pushSyncToDesktop(ws, email || undefined)
-    if (email) this.flushPendingDesktopDeletes(ws, email)
-    this.sendDesktopStatus(true, {
-      deviceId,
-      accountEmail: email || undefined,
-    })
+    if (email) this.threadCache.flushDeletes(ws, email)
+    this.sendDesktopStatus(true, { deviceId, accountEmail: email || undefined })
     return { ok: true }
   }
 
@@ -916,42 +741,26 @@ export class GatewayStateService {
     ok: boolean
     error?: string
   } {
-    if (!this.isWebAuthorized(token)) {
-      return { ok: false, error: 'unauthorized' }
-    }
-    const clientKey = `web:${token}:${deviceId}`
-    const email = webEmail || this.getWebEmailForToken(token)
-    this.clients.set(clientKey, {
-      ws,
-      role: 'web',
-      deviceId,
-      sessions: new Set(),
-      clientKey,
-      webEmail: email,
-    })
-    return { ok: true }
+    return this.connections.registerWeb(ws, deviceId, token, webEmail)
   }
 
   async subscribe(ws: WebSocket, sessionKey: string, clientKey: string): Promise<void> {
-    const client = this.clients.get(clientKey)
+    const client = this.connections.getClient(clientKey)
     if (!client || !sessionKey) return
     if (client.role === 'web' && isWebLoginRequired()) {
-      const token = this.webTokenFromClientKey(clientKey)
-      const exec = this.pickDesktopForWebToken(token)
+      const token = this.connections.webTokenFromClientKey(clientKey)
+      const exec = this.connections.resolveDesktopForWebToken(token)
       if (!exec) {
         ws.send(JSON.stringify({ type: 'error', message: 'desktop_offline' }))
         return
       }
-      const sessDevice = this.sessionDesktop.get(sessionKey)
+      const sessDevice = this.catalog.getDesktopForSession(sessionKey)
       if (sessDevice && sessDevice !== exec.deviceId) {
         ws.send(JSON.stringify({ type: 'error', message: 'forbidden' }))
         return
       }
-    }
-    if (client.role === 'web' && isWebLoginRequired()) {
       const email =
-        client.webEmail
-        || this.getWebEmailForToken(this.webTokenFromClientKey(clientKey))
+        client.webEmail || this.connections.getWebEmailForToken(token)
       if (!email?.includes('@')) {
         ws.send(JSON.stringify({ type: 'error', message: 'forbidden' }))
         return
@@ -965,25 +774,22 @@ export class GatewayStateService {
     }
     client.sessions.add(sessionKey)
     if (client.role === 'web') {
-      let set = this.sessionWebSockets.get(sessionKey)
-      if (!set) {
-        set = new Set()
-        this.sessionWebSockets.set(sessionKey, set)
-      }
-      set.add(ws)
+      this.catalog.addWebSubscriber(sessionKey, ws)
     }
     if (client.role === 'desktop') {
       if (!(await this.desktopMayPublishSession(client.deviceId, sessionKey))) return
-      this.sessionDesktop.set(sessionKey, client.deviceId)
+      this.catalog.bindSessionToDesktop(sessionKey, client.deviceId)
     }
   }
 
   unsubscribe(ws: WebSocket, sessionKey: string, clientKey: string): void {
-    const client = this.clients.get(clientKey)
+    const client = this.connections.getClient(clientKey)
     if (!client) return
     client.sessions.delete(sessionKey)
-    this.sessionWebSockets.get(sessionKey)?.delete(ws)
+    this.catalog.removeWebSubscriber(sessionKey, ws)
   }
+
+  // ── Publish from desktop ──
 
   publishUiEventFromDesktop(
     clientKey: string,
@@ -991,9 +797,9 @@ export class GatewayStateService {
     chatId: string,
     event: Record<string, unknown>,
   ): void {
-    const client = this.clients.get(clientKey)
+    const client = this.connections.getClient(clientKey)
     if (!client || client.role !== 'desktop') return
-  void this.publishUiEventFromDesktopAsync(client, sessionKey, chatId, event)
+    void this.publishUiEventFromDesktopAsync(client, sessionKey, chatId, event)
   }
 
   private async publishUiEventFromDesktopAsync(
@@ -1005,7 +811,7 @@ export class GatewayStateService {
     const sk = sessionKey.trim()
     if (sk && !(await this.desktopMayPublishSession(client.deviceId, sk))) return
     if (sk) {
-      this.sessionDesktop.set(sk, client.deviceId)
+      this.catalog.bindSessionToDesktop(sk, client.deviceId)
       client.sessions.add(sk)
     }
     const cid = chatId || this.chatIdFromSessionKey(sessionKey)
@@ -1017,40 +823,27 @@ export class GatewayStateService {
   }
 
   disconnect(clientKey: string): void {
-    const client = this.clients.get(clientKey)
-    if (!client) return
-    const disconnectedDesktop = client.role === 'desktop'
-      ? {
-          deviceId: client.deviceId,
-          accountEmail: client.accountEmail,
-        }
-      : null
-    if (client.role === 'desktop') {
-      for (const [sk, did] of this.sessionDesktop) {
-        if (did === client.deviceId) this.sessionDesktop.delete(sk)
-      }
-      if (client.accountEmail) {
-        const email = this.normalizeEmail(client.accountEmail)
-        if (this.deviceIdByAccountEmail.get(email) === client.deviceId) {
-          this.deviceIdByAccountEmail.delete(email)
-        }
-      }
-      this.sessionCatalogByDevice.delete(client.deviceId)
+    const disconnected = this.connections.disconnect(clientKey)
+    if (!disconnected) return
+
+    if (disconnected.role === 'desktop') {
+      this.catalog.unbindSessionsForDevice(disconnected.deviceId)
+      this.catalog.deleteCatalog(disconnected.deviceId)
+      this.sendDesktopStatus(false, {
+        deviceId: disconnected.deviceId,
+        accountEmail: disconnected.accountEmail,
+      })
     }
-    for (const sk of client.sessions) {
-      this.sessionWebSockets.get(sk)?.delete(client.ws)
-    }
-    this.clients.delete(clientKey)
-    if (disconnectedDesktop) {
-      this.sendDesktopStatus(false, disconnectedDesktop)
+
+    const client = this.connections.getClient(clientKey) ?? null
+    if (client) {
+      for (const sk of client.sessions) {
+        this.catalog.removeWebSubscriber(sk, client.ws)
+      }
     }
   }
 
   countDesktops(): { total: number; online: number } {
-    const desktops = [...this.clients.values()].filter((c) => c.role === 'desktop')
-    return {
-      total: desktops.length,
-      online: desktops.filter((c) => c.ws.readyState === 1).length,
-    }
+    return this.connections.countDesktops()
   }
 }

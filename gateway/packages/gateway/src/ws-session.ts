@@ -1,9 +1,8 @@
-import { randomBytes } from 'node:crypto'
 import type { WebSocket } from 'ws'
-import type { GatewaySessionRole } from '@catbuddy/shared'
 import type { AuthService } from './session/auth/auth.service.js'
-import { isWebLoginRequired } from './session/auth/auth-policy.js'
 import type { GatewayStateService } from './session/gateway-state.js'
+import { createHandlerRegistry, handleRegister } from './ws-session/handlers/index.js'
+import type { WsSessionContext, SessionClient } from './ws-session/handlers/types.js'
 
 /** Web ⇄ Desktop session WebSocket (register / subscribe / ui_event). */
 export function attachGatewaySessionWebSocket(
@@ -12,8 +11,11 @@ export function attachGatewaySessionWebSocket(
   auth: AuthService,
   log: (msg: string) => void,
 ): void {
+  const ctx: WsSessionContext = { state, auth, log }
+  const handlerRegistry = createHandlerRegistry()
+
   server.on('connection', (ws: WebSocket) => {
-    let clientKey = ''
+    let client: SessionClient | null = null
 
     ws.on('message', (raw) => {
       let msg: Record<string, unknown>
@@ -30,130 +32,40 @@ export function attachGatewaySessionWebSocket(
       }
 
       if (msg.type === 'register') {
-        const token = String(msg.token || '')
-        const role: GatewaySessionRole = msg.role === 'desktop' ? 'desktop' : 'web'
-        const deviceId = String(msg.deviceId || randomBytes(8).toString('hex'))
-
-        if (role === 'desktop') {
-          const accountEmail = String(msg.accountEmail || '')
-          const result = state.registerDesktop(ws, deviceId, token, accountEmail)
-          if (!result.ok) {
-            ws.send(JSON.stringify({ type: 'error', message: result.error }))
-            ws.close()
-            return
-          }
-          clientKey = `desktop:${deviceId}`
-          ws.send(JSON.stringify({ type: 'registered', deviceId, role }))
-          log(`desktop registered deviceId=${deviceId} account=${accountEmail || 'n/a'}`)
-        } else {
-          void (async () => {
-            if (isWebLoginRequired() && !(await auth.registerTokenFromJwt(token))) {
-              ws.send(JSON.stringify({ type: 'error', message: 'unauthorized' }))
-              ws.close()
-              return
-            }
-            const result = state.registerWeb(ws, deviceId, token)
-            if (!result.ok) {
-              ws.send(JSON.stringify({ type: 'error', message: result.error }))
-              ws.close()
-              return
-            }
-            clientKey = `web:${token}:${deviceId}`
-            ws.send(JSON.stringify({ type: 'registered', deviceId, role }))
-            const desktop = state.pickDesktopForWebToken(token)
-            state.sendDesktopStatus(!!desktop, {
-              ws,
-              deviceId: desktop?.deviceId,
-            })
-          })().catch((err) => {
+        handleRegister(msg, ws, ctx)
+          .then((result) => {
+            if (result) client = result
+          })
+          .catch((err) => {
             log(`web register error: ${err instanceof Error ? err.message : String(err)}`)
             ws.close()
           })
-        }
         return
       }
 
-      if (!clientKey) {
+      if (!client) {
         ws.send(JSON.stringify({ type: 'error', message: 'not_registered' }))
         return
       }
 
-      if (msg.type === 'subscribe') {
-        void state.subscribe(ws, String(msg.sessionKey || ''), clientKey)
-        return
-      }
-
-      if (msg.type === 'unsubscribe') {
-        state.unsubscribe(ws, String(msg.sessionKey || ''), clientKey)
-        return
-      }
-
-      if (msg.type === 'ui_event') {
-        state.publishUiEventFromDesktop(
-          clientKey,
-          String(msg.sessionKey || ''),
-          String(msg.chatId || ''),
-          (msg.event as Record<string, unknown>) ?? {},
-        )
-        return
-      }
-
-      if (msg.type === 'sessions_sync' && clientKey.startsWith('desktop:')) {
-        const deviceId = clientKey.slice('desktop:'.length)
-        const sessions = (msg.sessions as Array<Record<string, unknown>>) ?? []
-        const rows = sessions.map((s) => ({
-          key: String(s.key || ''),
-          channel: String(s.channel || 'desktop'),
-          chatId: String(s.chatId || ''),
-          createdAt: String(s.createdAt || new Date().toISOString()),
-          updatedAt: String(s.updatedAt || new Date().toISOString()),
-          title: s.title != null ? String(s.title) : '',
-          preview: String(s.preview || ''),
-          workspaceFolderId:
-            typeof s.workspaceFolderId === 'string' && s.workspaceFolderId.trim()
-              ? s.workspaceFolderId.trim()
-              : null,
-          workspaceFolderName:
-            typeof s.workspaceFolderName === 'string' && s.workspaceFolderName.trim()
-              ? s.workspaceFolderName.trim()
-              : null,
-        }))
-        const requestId = msg.requestId ? String(msg.requestId) : ''
-        void state.applySessionsSync(deviceId, rows, { notifyWebClients: !requestId })
-        if (requestId) state.resolveSessionsRpc(requestId, rows)
-        return
-      }
-
-      if (msg.type === 'thread_response' && clientKey.startsWith('desktop:')) {
-        state.resolveThreadRpc(
-          String(msg.requestId || ''),
-          (msg.payload as Record<string, unknown> | null) ?? null,
-          String(msg.sessionKey || ''),
-        )
-        return
-      }
-
-      if (msg.type === 'thread_snapshot' && clientKey.startsWith('desktop:')) {
-        const sessionKey = String(msg.sessionKey || '')
-        const payload = (msg.payload as Record<string, unknown> | null) ?? null
-        const deviceId = clientKey.slice('desktop:'.length)
-        void state.persistThreadSnapshot(sessionKey, payload, deviceId)
-        return
-      }
-
-      if (msg.type === 'session_delete' && clientKey.startsWith('desktop:')) {
-        const deviceId = clientKey.slice('desktop:'.length)
-        void state.deleteSessionFromDesktop(deviceId, String(msg.sessionKey || ''))
-        return
+      const handler = handlerRegistry.get(String(msg.type || ''))
+      if (handler) {
+        try {
+          handler(msg, client, ctx)
+        } catch (err) {
+          log(
+            `handler error [${String(msg.type)}]: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
       }
     })
 
     ws.on('close', () => {
-      if (!clientKey) return
-      const parts = clientKey.split(':')
+      if (!client) return
+      const parts = client.clientKey.split(':')
       const role = parts[0]
       const deviceId = parts[1]
-      state.disconnect(clientKey)
+      state.disconnect(client.clientKey)
       log(`disconnect ${role} ${deviceId}`)
     })
   })

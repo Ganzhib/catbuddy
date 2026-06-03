@@ -203,6 +203,12 @@
       "compactionEnable": "Enable",
       "compactionThreshold": "Message Threshold"
     },
+    "model": {
+      "searchPlaceholder": "Search models...",
+      "customModel": "Custom model...",
+      "chooseFromList": "Choose from list",
+      "noModelsFound": "No models found"
+    },
     "help": {
       "theme": "Switch between light and dark appearance.",
       "language": "Choose the language used by the WebUI.",
@@ -230,11 +236,12 @@
       "cancel": "Cancel"
     },
     "byok": {
-      "description": "Bring your own provider keys. catbuddy reads these values from the current config and only configured providers can be selected in General.",
+      "description": "Configure API keys and base URLs for each provider. Once configured, the provider can be used in conversations.",
       "configured": "Configured",
       "notConfigured": "Not configured",
       "configuredSection": "Configured",
       "notConfiguredSection": "Not configured",
+      "active": "Active",
       "showMore": "Show {{count}} more",
       "showLess": "Show fewer",
       "apiKey": "API key",
@@ -403,6 +410,8 @@
         "deepResearch": "Deep research",
         "voice": "Voice input"
       },
+      "modelSwitcherTitle": "Switch Model",
+      "modelSwitcherDesc": "Choose a model and provider",
       "slash": {
         "ariaLabel": "Slash commands",
         "label": "commands",

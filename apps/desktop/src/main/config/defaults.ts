@@ -43,6 +43,82 @@ export function getDefaultConfig(): catbuddyConfig {
         apiKey: resolveProviderApiKey('openai'),
         apiBase: resolveProviderApiBase('openai'),
       },
+      anthropic: {
+        apiKey: resolveProviderApiKey('anthropic'),
+        apiBase: resolveProviderApiBase('anthropic'),
+      },
+      gemini: {
+        apiKey: resolveProviderApiKey('gemini'),
+        apiBase: resolveProviderApiBase('gemini'),
+      },
+      groq: {
+        apiKey: resolveProviderApiKey('groq'),
+        apiBase: resolveProviderApiBase('groq'),
+      },
+      moonshot: {
+        apiKey: resolveProviderApiKey('moonshot'),
+        apiBase: resolveProviderApiBase('moonshot'),
+      },
+      zhipu: {
+        apiKey: resolveProviderApiKey('zhipu'),
+        apiBase: resolveProviderApiBase('zhipu'),
+      },
+      dashscope: {
+        apiKey: resolveProviderApiKey('dashscope'),
+        apiBase: resolveProviderApiBase('dashscope'),
+      },
+      mistral: {
+        apiKey: resolveProviderApiKey('mistral'),
+        apiBase: resolveProviderApiBase('mistral'),
+      },
+      siliconflow: {
+        apiKey: resolveProviderApiKey('siliconflow'),
+        apiBase: resolveProviderApiBase('siliconflow'),
+      },
+      minimax: {
+        apiKey: resolveProviderApiKey('minimax'),
+        apiBase: resolveProviderApiBase('minimax'),
+      },
+      openrouter: {
+        apiKey: resolveProviderApiKey('openrouter'),
+        apiBase: resolveProviderApiBase('openrouter'),
+      },
+      hunyuan: {
+        apiKey: resolveProviderApiKey('hunyuan'),
+        apiBase: resolveProviderApiBase('hunyuan'),
+      },
+      baidu: {
+        apiKey: resolveProviderApiKey('baidu'),
+        apiBase: resolveProviderApiBase('baidu'),
+      },
+      volc: {
+        apiKey: resolveProviderApiKey('volc'),
+        apiBase: resolveProviderApiBase('volc'),
+      },
+      spark: {
+        apiKey: resolveProviderApiKey('spark'),
+        apiBase: resolveProviderApiBase('spark'),
+      },
+      lingyi: {
+        apiKey: resolveProviderApiKey('lingyi'),
+        apiBase: resolveProviderApiBase('lingyi'),
+      },
+      sensetime: {
+        apiKey: resolveProviderApiKey('sensetime'),
+        apiBase: resolveProviderApiBase('sensetime'),
+      },
+      tiangong: {
+        apiKey: resolveProviderApiKey('tiangong'),
+        apiBase: resolveProviderApiBase('tiangong'),
+      },
+      baichuan: {
+        apiKey: resolveProviderApiKey('baichuan'),
+        apiBase: resolveProviderApiBase('baichuan'),
+      },
+      github: {
+        apiKey: resolveProviderApiKey('github'),
+        apiBase: resolveProviderApiBase('github'),
+      },
     },
     modelPresets: {},
     channels: {

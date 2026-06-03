@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { ModelPicker } from "./ModelPicker";
 import {
   Bot,
   Brain,
@@ -47,17 +48,10 @@ import {
 } from "@catbuddy/platform";
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
-import type { SettingsPayload, WebSearchSettingsUpdate } from "@catbuddy/shared";
+import type { SettingsPayload, SettingsUpdate, WebSearchSettingsUpdate } from "@catbuddy/shared";
 
 type SettingsSectionKey = "general" | "byok";
 type ByokPaneKey = "llm" | "web-search";
-
-const LOCAL_UNCONFIGURED_PROVIDER_ORDER = new Map(
-  ["vllm", "ollama", "lm_studio", "atomic_chat", "ovms"].map((name, index) => [
-    name,
-    index,
-  ]),
-);
 
 interface SettingsViewProps {
   theme: "light" | "dark";
@@ -204,15 +198,15 @@ export function SettingsView({
         apiBase: providerForm.apiBase.trim(),
       });
       applyPayload(payload);
+      // 保存后保留表单数据，方便用户继续编辑
       setProviderForms((prev) => ({
         ...prev,
         [providerName]: {
-          apiKey: "",
+          apiKey: prev[providerName]?.apiKey ?? "",
           apiBase: providerForm.apiBase.trim(),
         },
       }));
       setVisibleProviderKeys((prev) => ({ ...prev, [providerName]: false }));
-      setEditingProviderKeys((prev) => ({ ...prev, [providerName]: false }));
       setError(null);
     } catch (err) {
       setError((err as Error).message);
@@ -260,6 +254,26 @@ export function SettingsView({
       setError((err as Error).message);
     } finally {
       setWebSearchSaving(false);
+    }
+  };
+
+  const handleModelChange = async (model: string, provider?: string) => {
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const update: SettingsUpdate = { model };
+      // 从某个 provider 卡片选模型时，同步切换 provider，避免 glm-4-flash 发给 deepseek
+      if (provider && provider !== settings.agent.provider) {
+        update.provider = provider;
+      }
+      const payload = await updateSettings(token, update);
+      applyPayload(payload);
+      onModelNameChange(payload.agent.model || null);
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -376,15 +390,9 @@ export function SettingsView({
                 <GeneralSettings
                   theme={theme}
                   onToggleTheme={onToggleTheme}
-                  form={form}
-                  setForm={setForm}
                   settings={settings}
-                  dirty={dirty}
-                  saving={saving}
-                  onSave={save}
                   onRestart={onRestart}
                   isRestarting={isRestarting}
-                  onOpenByok={() => setActiveSection("byok")}
                 />
               ) : (
                 <ByokSettings
@@ -423,6 +431,7 @@ export function SettingsView({
                   onResetProviderDraft={resetProviderDraft}
                   onResetWebSearchDraft={resetWebSearchDraft}
                   onSaveWebSearch={saveWebSearch}
+                  onModelChange={handleModelChange}
                 />
               )}
             </div>
@@ -643,39 +652,17 @@ function CompactionSettings() {
 function GeneralSettings({
   theme,
   onToggleTheme,
-  form,
-  setForm,
   settings,
-  dirty,
-  saving,
-  onSave,
   onRestart,
   isRestarting,
-  onOpenByok,
 }: {
   theme: "light" | "dark";
   onToggleTheme: () => void;
-  form: {
-    model: string;
-    provider: string;
-  };
-  setForm: Dispatch<SetStateAction<{
-    model: string;
-    provider: string;
-  }>>;
   settings: SettingsPayload;
-  dirty: boolean;
-  saving: boolean;
-  onSave: () => void;
   onRestart?: () => void;
   isRestarting?: boolean;
-  onOpenByok: () => void;
 }) {
   const { t } = useTranslation();
-  const configuredProviders = settings.providers.filter((provider) => provider.configured);
-  const providerValue = configuredProviders.some((provider) => provider.name === form.provider)
-    ? form.provider
-    : "";
   return (
     <div className="space-y-8">
       <section>
@@ -715,50 +702,6 @@ function GeneralSettings({
           >
             <LanguageSwitcher />
           </SettingsRow>
-        </SettingsGroup>
-      </section>
-
-      <section>
-        <SettingsSectionTitle>{t("settings.sections.ai")}</SettingsSectionTitle>
-        <SettingsGroup>
-          <SettingsRow
-            title={t("settings.rows.provider")}
-            description={t("settings.help.provider")}
-          >
-            <ProviderPicker
-              providers={configuredProviders}
-              value={providerValue}
-              emptyLabel={t("settings.byok.noConfiguredProviders")}
-              onChange={(provider) => setForm((prev) => ({ ...prev, provider }))}
-            />
-          </SettingsRow>
-
-          <SettingsRow
-            title={t("settings.rows.model")}
-            description={t("settings.help.model")}
-          >
-            <Input
-              value={form.model}
-              onChange={(event) => setForm((prev) => ({ ...prev, model: event.target.value }))}
-              className="h-8 w-full max-w-[280px] rounded-full text-[13px] sm:w-[280px]"
-            />
-          </SettingsRow>
-
-          {(dirty || saving || settings.requires_restart) ? (
-            <SettingsFooter
-              dirty={dirty}
-              saving={saving}
-              saved={settings.requires_restart && !dirty}
-              onSave={onSave}
-            />
-          ) : null}
-          {configuredProviders.length === 0 ? (
-            <SettingsRow title={t("settings.byok.configureFirst")}>
-              <Button size="sm" variant="outline" onClick={onOpenByok} className="rounded-full">
-                {t("settings.byok.openByok")}
-              </Button>
-            </SettingsRow>
-          ) : null}
         </SettingsGroup>
       </section>
 
@@ -1049,6 +992,7 @@ function ByokSettings({
   onResetProviderDraft,
   onResetWebSearchDraft,
   onSaveWebSearch,
+  onModelChange,
 }: {
   settings: SettingsPayload;
   expandedProvider: string | null;
@@ -1072,23 +1016,10 @@ function ByokSettings({
   onResetProviderDraft: (provider: string) => void;
   onResetWebSearchDraft: () => void;
   onSaveWebSearch: () => void;
+  onModelChange: (model: string, provider?: string) => void;
 }) {
   const { t } = useTranslation();
   const [activePane, setActivePane] = useState<ByokPaneKey>("llm");
-  const [showAllUnconfigured, setShowAllUnconfigured] = useState(false);
-  const configuredProviders = settings.providers.filter((provider) => provider.configured);
-  const unconfiguredProviders = useMemo(
-    () => orderUnconfiguredProviders(settings.providers.filter((provider) => !provider.configured)),
-    [settings.providers],
-  );
-  const initialUnconfiguredCount = 6;
-  const visibleUnconfiguredProviders = showAllUnconfigured
-    ? unconfiguredProviders
-    : unconfiguredProviders.slice(0, initialUnconfiguredCount);
-  const hiddenUnconfiguredCount = Math.max(
-    0,
-    unconfiguredProviders.length - visibleUnconfiguredProviders.length,
-  );
   const renderProviderRow = (provider: SettingsPayload["providers"][number]) => {
     const expanded = expandedProvider === provider.name;
     const form = providerForms[provider.name] ?? {
@@ -1104,6 +1035,8 @@ function ByokSettings({
     const missingRequiredApiKey = apiKeyRequired && !provider.configured && !apiKey;
     const missingOptionalCredential =
       !apiKeyRequired && !provider.configured && !apiKey && !apiBase;
+
+    const isCurrentProvider = settings.agent.provider === provider.name;
     return (
       <div
         key={provider.name}
@@ -1138,6 +1071,23 @@ function ByokSettings({
 
         {expanded ? (
           <div className="space-y-3 bg-muted/18 px-4 py-4 sm:px-5">
+            {/* Model name — free text input */}
+            <label className="block space-y-1.5">
+              <span className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground">
+                {t("settings.rows.model")}
+                {isCurrentProvider ? (
+                  <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
+                    {t("settings.byok.active")}
+                  </span>
+                ) : null}
+              </span>
+              <ModelPicker
+                value={isCurrentProvider ? settings.agent.model : ""}
+                options={[]}
+                onChange={(model) => onModelChange(model, provider.name)}
+              />
+            </label>
+
             <label className="block space-y-1.5">
               <span className="text-[12px] font-medium text-muted-foreground">
                 {t("settings.byok.apiKey")}
@@ -1270,53 +1220,12 @@ function ByokSettings({
         })}
       </div>
       {activePane === "llm" ? (
-        <div className="space-y-8">
-          <section className="space-y-3">
-            <ByokSectionHeader
-              title={t("settings.byok.configuredSection")}
-              count={configuredProviders.length}
-            />
-            <div className="overflow-hidden rounded-[22px] border border-border/45 bg-card/86 shadow-[0_18px_65px_rgba(15,23,42,0.07)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_18px_65px_rgba(0,0,0,0.22)]">
-              {configuredProviders.length > 0 ? (
-                <div className="divide-y divide-border/45">
-                  {configuredProviders.map(renderProviderRow)}
-                </div>
-              ) : (
-                <ByokEmptyState>{t("settings.byok.noConfiguredProviders")}</ByokEmptyState>
-              )}
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-[22px] border border-border/45 bg-card/86 shadow-[0_18px_65px_rgba(15,23,42,0.07)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_18px_65px_rgba(0,0,0,0.22)]">
+            <div className="divide-y divide-border/45">
+              {settings.providers.map(renderProviderRow)}
             </div>
-          </section>
-
-          <section className="space-y-3">
-            <ByokSectionHeader
-              title={t("settings.byok.notConfiguredSection")}
-              count={unconfiguredProviders.length}
-            />
-            <div className="overflow-hidden rounded-[22px] border border-border/45 bg-card/86 shadow-[0_18px_65px_rgba(15,23,42,0.07)] backdrop-blur-xl dark:border-white/10 dark:shadow-[0_18px_65px_rgba(0,0,0,0.22)]">
-              <div className="divide-y divide-border/45">
-                {visibleUnconfiguredProviders.map(renderProviderRow)}
-              </div>
-            </div>
-            {hiddenUnconfiguredCount > 0 ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowAllUnconfigured(true)}
-                className="h-9 rounded-full px-3 text-[13px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              >
-                {t("settings.byok.showMore", { count: hiddenUnconfiguredCount })}
-              </Button>
-            ) : showAllUnconfigured && unconfiguredProviders.length > initialUnconfiguredCount ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowAllUnconfigured(false)}
-                className="h-9 rounded-full px-3 text-[13px] text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              >
-                {t("settings.byok.showLess")}
-              </Button>
-            ) : null}
-          </section>
+          </div>
         </div>
       ) : (
         <WebSearchByokSettings
@@ -1334,46 +1243,6 @@ function ByokSettings({
       )}
     </div>
   );
-}
-
-function ByokSectionHeader({ title, count }: { title: string; count: number }) {
-  return (
-    <div className="flex items-center justify-between px-1">
-      <h2 className="text-[13px] font-semibold tracking-[-0.01em] text-foreground/85">
-        {title}
-      </h2>
-      <span className="rounded-full bg-muted px-2 py-0.5 text-[11.5px] font-medium text-muted-foreground">
-        {count}
-      </span>
-    </div>
-  );
-}
-
-function ByokEmptyState({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-[18px] border border-dashed border-border/65 bg-card/45 px-4 py-5 text-[13px] text-muted-foreground">
-      {children}
-    </div>
-  );
-}
-
-function orderUnconfiguredProviders(
-  providers: SettingsPayload["providers"],
-): SettingsPayload["providers"] {
-  return providers
-    .map((provider, index) => ({ provider, index }))
-    .sort((left, right) => {
-      const rank = providerVisibilityRank(left.provider) - providerVisibilityRank(right.provider);
-      return rank || left.index - right.index;
-    })
-    .map(({ provider }) => provider);
-}
-
-function providerVisibilityRank(provider: SettingsPayload["providers"][number]): number {
-  const localRank = LOCAL_UNCONFIGURED_PROVIDER_ORDER.get(provider.name);
-  if (localRank !== undefined) return localRank;
-  if ((provider.api_key_required ?? true) === false) return 100;
-  return 200;
 }
 
 const PROVIDER_ICONS: Record<string, LucideIcon> = {

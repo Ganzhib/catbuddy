@@ -39,7 +39,7 @@ export default function App() {
   return (
     <AuthGate>
       {({ client, token, modelName: bootModel, onLogout }) => (
-        <ClientProvider client={client} token={token} modelName={modelName ?? bootModel}>
+        <ClientProvider client={client} token={token} modelName={modelName ?? bootModel} onModelNameChange={setModelName}>
           <Shell
             onModelNameChange={setModelName}
             onLogout={onLogout}

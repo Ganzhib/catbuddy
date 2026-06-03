@@ -6,6 +6,7 @@ interface ClientContextValue {
   client: catbuddyClient;
   token: string;
   modelName: string | null;
+  setModelName: (name: string | null) => void;
 }
 
 const ClientContext = createContext<ClientContextValue | null>(null);
@@ -14,15 +15,17 @@ export function ClientProvider({
   client,
   token,
   modelName = null,
+  onModelNameChange,
   children,
 }: {
   client: catbuddyClient;
   token: string;
   modelName?: string | null;
+  onModelNameChange?: (name: string | null) => void;
   children: ReactNode;
 }) {
   return (
-    <ClientContext.Provider value={{ client, token, modelName }}>
+    <ClientContext.Provider value={{ client, token, modelName, setModelName: onModelNameChange ?? (() => {}) }}>
       {children}
     </ClientContext.Provider>
   );

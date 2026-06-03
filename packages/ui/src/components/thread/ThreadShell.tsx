@@ -21,8 +21,8 @@ import { StreamErrorNotice } from "@/components/thread/StreamErrorNotice";
 import { ThreadViewport } from "@/components/thread/ThreadViewport";
 import { useCatbuddyStream, type SendImage, type SendOptions } from "@/hooks/useCatbuddyStream";
 import { useSessionHistory } from "@/hooks/useSessions";
-import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway } from "@catbuddy/platform";
-import type { ChatSummary, SlashCommand, UIMessage } from "@catbuddy/shared";
+import { hasCatbuddyIpc, listSlashCommands, useCatbuddyGateway, fetchSettings, updateSettings } from "@catbuddy/platform";
+import type { ChatSummary, SettingsPayload, SlashCommand, UIMessage } from "@catbuddy/shared";
 import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared";
 import { normalizeLegacyLongTaskMessages } from "@/lib/thread-display-compat";
 import { scrubSubagentUiMessages } from "@/lib/subagent-channel-display";
@@ -105,7 +105,7 @@ export function ThreadShell({
     refresh: refreshHistory,
     version: historyVersion,
   } = useSessionHistory(historyKey);
-  const { client, modelName, token } = useClient();
+  const { client, modelName, token, setModelName } = useClient();
   const gatewayWebOnly = useCatbuddyGateway() && !hasCatbuddyIpc();
   const [booting, setBooting] = useState(false);
   const [slashCommands, setSlashCommands] = useState<SlashCommand[]>(() =>
@@ -113,6 +113,7 @@ export function ThreadShell({
   );
   const [heroImageMode, setHeroImageMode] = useState(false);
   const [scrollToBottomSignal, setScrollToBottomSignal] = useState(0);
+  const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const pendingFirstRef = useRef<PendingFirstMessage | null>(null);
   const messageCacheRef = useRef<Map<string, UIMessage[]>>(new Map());
   /** Last chatId we associated with the in-memory thread (for cache-on-switch). */
@@ -308,6 +309,35 @@ export function ThreadShell({
     };
   }, [token]);
 
+  // Fetch settings for model switcher
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const payload = await fetchSettings(token);
+        if (!cancelled) setSettings(payload);
+      } catch {
+        // silently ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
+
+  const handleModelSwitch = useCallback(
+    async (model: string, provider: string) => {
+      if (!token) return;
+      try {
+        const payload = await updateSettings(token, { model, provider });
+        setSettings(payload);
+        setModelName(payload.agent.model);
+      } catch {
+        // silently ignore
+      }
+    },
+    [token, setModelName],
+  );
+
   const handleWelcomeSend = useCallback(
     async (content: string, images?: SendImage[], options?: SendOptions) => {
       if (booting) return;
@@ -402,6 +432,11 @@ export function ThreadShell({
           goalState={goalState}
           workspaceFolderId={session.workspaceFolderId ?? null}
           chatSessionSelected
+          modelOptions={settings?.agent.model_options}
+          providers={settings?.providers}
+          currentModel={settings?.agent.model ?? ""}
+          currentProvider={settings?.agent.provider ?? ""}
+          onModelSwitch={handleModelSwitch}
         />
       ) : (
         <ThreadComposer
@@ -422,6 +457,11 @@ export function ThreadShell({
           goalState={goalState}
           workspaceFolderId={draftWorkspaceFolderId}
           onWorkspaceFolderIdChange={onDraftWorkspaceFolderIdChange}
+          modelOptions={settings?.agent.model_options}
+          providers={settings?.providers}
+          currentModel={settings?.agent.model ?? ""}
+          currentProvider={settings?.agent.provider ?? ""}
+          onModelSwitch={handleModelSwitch}
         />
       )}
       {showHeroComposer ? quickActions : null}

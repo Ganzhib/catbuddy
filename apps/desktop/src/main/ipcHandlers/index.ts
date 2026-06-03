@@ -207,46 +207,74 @@ export function registerIpcHandlers(
   ipcMain.handle('config:get', async () => runtime.config)
   ipcMain.handle('settings:get', async () => buildSettingsPayload(runtime.config))
   ipcMain.handle('config:update', async (_event, { path, value }: { path: string; value: unknown }) => {
-    const keys = path.split('.')
-    let obj: any = runtime.config
-    for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]]
-    obj[keys[keys.length - 1]] = value
-
-    // 压缩配置实时生效
-    if (path === 'agents.defaults.autoCompact' && typeof value === 'object') {
-      const v = value as any
-      agentLoop.setCompactConfig({ enabled: v.enabled !== false, threshold: v.threshold ?? 50 })
-    }
-
-    // Model 切换实时生效
-    if (path === 'agents.defaults.model' && typeof value === 'string') {
-      agentLoop.setModel(value)
-    }
-
-    if (path === 'agents.defaults.disabledSkills' && Array.isArray(value)) {
-      agentLoop.setDisabledSkills(value as string[])
-    }
-
-    // Provider API key 变更 → 重建 fallback provider
-    if (path.startsWith('providers.') && path.endsWith('.apiKey')) {
-      try {
-        const { createProvider } = await import('../providers/factory.js')
-        const newProvider = createProvider(runtime.config)
-        agentLoop.setProvider(newProvider)
-        const agentLoop2: any = agentLoop
-        if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
-      } catch (err: any) {
-        console.error('[config] Failed to reload provider:', err.message)
-        throw err
+    try {
+      const keys = path.split('.')
+      let obj: any = runtime.config
+      for (let i = 0; i < keys.length - 1; i++) {
+        const parent = obj
+        obj = obj[keys[i]]
+        if (obj === undefined || obj === null) {
+          console.warn(`[config] Path "${path}" not writable — "${keys[i]}" missing on parent:`, Object.keys(parent))
+          return { ok: false, error: `Path "${path}" not found in config` }
+        }
       }
-    }
+      obj[keys[keys.length - 1]] = value
 
-    if (path === 'tools.mcpServers') {
-      agentLoop.mcpManager?.updateServers(value as Record<string, McpServerConfig> | undefined)
-      await agentLoop.mcpManager?.reload()
-    }
+      // 压缩配置实时生效
+      if (path === 'agents.defaults.autoCompact' && typeof value === 'object') {
+        const v = value as any
+        agentLoop.setCompactConfig({ enabled: v.enabled !== false, threshold: v.threshold ?? 50 })
+      }
 
-    persistConfig()
+      // Model / Provider 切换 → 总是重建 Provider 实例
+      // 因为 setModel 只改了 agentLoop.model，不会切换 API endpoint。
+      // createProvider(config) 会从 config 读取 defaults.model + defaults.provider 一并生效。
+      if (
+        (path === 'agents.defaults.model' && typeof value === 'string') ||
+        (path === 'agents.defaults.provider' && typeof value === 'string')
+      ) {
+        try {
+          agentLoop.setModel(runtime.config.agents.defaults.model)
+          const { createProvider } = await import('../providers/factory.js')
+          const newProvider = createProvider(runtime.config)
+          agentLoop.setProvider(newProvider)
+          const agentLoop2: any = agentLoop
+          if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
+        } catch (err: any) {
+          console.error('[config] Failed to reload provider on model/provider change:', err.message)
+          throw err
+        }
+      }
+
+      if (path === 'agents.defaults.disabledSkills' && Array.isArray(value)) {
+        agentLoop.setDisabledSkills(value as string[])
+      }
+
+      // Provider API key 变更 → 重建 fallback provider
+      if (path.startsWith('providers.') && path.endsWith('.apiKey')) {
+        try {
+          const { createProvider } = await import('../providers/factory.js')
+          const newProvider = createProvider(runtime.config)
+          agentLoop.setProvider(newProvider)
+          const agentLoop2: any = agentLoop
+          if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
+        } catch (err: any) {
+          console.error('[config] Failed to reload provider:', err.message)
+          throw err
+        }
+      }
+
+      if (path === 'tools.mcpServers') {
+        agentLoop.mcpManager?.updateServers(value as Record<string, McpServerConfig> | undefined)
+        await agentLoop.mcpManager?.reload()
+      }
+
+      persistConfig()
+      return { ok: true }
+    } catch (err: any) {
+      console.error(`[config] updateConfig("${path}") failed:`, err)
+      return { ok: false, error: err.message ?? String(err) }
+    }
   })
 
   ipcMain.handle('config:list-models', async () => {

@@ -110,6 +110,7 @@ export async function fetchSettingsIpc(
       provider: config.agents.defaults.provider,
       resolved_provider: config.agents.defaults.provider,
       has_api_key: true,
+      model_options: {},
     },
     providers: Object.entries(config.providers).map(([name, p]) => ({
       name,
@@ -134,7 +135,8 @@ export async function updateSettingsIpc(
   update: SettingsUpdate,
   _base: string = '',
 ): Promise<SettingsPayload> {
-  if (update.model) await requireIpcBridge().setModel(update.model)
+  if (update.model) await requireIpcBridge().updateConfig('agents.defaults.model', update.model)
+  if (update.provider) await requireIpcBridge().updateConfig('agents.defaults.provider', update.provider)
   return fetchSettingsIpc(_token, _base)
 }
 

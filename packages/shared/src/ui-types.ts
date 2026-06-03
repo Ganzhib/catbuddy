@@ -156,6 +156,12 @@ export interface SettingsPayload {
     provider: string;
     resolved_provider: string | null;
     has_api_key: boolean;
+    /** Known models keyed by provider name (shown in model picker dropdown). */
+    model_options?: Record<string, Array<{
+      value: string;
+      label: string;
+      description?: string;
+    }>>;
   };
   providers: Array<{
     name: string;

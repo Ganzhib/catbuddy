@@ -97,7 +97,7 @@
     },
     "nav": {
       "general": "通用",
-      "byok": "BYOK",
+      "byok": "密钥配置",
       "skills": "Skills",
       "mcp": "MCP 工具"
     },
@@ -200,6 +200,12 @@
       "compactionEnable": "自动压缩旧对话以节省 token（Agent 状态机 COMPACT 步骤）。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
     },
+    "model": {
+      "searchPlaceholder": "搜索模型...",
+      "customModel": "自定义模型...",
+      "chooseFromList": "从列表选择",
+      "noModelsFound": "未找到模型"
+    },
     "values": {
       "light": "浅色",
       "dark": "深色",
@@ -218,11 +224,12 @@
       "cancel": "取消"
     },
     "byok": {
-      "description": "自带 provider key。catbuddy 会从当前 config 读取这些值，只有已配置的 provider 才能在通用设置里选择。",
+      "description": "配置各提供商的 API 密钥和接口地址。配置完成后即可在对话中使用对应的模型。",
       "configured": "已配置",
       "notConfigured": "未配置",
       "configuredSection": "已配置",
       "notConfiguredSection": "未配置",
+      "active": "当前使用",
       "showMore": "再显示 {{count}} 个",
       "showLess": "收起",
       "apiKey": "API key",
@@ -235,10 +242,10 @@
       "showApiKey": "显示 API key",
       "hideApiKey": "隐藏 API key",
       "noConfiguredProviders": "没有已配置的 provider",
-      "configureFirst": "请先在 BYOK 里配置 provider。",
-      "openByok": "打开 BYOK",
+      "configureFirst": "请先在密钥配置中配置提供商。",
+      "openByok": "打开密钥配置",
       "tabs": {
-        "ariaLabel": "BYOK 凭证类型",
+        "ariaLabel": "凭证类型",
         "llm": "LLM",
         "webSearch": "Web Search"
       },
@@ -390,6 +397,8 @@
         "deepResearch": "深度研究",
         "voice": "语音输入"
       },
+      "modelSwitcherTitle": "切换模型",
+      "modelSwitcherDesc": "选择模型和服务商",
       "slash": {
         "ariaLabel": "斜杠命令",
         "label": "命令",

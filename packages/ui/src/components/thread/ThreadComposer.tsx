@@ -41,6 +41,13 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
   useAttachedImages,
   type AttachedImage,
   type AttachmentError,
@@ -63,6 +70,18 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface ModelOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface ProviderInfo {
+  name: string;
+  label: string;
+  configured: boolean;
+}
+
 interface ThreadComposerProps {
   onSend: (content: string, images?: SendImage[], options?: SendOptions) => void;
   disabled?: boolean;
@@ -83,6 +102,12 @@ interface ThreadComposerProps {
   onWorkspaceFolderIdChange?: (workspaceFolderId: string | null) => void;
   /** True when the composer belongs to an existing selected conversation. */
   chatSessionSelected?: boolean;
+  /** Settings-driven model switcher props */
+  modelOptions?: Record<string, ModelOption[]>;
+  providers?: ProviderInfo[];
+  currentModel?: string;
+  currentProvider?: string;
+  onModelSwitch?: (model: string, provider: string) => void;
 }
 
 const COMMAND_ICONS: Record<string, LucideIcon> = {
@@ -397,6 +422,11 @@ export function ThreadComposer({
   workspaceFolderId,
   onWorkspaceFolderIdChange,
   chatSessionSelected = false,
+  modelOptions,
+  providers = [],
+  currentModel = "",
+  currentProvider = "",
+  onModelSwitch,
 }: ThreadComposerProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
@@ -411,6 +441,13 @@ export function ThreadComposer({
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
   const [importingFolder, setImportingFolder] = useState(false);
   const [folderChipCleared, setFolderChipCleared] = useState(false);
+  const [modelDialogOpen, setModelDialogOpen] = useState(false);
+  const showModelSwitcher = useMemo(() => {
+    if (!modelLabel) return false;
+    const configured = providers.filter((p) => p.configured);
+    if (configured.length === 0) return false;
+    return configured.some((p) => (modelOptions?.[p.name]?.length ?? 0) > 0);
+  }, [modelLabel, providers, modelOptions]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -697,6 +734,7 @@ export function ThreadComposer({
       document.removeEventListener("wheel", closeOnWheel, true);
     };
   }, [aspectMenuOpen]);
+
 
   const resizeTextarea = useCallback(() => {
     requestAnimationFrame(() => {
@@ -1080,23 +1118,42 @@ export function ThreadComposer({
                 />
               ) : null}
             </div>
-            {modelLabel ? (
-              <span
-                title={modelLabel}
-                className={cn(
-                  "hidden min-w-0 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 md:inline-flex",
-                  "border-foreground/10 bg-foreground/[0.035] font-medium text-foreground/80",
-                  isHero
-                    ? "max-w-[13rem] text-[12px] shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
-                    : "max-w-[10rem] text-[10.5px] shadow-[0_2px_8px_rgba(15,23,42,0.035)]",
-                )}
-              >
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 flex-none rounded-full bg-emerald-500/80"
+            {showModelSwitcher ? (
+              <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
+                <button
+                  type="button"
+                  title={modelLabel ?? undefined}
+                  disabled={disabled}
+                  aria-haspopup="dialog"
+                  onClick={() => setModelDialogOpen(true)}
+                  className={cn(
+                    "hidden min-w-0 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 md:inline-flex",
+                    "border-foreground/10 bg-foreground/[0.035] font-medium text-foreground/80",
+                    "hover:bg-foreground/[0.06] transition-colors",
+                    isHero
+                      ? "max-w-[13rem] text-[12px] shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
+                      : "max-w-[10rem] text-[10.5px] shadow-[0_2px_8px_rgba(15,23,42,0.035)]",
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 flex-none rounded-full bg-emerald-500/80"
+                  />
+                  <span className="truncate">{modelLabel}</span>
+                  <ChevronDown className={cn("shrink-0", isHero ? "h-3 w-3" : "h-2.5 w-2.5")} />
+                </button>
+                <ModelSwitcherDialog
+                  modelOptions={modelOptions}
+                  providers={providers}
+                  currentModel={currentModel}
+                  currentProvider={currentProvider}
+                  onSelect={(model, provider) => {
+                    onModelSwitch?.(model, provider);
+                    setModelDialogOpen(false);
+                    textareaRef.current?.focus();
+                  }}
                 />
-                <span className="truncate">{modelLabel}</span>
-              </span>
+              </Dialog>
             ) : null}
             {!isHero ? (
               <span className="hidden select-none text-[10.5px] text-muted-foreground/60 sm:inline">
@@ -1143,6 +1200,101 @@ interface SlashCommandPaletteProps {
   isHero: boolean;
   onHover: (index: number) => void;
   onChoose: (command: SlashCommand) => void;
+}
+
+interface ModelSwitcherDialogProps {
+  modelOptions?: Record<string, ModelOption[]>;
+  providers: ProviderInfo[];
+  currentModel: string;
+  currentProvider: string;
+  onSelect: (model: string, provider: string) => void;
+}
+
+function ModelSwitcherDialog({
+  providers,
+  currentModel,
+  currentProvider,
+  onSelect,
+}: ModelSwitcherDialogProps) {
+  const { t } = useTranslation();
+  const configuredProviders = providers.filter((p) => p.configured);
+  const [modelInput, setModelInput] = useState(currentModel);
+
+  useEffect(() => {
+    setModelInput(currentModel);
+  }, [currentModel]);
+
+  if (configuredProviders.length === 0) return null;
+
+  return (
+    <DialogContent className="max-w-md gap-0 p-0">
+      <DialogTitle className="sr-only">{t("thread.composer.modelSwitcherTitle", "Switch Model")}</DialogTitle>
+      <DialogDescription className="sr-only">
+        {t("thread.composer.modelSwitcherDesc", "Choose a model and provider")}
+      </DialogDescription>
+      <div className="space-y-4 p-4">
+        {/* Model name text input */}
+        <label className="block space-y-1.5">
+          <span className="text-[12px] font-medium text-muted-foreground">
+            {t("settings.rows.model")}
+          </span>
+          <Input
+            value={modelInput}
+            onChange={(e) => setModelInput(e.target.value)}
+            placeholder="model-name"
+            className="h-9 rounded-full text-[13px]"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && modelInput.trim()) {
+                onSelect(modelInput.trim(), currentProvider);
+              }
+            }}
+          />
+        </label>
+
+        {/* Provider selector */}
+        <label className="block space-y-1.5">
+          <span className="text-[12px] font-medium text-muted-foreground">
+            {t("settings.rows.provider")}
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {configuredProviders.map((provider) => {
+              const active = provider.name === currentProvider;
+              return (
+                <button
+                  key={provider.name}
+                  type="button"
+                  onClick={() => setModelInput((prev) => { onSelect(prev || modelInput, provider.name); return prev; })}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {provider.label}
+                  {active ? <Check className="ml-1 inline h-3 w-3" /> : null}
+                </button>
+              );
+            })}
+          </div>
+        </label>
+
+        {/* Confirm button */}
+        <Button
+          size="sm"
+          onClick={() => {
+            if (modelInput.trim()) {
+              onSelect(modelInput.trim(), currentProvider);
+            }
+          }}
+          disabled={!modelInput.trim()}
+          className="w-full rounded-full"
+        >
+          {t("settings.actions.save")}
+        </Button>
+      </div>
+    </DialogContent>
+  );
 }
 
 function ImageAspectMenu({

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "CatBuddy",
+    "slug": "catbuddy-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "catbuddy",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#171717"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "icu.ganzhibin.catbuddy",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "catbuddy.ganzhibin.icu": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSIncludesSubdomains": true,
+              "NSTemporaryExceptionMinimumTLSVersion": "TLSv1.2"
+            }
+          }
+        }
+      }
+    },
+    "android": {
+      "package": "icu.ganzhibin.catbuddy",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#171717"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-system-ui",
+      "expo-asset"
+    ]
+  }
+}

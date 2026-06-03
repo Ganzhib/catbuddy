@@ -1,0 +1,20 @@
+# Expo
+.expo/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# macOS
+.DS_Store

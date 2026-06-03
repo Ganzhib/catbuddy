@@ -6,6 +6,8 @@ packages:
 
 overrides:
   sharp: ^0.33.5
+  '@types/react': ^18.3.18
+  '@types/react-dom': ^18.3.5
 
 # pnpm v11: allow dependency install scripts (replaces package.json pnpm.onlyBuiltDependencies)
 allowBuilds:

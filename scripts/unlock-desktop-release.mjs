@@ -17,7 +17,7 @@ const desktopRoot = path.resolve(
 const PREFERRED_OUTPUT_DIRS = ['release', 'release-fresh'];
 const SINGLE_FALLBACK = 'release-build';
 
-/** Remove stale release-build-TIMESTAMP dirs and .bak backups from previous builds. */
+/** Remove stale release-build-TIMESTAMP dirs, .bak backups, and previous release-build artifacts. */
 function cleanStaleBuildDirs() {
   for (const entry of fs.readdirSync(desktopRoot, { withFileTypes: true })) {
     const name = entry.name;
@@ -37,6 +37,26 @@ function cleanStaleBuildDirs() {
       try { tryRm(full); } catch {}
     }
   }
+
+  // Clean the fallback release-build directory (prevent 7-Zip file-lock on Windows)
+  const fallback = path.join(desktopRoot, SINGLE_FALLBACK);
+  if (fs.existsSync(fallback)) {
+    try { tryRm(fallback); } catch {}
+    if (fs.existsSync(fallback)) {
+      if (process.platform === 'win32') {
+        spawnSync('cmd.exe', ['/c', 'rmdir', '/s', '/q', fallback], {
+          stdio: 'ignore',
+          windowsHide: true,
+        });
+        sleepMs(200);
+      }
+      if (fs.existsSync(fallback)) log(`warning: could not remove ${SINGLE_FALLBACK} (file locked)`);
+      else log(`cleaned ${SINGLE_FALLBACK}/`);
+    } else {
+      log(`cleaned ${SINGLE_FALLBACK}/`);
+    }
+  }
+
   log('cleaned stale build directories');
 }
 

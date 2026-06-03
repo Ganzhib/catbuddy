@@ -10,6 +10,7 @@ import type {
   LLMMessage, ToolCallRequest, ToolEvent,
   AgentRunResult, TokenUsage,
 } from "@catbuddy/shared"
+import { countMessageTokens, getEncodingForModel } from './token-counter'
 
 export interface RunSpec {
   context: Context
@@ -92,21 +93,7 @@ function toolCallPreflightError(call: ToolCallRequest): string | null {
   return null
 }
 
-/** 粗略估算 message 的 token 数 */
-function estimateTokens(content: unknown): number {
-  if (typeof content === 'string') return Math.ceil(content.length / 3)
-  return 0
-}
-
-function estimateMessageTokens(msg: LLMMessage): number {
-  let t = estimateTokens(msg.content)
-  if (msg.toolCalls) {
-    for (const tc of msg.toolCalls) {
-      t += estimateTokens(JSON.stringify(tc.arguments))
-    }
-  }
-  return t
-}
+// Token 计算已迁移至 token-counter.ts（基于 js-tiktoken 精确 BPE 分词）
 
 export class AgentRunner {
   constructor(private provider: LLMProvider) {}
@@ -426,9 +413,11 @@ export class AgentRunner {
     const budget = spec.contextWindowTokens - (spec.maxTokens ?? 4096) - SNIP_SAFETY_BUFFER
     if (budget <= 0) return
 
+    const encoding = getEncodingForModel(spec.model)
+
     let total = 0
     for (let i = messages.length - 1; i >= 0; i--) {
-      total += estimateMessageTokens(messages[i])
+      total += countMessageTokens(messages[i], encoding)
       if (total > budget) {
         // 从 i+1 截断，但保持从 user 消息开始
         let start = i + 1

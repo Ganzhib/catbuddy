@@ -116,6 +116,7 @@ export class AgentRunner {
     let emptyRetries = 0
     let lengthRecoveries = 0
     let lastReasoningContent: string | undefined
+    let streamedContent = ''
     const hook = spec.hook ?? new AgentHook()
     const externalLookupCounts = new Map<string, number>()
 
@@ -139,6 +140,7 @@ export class AgentRunner {
 
       const onContentDelta = async (delta: string) => {
         hookCtx.streamedContent = true
+        streamedContent += delta
         if (hook.wantsStreaming()) await hook.onStream(hookCtx, delta)
         await spec.onStream?.(delta)
       }
@@ -165,7 +167,9 @@ export class AgentRunner {
       // Check if task was cancelled during LLM call
       if (spec.abortSignal?.aborted) {
         stopReason = 'cancelled'
-        finalContent = 'Task was cancelled.'
+        finalContent = streamedContent.trim()
+          ? `${streamedContent}\n\n---\n*Task was cancelled.*`
+          : 'Task was cancelled.'
         break
       }
 
@@ -330,6 +334,7 @@ export class AgentRunner {
       lastReasoningContent,
       toolEvents,
       hadInjections: false,
+      streamedContent: streamedContent.trim() || undefined,
     }
   }
 

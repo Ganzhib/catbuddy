@@ -1,4 +1,5 @@
 import type {
+  FileEditEvent,
   MessageRecord,
   ToolCallRequest,
 } from './agent-types.js'
@@ -69,6 +70,7 @@ function traceMessage(
   source: MessageRecord,
   toolProgress: Record<string, ToolProgressEvent>,
   activitySegmentId: string,
+  fileEdits?: FileEditEvent[],
 ): UIMessage {
   return {
     id: `trace-${activitySegmentId}-${source.id}`,
@@ -79,6 +81,7 @@ function traceMessage(
     toolProgress,
     activitySegmentId,
     createdAt: timestampMs(source.timestamp),
+    ...(fileEdits?.length ? { fileEdits } : {}),
   }
 }
 
@@ -90,6 +93,8 @@ function assistantMessage(source: MessageRecord, activitySegmentId?: string): UI
     createdAt: timestampMs(source.timestamp),
     ...(source.reasoningContent ? { reasoning: source.reasoningContent } : {}),
     ...(activitySegmentId ? { activitySegmentId } : {}),
+    ...(source.tokenUsage ? { tokenUsage: source.tokenUsage } : {}),
+    ...(source.latencyMs != null ? { latencyMs: source.latencyMs } : {}),
   }
 }
 
@@ -121,6 +126,92 @@ function collectToolResults(
   return index
 }
 
+// ── FileEdit synthesis from persisted tool calls/results ──
+
+/** Tool names that produce or modify files. */
+const FILE_EDIT_TOOLS = new Set([
+  'write_file', 'write', 'edit_file', 'edit',
+  'create_file', 'replace_in_file',
+  'display_diagram', 'append_diagram', 'edit_diagram',
+])
+
+/** Extract a file path from tool arguments (common key names). */
+function extractPathFromArgs(args: unknown): string | undefined {
+  if (!args || typeof args !== 'object') return undefined
+  const a = args as Record<string, unknown>
+  const candidates = [a.path, a.filePath, a.file_path, a.file, a.target, a.destination, a.dest]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim()
+  }
+  return undefined
+}
+
+/** Try to find a .drawio file path in a tool result string. */
+function extractDrawioPath(content: string): string | undefined {
+  // Look for paths ending in .drawio (Windows or Unix)
+  const m = content.match(/([^\s"'`\[\]()]+\.drawio)/i)
+  return m?.[1]
+}
+
+/** Build synthetic FileEditEvent[] from toolCalls + tool results for history replay. */
+function synthesizeFileEdits(
+  calls: ToolCallRequest[],
+  results: MessageRecord[],
+): FileEditEvent[] {
+  const edits: FileEditEvent[] = []
+  const resultByCallId = new Map<string, MessageRecord>()
+  for (const r of results) {
+    if (r.toolCallId) resultByCallId.set(r.toolCallId, r)
+  }
+
+  for (const call of calls) {
+    if (!FILE_EDIT_TOOLS.has(call.name)) continue
+    const path = extractPathFromArgs(call.arguments)
+    const result = resultByCallId.get(call.id)
+    const resultContent = result?.content ?? ''
+
+    // Try to get path from arguments, or extract .drawio from result
+    const resolvedPath = path ?? extractDrawioPath(resultContent)
+
+    if (!resolvedPath) continue
+
+    // Detect status from result content
+    const isError = /\b(?:Error|Failed)\b/i.test(resultContent)
+    const status: FileEditEvent['status'] = isError ? 'error' : 'done'
+
+    edits.push({
+      call_id: call.id,
+      tool: call.name,
+      path: resolvedPath,
+      added: 0,
+      deleted: 0,
+      status,
+      ...(isError ? { error: resultContent.slice(0, 200) } : {}),
+    })
+  }
+  return edits
+}
+
+/** Collect tool results for the assistant's tool calls. */
+function collectResultsForCalls(
+  records: MessageRecord[],
+  start: number,
+  callCount: number,
+): { results: MessageRecord[]; next: number } {
+  const results: MessageRecord[] = []
+  let index = start
+  while (index < records.length && results.length < callCount) {
+    const record = records[index]
+    if (record.role === 'tool') {
+      results.push(record)
+    } else {
+      break
+    }
+    index += 1
+  }
+  return { results, next: index }
+}
+
 /** Convert persisted session messages into the Web UI replay shape. */
 export function buildWebuiThreadPayload(
   session: WebuiThreadSession | null,
@@ -141,9 +232,11 @@ export function buildWebuiThreadPayload(
       }
       const progress: Record<string, ToolProgressEvent> = {}
       for (const call of message.toolCalls) mergeToolEvent(progress, toolStartEvent(call))
+      const { results, next: resultEnd } = collectResultsForCalls(session.messages, i + 1, message.toolCalls.length)
       const next = collectToolResults(session.messages, i + 1, progress)
-      messages.push(traceMessage(message, progress, segmentId))
-      i = next - 1
+      const fileEdits = synthesizeFileEdits(message.toolCalls, results)
+      messages.push(traceMessage(message, progress, segmentId, fileEdits))
+      i = Math.max(next, resultEnd) - 1
       continue
     }
 
@@ -152,7 +245,13 @@ export function buildWebuiThreadPayload(
       const segmentId = `history-activity-${activityIndex}`
       const progress: Record<string, ToolProgressEvent> = {}
       const next = collectToolResults(session.messages, i, progress)
-      messages.push(traceMessage(message, progress, segmentId))
+      // For orphan tool results, reconstruct fileEdits from toolCall info in each record
+      const toolRecords = session.messages.slice(i, next)
+      const callsFromResults = toolRecords
+        .filter(r => r.toolCalls?.[0])
+        .map(r => r.toolCalls![0])
+      const fileEdits = synthesizeFileEdits(callsFromResults, toolRecords)
+      messages.push(traceMessage(message, progress, segmentId, fileEdits))
       i = next - 1
       continue
     }
@@ -246,6 +345,11 @@ export function sessionRecordsFromWebuiMessages(
         content,
         reasoningContent: typeof raw.reasoning === 'string' ? raw.reasoning : undefined,
         timestamp,
+        tokenUsage: isRecord(raw.tokenUsage) ? {
+          inputTokens: Number((raw.tokenUsage as Record<string, unknown>).inputTokens) || 0,
+          outputTokens: Number((raw.tokenUsage as Record<string, unknown>).outputTokens) || 0,
+        } : undefined,
+        latencyMs: typeof raw.latencyMs === 'number' ? raw.latencyMs : undefined,
       })
     }
   }

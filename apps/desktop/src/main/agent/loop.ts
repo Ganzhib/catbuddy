@@ -909,6 +909,7 @@ export class AgentLoop implements RuntimeState {
 
     const now = new Date().toISOString()
     const sessionManager = this.sessionManagerFor(ctx.sessionKey);
+    const latencyMs = Math.round(performance.now() - ctx.startedAt);
 
     for (const msg of ctx.allMessages.slice(ctx.persistFromIndex)) {
       if (msg.role === "assistant" && msg.toolCalls?.length) {
@@ -938,6 +939,8 @@ export class AgentLoop implements RuntimeState {
         role: "assistant",
         content: ctx.finalContent,
         timestamp: now,
+        tokenUsage: ctx.usage ?? undefined,
+        latencyMs,
       });
     }
 

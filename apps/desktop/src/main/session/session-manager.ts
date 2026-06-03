@@ -85,6 +85,8 @@ export class SessionManager {
       media: msg.media,
       reasoningContent: msg.reasoningContent,
       timestamp: now,
+      tokenUsage: msg.tokenUsage,
+      latencyMs: msg.latencyMs,
     })
 
     // 上限裁剪

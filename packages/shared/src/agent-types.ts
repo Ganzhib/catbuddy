@@ -159,6 +159,10 @@ export interface MessageRecord {
   /** DeepSeek thinking mode: must round-trip on tool-call turns. */
   reasoningContent?: string
   timestamp: string
+  /** Token usage for this assistant turn (persisted from turn_end). */
+  tokenUsage?: TokenUsage
+  /** End-to-end wall time in ms for this assistant turn. */
+  latencyMs?: number
 }
 
 // ── Agent ──
@@ -173,6 +177,8 @@ export interface AgentRunResult {
   error?: string
   toolEvents: ToolEvent[]
   hadInjections: boolean
+  /** Content that was streamed via deltas before the turn was cancelled/interrupted. */
+  streamedContent?: string
 }
 
 export interface TurnCompleteData {

@@ -1,6 +1,6 @@
-# 13｜不修改核心代码，只插 Hook：Agent 生命周期扩展
+# 08｜不修改核心代码，只插 Hook：Agent 生命周期扩展
 
-> 这是 CatBuddy 技术专栏的第 13 篇。上篇讲了多 Provider 适配层如何用一套接口接三家 API。这篇聊聊 Agent Hook——在不修改 Agent Loop 核心代码的前提下，怎么插入自定义行为。
+> 这是 CatBuddy 技术专栏的第 8 篇。上篇讲了多 Provider 适配层如何用一套接口接三家 API。这篇聊聊 Agent Hook——在不修改 Agent Loop 核心代码的前提下，怎么插入自定义行为：日志、监控、调试、项目特定逻辑。
 
 ---
 
@@ -193,4 +193,4 @@ Hook 系统的一个局限：Hook 方法都是 `async`，但它们是顺序执�
 > 2. AgentHookContext 携带了 Agent 迭代的完整状态——消息历史、工具调用链、token 消耗、错误信息。Hook 不需要知道 AgentRunner 内部实现就能做出有意义的决策。
 > 3. CompositeHook 支持组合多个 Hook，带错误隔离和链式转换。显式回调和 Hook 各司其职——回调是"数据管道"，Hook 是"观察插槽"。
 
-> 下一篇聊聊 CatBuddy 的命令系统——`/stop`、`/heartbeat`、`/model` 这些斜杠命令是怎么在 Agent Loop 里被优先处理的？
+> 下一篇聊 MCP——Agent 有了大脑，还需要手脚。MCP 协议怎么让 Agent 读文件、跑命令、操作浏览器？为什么选 MCP 而不是自己定义一套工具接口？

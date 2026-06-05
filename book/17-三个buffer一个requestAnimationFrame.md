@@ -1,6 +1,6 @@
-# 10｜三个 buffer，一个 requestAnimationFrame：让 AI 打字像真的在打字
+# 16｜三个 buffer，一个 requestAnimationFrame：让 AI 打字像真的在打字
 
-> 这是 CatBuddy 技术专栏的第 10 篇。上篇讲了 JSONL 会话持久化。这篇聊聊 CatBuddy 最"所见即所得"的部分——流式渲染。当 LLM 还在一个字一个字往外蹦的时候，UI 怎么做到不卡顿、不闪烁、不让用户觉得"卡住了"？
+> 这是 CatBuddy 技术专栏的第 16 篇。上篇讲了 JSONL 会话持久化——Agent 的每一次对话怎么用逐行追加的 JSON 文件高效存储。这篇聊聊 CatBuddy 最"所见即所得"的部分——流式渲染。当 LLM 还在一个字一个字往外蹦的时候，UI 怎么做到不卡顿、不闪烁、不让用户觉得"卡住了"？
 
 ---
 
@@ -301,4 +301,4 @@ const open = userToggled ? openLocal : streaming; // 流式时展开，结束后
 > 2. 消息树由五个函数维护：`appendAnswerChunk`、`attachReasoningChunk`、`appendToolProgressTrace`、`mergeFileEditIntoTrace`、`closeReasoningStream`。每个函数对应一种流式事件，各司其职。
 > 3. UI 层有四种视觉状态：打字光标、跳点等待、可折叠推理气泡、可折叠工具调用组。`AgentActivityCluster` 把"干活步骤"折叠成统一区块，不淹没用户的主对话。
 
-> 下一篇聊聊上下文治理——当一段对话超过 100 条消息后，Agent 怎么不疯掉？
+> 下一篇回到数据本身——CatBuddy 的"数据库"到底是什么？桌面端用 JSONL 存聊天记录，Gateway 端用 MySQL 做缓存。两个存储系统怎么协同？"文件即数据库"的哲学到底是什么意思？

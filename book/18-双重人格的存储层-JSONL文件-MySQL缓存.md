@@ -1,6 +1,6 @@
-# 20｜双重人格的存储层：JSONL 文件 × MySQL 缓存
+# 17｜双重人格的存储层：JSONL 文件 × MySQL 缓存
 
-> 这是 CatBuddy 技术专栏的第 20 篇。前几篇讲了 Gateway 的会话同步、传输层抽象、Prompt 工程。这篇回到数据本身——CatBuddy 的"数据库"到底是什么？
+> 这是 CatBuddy 技术专栏的第 17 篇。上篇讲了流式渲染——三个 buffer 加一个 requestAnimationFrame 怎么让 AI 打字像真的在打字。这篇回到数据本身——CatBuddy 的"数据库"到底是什么？桌面端用 JSONL，Gateway 端用 MySQL，两个存储系统怎么协同？"文件即数据库"的哲学到底是什么意思？
 
 > **核心问题**：桌面端用 JSONL 存聊天记录，Gateway 端用 MySQL 做缓存。两个存储系统如何协同？"文件即数据库"的哲学到底是什么？
 
@@ -368,4 +368,4 @@ Desktop → Gateway (publishSessionsSync) → MysqlSessionStore.mergeSessionRow
 >
 > 4. "文件即数据库"不是反智主义——它是基于访问模式的最优选择。纯文本的 JSONL 提供了 SQLite 无法比拟的可观测性（`cat`/`grep`/`jq` 直接操作），而 POSIX 原子 rename 提供了等价于 ACID 事务的安全性。
 
-> 下一篇是专栏的最后一篇——三端部署与发布。Gateway 用 Docker Compose 部署，Web 是静态文件 + CDN，Desktop 用 electron-builder 打包成三平台安装包。三者怎么协同发版？CI/CD 流水线怎么设计？
+> 下一篇聊 CatBuddy 的传输层抽象——Desktop 里用 IPC，Web 端用 WebSocket，上层代码怎么做到"不关心底层是哪种通信方式"？"二层抽象 + 一个总线"的三段式传输层架构是怎么设计的？

@@ -1,6 +1,6 @@
-# 06｜MCP：给 Agent 装上手脚
+# 09｜MCP：给 Agent 装上手脚
 
-> 这是 CatBuddy 技术专栏的第 6 篇。上篇讲了 Agent Loop 的两层循环——怎么决定"现在该思考还是该干活"。这篇聊 MCP——Agent 怎么真正动手干活。
+> 这是 CatBuddy 技术专栏的第 9 篇。上篇讲了 Agent Hook——怎么在不修改 Agent Loop 核心代码的前提下插入自定义行为。这篇聊 MCP——Agent 怎么真正动手干活：读文件、跑命令、操作浏览器。
 
 ---
 

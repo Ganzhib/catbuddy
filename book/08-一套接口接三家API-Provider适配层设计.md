@@ -1,6 +1,6 @@
-# 12｜一套接口接三家 API：Provider 适配层设计
+# 07｜一套接口接三家 API：Provider 适配层设计
 
-> 这是 CatBuddy 技术专栏的第 12 篇。上篇讲了上下文治理的三层防线。这篇聊一个基础设施问题：CatBuddy 支持 Anthropic、OpenAI、DeepSeek（以及任何 OpenAI 兼容的 API），但它们的数据格式、流式协议、工具调用方式各不相同。怎么用一套接口统一？
+> 这是 CatBuddy 技术专栏的第 7 篇。上篇讲了上下文治理的三层防线——怎么让 Agent 在长对话中既不"失忆"又不爆 token。这篇聊一个基础设施问题：CatBuddy 支持 Anthropic、OpenAI、DeepSeek（以及任何 OpenAI 兼容的 API），但它们的数据格式、流式协议、工具调用方式各不相同。怎么用一套接口统一？
 
 ---
 

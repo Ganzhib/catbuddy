@@ -1,6 +1,6 @@
-# 14｜`/stop` 要立刻生效：三层命令路由
+# 12｜`/stop` 要立刻生效：三层命令路由
 
-> 这是 CatBuddy 技术专栏的第 14 篇。上篇讲了 Agent Hook 生命周期扩展。这篇聊聊斜杠命令系统——`/stop`、`/model`、`/compact` 这些命令怎么在 Agent Loop 里被路由和执行的。
+> 这是 CatBuddy 技术专栏的第 12 篇。上篇讲了工具注册与调度——15 个内置工具和外部 MCP 工具怎么在同一个 Registry 里注册、查找、执行。这篇聊聊斜杠命令系统——`/stop`、`/model`、`/compact` 这些命令怎么在 Agent Loop 里被路由和执行的。
 
 ---
 

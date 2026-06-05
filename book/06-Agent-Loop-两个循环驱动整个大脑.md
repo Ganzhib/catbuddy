@@ -215,4 +215,4 @@ class FallbackProvider extends LLMProvider {
 > 2. AgentRunner 在每次调 LLM 前做**上下文治理**——清理脏数据、补缺失结果、微压缩旧内容、token 预算截断。这些防御性工程决定了 Agent 能跑 10 轮还是 100 轮。
 > 3. 多 Provider 适配的关键是**找到共性而不是各自实现**——基类统一重试和 role 交替，子类只处理 API 差异。DeepSeek 的 reasoning_content 往返是最隐蔽的坑。
 
-> 下一篇聊 MCP——Agent 有了大脑，还需要手脚。MCP 协议怎么让 Agent 读文件、跑命令、操作浏览器？为什么选 MCP 而不是自己定义一套工具接口？
+> 下一篇聊上下文治理——Agent 的大脑是 LLM，但 LLM 的上下文窗口是有限的。当一段对话超过 100 条消息后，Agent 怎么不疯掉？三层防线是怎么运作的？

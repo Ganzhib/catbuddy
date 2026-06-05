@@ -1,6 +1,6 @@
-# 19｜让 AI 画架构图：Prompt 工程的一线实践
+# 20｜让 AI 画架构图：Prompt 工程的一线实践
 
-> 这是 CatBuddy 技术专栏的第 19 篇。CatBuddy 有个功能——你描述系统，它自动生成 Draw.io 架构图。这篇聊聊这个功能背后的 Prompt 是怎么设计的，踩过哪些坑。
+> 这是 CatBuddy 技术专栏的第 20 篇。上篇讲了 Gateway 会话同步——一块数据，三地一致。这篇聊一个更靠近 LLM 的话题：CatBuddy 有个功能——你描述系统，它自动生成 Draw.io 架构图。这篇聊聊这个功能背后的 Prompt 是怎么设计的，踩过哪些坑，"反向剔除"哲学是什么。
 
 > **核心问题**：从自然语言描述到 Draw.io XML 的完整链路是怎样的？Prompt 模板的结构怎么设计？生成结果不准确时怎么修正？
 
@@ -412,4 +412,4 @@ LLM 在决策时会综合考虑这四个层次，但**每次 tool call 只需要
 >
 > 4. 四条 Prompt 工程原则：反向剔除（系统做 boilerplate）、示例密度（50% 内容为示例）、错误消息即微 Prompt（含原因+建议）、分层约束（Skill/Tool/Library/Error 四个信息来源）。
 
-> 下一篇聊 CatBuddy 的数据库设计——不，CatBuddy 其实没有传统意义上的"数据库"，它用 JSONL 文件做持久化，用 MySQL 做跨端缓存。这套"文件即数据库"的哲学是怎么运作的？
+> 下一篇是专栏的最后一篇——三端部署与发布。Gateway 用 Docker Compose，Web 是静态文件 + CDN，Desktop 用 electron-builder 打包成三平台安装包。三者怎么协同发版？CI/CD 流水线怎么设计？

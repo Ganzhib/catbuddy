@@ -1,6 +1,6 @@
-# 15｜Agent 的文件读写，远不止 `fs.readFile` 那么简单
+# 13｜Agent 的文件读写，远不止 `fs.readFile` 那么简单
 
-> 这是 CatBuddy 技术专栏的第 15 篇。Agent 要帮你改代码，就得读文件、写文件、编辑文件。但直接开个 `fs` 给它用？那跟把家门钥匙交给陌生人有啥区别。这篇聊聊 CatBuddy 的文件编辑工具——`read_file`、`write_file`、`edit_file` 怎么在一个可控的安全边界内工作。
+> 这是 CatBuddy 技术专栏的第 13 篇。上篇讲了命令路由——`/stop`、`/model` 这些斜杠命令怎么在 Agent Loop 里被优先路由和执行。这篇聊聊 Agent 最核心的能力——文件读写。Agent 要帮你改代码，就得读文件、写文件、编辑文件。但直接开个 `fs` 给它用？那跟把家门钥匙交给陌生人有啥区别。本文拆解 `read_file`、`write_file`、`edit_file` 怎么在一个可控的安全边界内工作。
 
 > **核心问题**：Agent 怎么安全地读写用户文件？PathGuard 怎么画边界？`edit_file` 为什么坚持"精确字符串替换"？FileEditEvent 的三阶段通知机制是怎么让 UI 实时看到文件变更的？
 
@@ -382,4 +382,4 @@ Agent 在最上层发号施令，ToolRegistry 在中间层协调调度，PathGua
 > 2. PathGuard 是所有文件操作的安全门禁——两种模式（project/internal）、双重检查（边界+猫窝禁区）、零信任原则：每条路径必须经过 `resolve()` 校验才能落地。
 > 3. FileStates 通过 `AsyncLocalStorage` 实现跨工具调用的状态共享——读过的文件能去重，没读过就编辑会收到警告，自己改过的文件不再享有去重优化。
 
-> 下一篇聊 CatBuddy 的工具注册和调度机制——15 个内置工具怎么在一个统一的 Registry 里注册、查找、执行？MCP 外部工具怎么跟内置工具同台竞技？`ToolRegistry` 的查找顺序和执行流程是怎样的？
+> 下一篇进入记忆系统——Agent 产生的所有内容怎么被存储、传输、渲染？先从一个看似简单的类型系统说起：为什么 CatBuddy 要定义三层消息类型？磁盘上一张脸，网络上一张脸，屏幕上一张脸。

@@ -1,6 +1,6 @@
-# 16｜工具的注册、调度与 MCP 集成——15 个内置工具和一个"万能插槽"
+# 11｜工具的注册、调度与 MCP 集成——15 个内置工具和一个"万能插槽"
 
-> 这是 CatBuddy 技术专栏的第 16 篇。上一篇聊了文件编辑工具的安全机制，这篇往上走一层——15 个内置工具和外部 MCP 工具怎么在同一个 Registry 里注册、查找、执行？Agent 说"我要调 grep"，这条指令经历了什么才变成搜索结果？
+> 这是 CatBuddy 技术专栏的第 11 篇。上篇讲了 Skill 技能系统——怎么让 Agent 把原子工具组合成完整套路。这篇往上走一层——15 个内置工具和外部 MCP 工具怎么在同一个 Registry 里注册、查找、执行？Agent 说"我要调 grep"，这条指令经历了什么才变成搜索结果？
 
 > **核心问题**：ToolRegistry 的内部实现是怎样的？MCP 外部工具怎么和内置工具"同台竞技"？从 LLM 输出 tool_call 到拿到 tool_result，中间经过了哪些环节？
 
@@ -321,4 +321,4 @@ const COMPACTABLE_TOOLS = new Set([
 > 2. 从 `tool_call` 到 `tool_result` 的执行链路是：预检（runner 层）→ Registry.execute（查 Map）→ Tool.execute（具体逻辑）→ 结果截断 → 追加到 messages。异常不中断并行工具调用，空结果有兜底。
 > 3. `McpManager` 管理外部工具的完整生命周期——connect/reload/disconnect/status，包含 Schema 归一化（适配 OpenAI 格式）、瞬态错误重试、按前缀批量注销。`mcp_reload` 工具让 Agent 自己也能触发重连。
 
-> 下一篇聊 CatBuddy 的传输层抽象——Desktop 里用 IPC，Web 端用 WebSocket，上层代码怎么做到"不关心底层是哪种通信方式"？统一传输层接口是怎么设计的？
+> 下一篇聊聊 CatBuddy 的命令系统——`/stop`、`/model`、`/compact` 这些斜杠命令是怎么在 Agent Loop 里被优先路由和执行的？

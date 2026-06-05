@@ -1,0 +1,85 @@
+<mxfile><diagram name="架构图" id="diagram-1"><mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" value="Three-Layer Context Defense System" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+  <mxGeometry x="40" y="10" width="720" height="35" as="geometry"/>
+</mxCell>
+<mxCell id="3" value="Layer 1: Soft Cap (110K tokens)&#10;━━━━━━━━━━━━━━━━━━━━━━━━&#10;• Early warning trigger&#10;• Auto-compact activates: Summarize older turns&#10;• Lightweight, runs inline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;verticalAlign=top;fontSize=12;arcSize=8;" vertex="1" parent="1">
+  <mxGeometry x="40" y="65" width="400" height="115" as="geometry"/>
+</mxCell>
+<mxCell id="4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="3" target="5">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="5" value="Layer 2: Hard Cap (128K tokens)&#10;━━━━━━━━━━━━━━━━━━━━━━━━━━&#10;• Aggressive trimming&#10;• FIFO drop: oldest messages removed&#10;• Critical system messages preserved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;verticalAlign=top;fontSize=12;arcSize=8;" vertex="1" parent="1">
+  <mxGeometry x="40" y="230" width="400" height="115" as="geometry"/>
+</mxCell>
+<mxCell id="6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="5" target="7">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="7" value="Layer 3: Emergency (130K+ tokens)&#10;━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#10;• Catastrophic reset&#10;• Keep only: system prompt + last user message&#10;• AutoCompact background summary injection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;verticalAlign=top;fontSize=12;arcSize=8;" vertex="1" parent="1">
+  <mxGeometry x="40" y="395" width="400" height="115" as="geometry"/>
+</mxCell>
+<mxCell id="8" value="Exceeds 110K →" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=2;fontColor=#b46504;" vertex="1" parent="1">
+  <mxGeometry x="170" y="185" width="100" height="20" as="geometry"/>
+</mxCell>
+<mxCell id="9" value="Exceeds 128K →" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=2;fontColor=#b85450;" vertex="1" parent="1">
+  <mxGeometry x="170" y="350" width="100" height="20" as="geometry"/>
+</mxCell>
+<mxCell id="10" value="AutoCompact Pipeline" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=15;fontStyle=1;fontColor=#1a5276;" vertex="1" parent="1">
+  <mxGeometry x="480" y="55" width="280" height="30" as="geometry"/>
+</mxCell>
+<mxCell id="11" value="① Detect conversation inactive &gt; N minutes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;verticalAlign=middle;fontSize=11;arcSize=12;" vertex="1" parent="1">
+  <mxGeometry x="480" y="95" width="280" height="46" as="geometry"/>
+</mxCell>
+<mxCell id="12" value="② Read full session history from JSONL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;verticalAlign=middle;fontSize=11;arcSize=12;" vertex="1" parent="1">
+  <mxGeometry x="480" y="156" width="280" height="46" as="geometry"/>
+</mxCell>
+<mxCell id="13" value="③ Call LLM to generate summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;verticalAlign=middle;fontSize=11;arcSize=12;" vertex="1" parent="1">
+  <mxGeometry x="480" y="217" width="280" height="46" as="geometry"/>
+</mxCell>
+<mxCell id="14" value="④ Store summary in metadata._last_summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;verticalAlign=middle;fontSize=11;arcSize=12;" vertex="1" parent="1">
+  <mxGeometry x="480" y="278" width="280" height="46" as="geometry"/>
+</mxCell>
+<mxCell id="15" value="⑤ Next session: inject summary into system prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;verticalAlign=middle;fontSize=11;arcSize=12;" vertex="1" parent="1">
+  <mxGeometry x="480" y="339" width="280" height="46" as="geometry"/>
+</mxCell>
+<mxCell id="16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;endArrow=classic;endFill=1;" edge="1" parent="1" source="11" target="12">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;endArrow=classic;endFill=1;" edge="1" parent="1" source="12" target="13">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;endArrow=classic;endFill=1;" edge="1" parent="1" source="13" target="14">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;endArrow=classic;endFill=1;" edge="1" parent="1" source="14" target="15">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;dashed=1;dashPattern=4 4;endArrow=classic;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="15" target="7">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="460" y="362"/>
+      <mxPoint x="460" y="453"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+<mxCell id="21" value="injects summary" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontStyle=2;fontColor=#6c8ebf;" vertex="1" parent="1">
+  <mxGeometry x="445" y="420" width="55" height="18" as="geometry"/>
+</mxCell>
+<mxCell id="22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;strokeWidth=1.5;dashed=1;dashPattern=4 4;endArrow=classic;endFill=1;exitX=0;exitY=0.5;entryX=1;entryY=0.8;" edge="1" parent="1" source="15" target="3">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="455" y="362"/>
+      <mxPoint x="455" y="157"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+<mxCell id="23" value="triggers compact" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontStyle=2;fontColor=#6c8ebf;" vertex="1" parent="1">
+  <mxGeometry x="442" y="140" width="70" height="18" as="geometry"/>
+</mxCell>
+<mxCell id="24" value="🟢 Safe" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;" vertex="1" parent="1">
+  <mxGeometry x="40" y="520" width="70" height="20" as="geometry"/>
+</mxCell>
+<mxCell id="25" value="🟡 Warning" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;" vertex="1" parent="1">
+  <mxGeometry x="120" y="520" width="80" height="20" as="geometry"/>
+</mxCell>
+<mxCell id="26" value="🔴 Critical" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;" vertex="1" parent="1">
+  <mxGeometry x="210" y="520" width="80" height="20" as="geometry"/>
+</mxCell></root></mxGraphModel></diagram></mxfile>

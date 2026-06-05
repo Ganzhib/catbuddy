@@ -412,4 +412,4 @@ LLM 在决策时会综合考虑这四个层次，但**每次 tool call 只需要
 >
 > 4. 四条 Prompt 工程原则：反向剔除（系统做 boilerplate）、示例密度（50% 内容为示例）、错误消息即微 Prompt（含原因+建议）、分层约束（Skill/Tool/Library/Error 四个信息来源）。
 
-> 下一篇是专栏的最后一篇——三端部署与发布。Gateway 用 Docker Compose，Web 是静态文件 + CDN，Desktop 用 electron-builder 打包成三平台安装包。三者怎么协同发版？CI/CD 流水线怎么设计？
+> 下一篇回到 Agent 引擎——一个 Agent 不够用的时候，怎么创建子 Agent 批量并行干活？SubagentManager 怎么管理并发上限？spawn 工具怎么让主 Agent 像调普通工具一样派发子任务？结果怎么通过 MessageBus 注入回对话流？

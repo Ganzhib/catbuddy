@@ -324,4 +324,4 @@ export class Logger {
 >
 > 5. **设计哲学**：四层防线的共同原则是"永远不在用户面前崩溃"。每一层都吞掉自己能处理的错误，处理不了的传给下一层。最坏情况下返回一条有意义的消息，而不是 `undefined` 或白屏。
 
-> 下一篇是专栏的最后一篇——三端部署与发布。Gateway 用 Docker Compose，Web 是静态文件 + CDN，Desktop 用 electron-builder 打包成三平台安装包。三者怎么协同发版？CI/CD 流水线怎么设计？
+> 下一篇回到 Agent 的"大脑"——每次对话开始前，系统提示词是怎么组装的？ContextBuilder 五层流水线怎么把 Handlebars 模板、引导文件、分层记忆、技能清单拼成 LLM 看到的世界？基于 mtime 的指纹缓存怎么避免重复构建？

@@ -574,6 +574,19 @@ export class AgentLoop implements RuntimeState {
       turnLog.error("dispatch error", err);
       console.error("[agent] dispatch error:", detail);
 
+      // Langfuse Skill 最佳实践: 未捕获的错误也需要 Trace
+      // 为什么: 通过 UI 查看错误分布，发现系统性问题
+      if (this._langfuseClient?.enabled) {
+        try {
+          this._langfuseClient.createErrorTrace({
+            name: 'dispatch-error',
+            sessionId: key,
+            error: detail,
+            metadata: { channel: msg.channel, chatId: msg.chatId },
+          })
+        } catch { /* 静默失败，不影响主流程 */ }
+      }
+
       const errorText = detail
         ? `Sorry, I encountered an error: ${detail}`
         : "Sorry, I encountered an error.";

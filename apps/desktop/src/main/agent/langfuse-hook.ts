@@ -21,9 +21,17 @@
  *   - 工具名称、参数摘要、结果摘要
  *   - 执行耗时
  *   - 成功/失败状态
+ *
+ * Langfuse Skill 最佳实践:
+ * - Trace 必须有 version / environment 标签用于筛选
+ * - 错误 Trace 标记为 ERROR level
+ * - 工具执行成功率通过 Score 追踪
+ * - 输入/输出中的敏感数据必须脱敏
+ * - 参考: https://github.com/langfuse/skills/blob/main/skills/langfuse/references/instrumentation.md
  */
 import { AgentHook, type AgentHookContext } from './hook'
 import type { LangfuseClient } from './langfuse-client'
+import { maskSensitiveData } from './langfuse-client'
 import type { LangfuseTraceClient, LangfuseGenerationClient, LangfuseSpanClient } from 'langfuse'
 
 export interface LangfuseHookOptions {
@@ -56,6 +64,8 @@ export class LangfuseAgentHook extends AgentHook {
     super()
   }
 
+  private traceId: string | null = null
+
   // ── 创建 Trace ──
   private ensureTrace(): LangfuseTraceClient | null {
     if (this.trace) return this.trace
@@ -70,9 +80,17 @@ export class LangfuseAgentHook extends AgentHook {
         model: this.opts.model,
         temperature: this.opts.temperature,
         maxTokens: this.opts.maxTokens,
+        // 附加环境信息（Langfuse Skill 基线要求）
+        version: this.opts.client.version,
+        environment: this.opts.client.environment,
       },
-      tags: ['agent', 'catbuddy'],
-      input: this.opts.userMessage,
+      tags: [
+        'agent',
+        'catbuddy',
+        `env:${this.opts.client.environment}`,   // Langfuse Skill: 按环境筛选
+        `v:${this.opts.client.version}`,          // Langfuse Skill: 按版本对比
+      ],
+      input: maskSensitiveData(this.opts.userMessage),
     })
 
     if (!trace) {
@@ -81,6 +99,7 @@ export class LangfuseAgentHook extends AgentHook {
     }
 
     this.trace = trace
+    this.traceId = trace.traceId ?? null
     return trace
   }
 
@@ -102,7 +121,7 @@ export class LangfuseAgentHook extends AgentHook {
           temperature: this.opts.temperature ?? 0.7,
           maxTokens: this.opts.maxTokens ?? 4096,
         },
-        input: this._summarizeMessages(ctx.messages),
+        input: maskSensitiveData(this._summarizeMessages(ctx.messages)),
         startTime: this.generationStartTime,
       })
     } catch (err: any) {
@@ -152,14 +171,14 @@ export class LangfuseAgentHook extends AgentHook {
     try {
       this.currentGeneration.end({
         output: ctx.response
-          ? {
+          ? maskSensitiveData({
               content: this._truncate(ctx.response.content ?? '', 2000),
               finishReason: ctx.response.finishReason,
               toolCallCount: ctx.response.toolCalls?.length ?? 0,
               reasoningContent: ctx.response.reasoningContent
                 ? this._truncate(ctx.response.reasoningContent, 500)
                 : undefined,
-            }
+            })
           : null,
         usage: ctx.response?.usage
           ? {
@@ -249,7 +268,7 @@ export class LangfuseAgentHook extends AgentHook {
       try {
         const span = this.trace.span({
           name: `tool:${tc.name}`,
-          input: this._summarizeToolArgs(tc.arguments),
+          input: maskSensitiveData(this._summarizeToolArgs(tc.arguments)),
         })
 
         const metadata: Record<string, any> = {}
@@ -261,10 +280,10 @@ export class LangfuseAgentHook extends AgentHook {
           }
         }
 
+        // 注意: 不在 span.end 传 level，自托管 v3 服务端不支持该字段
         span.end({
-          output: this._truncate(result, 1000),
+          output: maskSensitiveData(this._truncate(result, 1000)),
           metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-          level: ev?.status === 'error' ? 'ERROR' : 'DEFAULT',
         } as any)
       } catch (err: any) {
         // 静默失败，避免影响 agent 主流程
@@ -276,23 +295,39 @@ export class LangfuseAgentHook extends AgentHook {
   private _finalizeTrace(ctx: AgentHookContext): void {
     if (!this.trace) return
 
+    const isError = ctx.stopReason === 'error' || ctx.stopReason === 'cancelled'
+    const toolEvents = ctx.toolEvents ?? []
+    const succeededTools = toolEvents.filter((e) => e.status === 'completed').length
+    const totalTools = toolEvents.length
+
     try {
+      // Langfuse Skill: 错误 Trace 通过 metadata.error 标记 / 工具成功率写入 metadata
+      // 注意: v3.38.20 自托管不支持 level / scores API，改用 metadata 承载
       this.trace.update({
-        output: {
+        output: maskSensitiveData({
           finalContent: this._truncate(ctx.finalContent ?? '', 2000),
           stopReason: ctx.stopReason ?? 'unknown',
           iterations: this.iterationCount,
           toolsUsed: [...this.allToolsUsed],
           totalInputTokens: this.totalInputTokens,
           totalOutputTokens: this.totalOutputTokens,
-        },
+        }),
         metadata: {
           ...(this.opts.workspace ? { workspace: this.opts.workspace } : {}),
           iterations: this.iterationCount,
           toolsUsedCount: this.allToolsUsed.size,
           totalTokens: this.totalInputTokens + this.totalOutputTokens,
+          ...(isError ? { error: true, stopReason: ctx.stopReason } : {}),
+          ...(totalTools > 0 ? {
+            toolSucceeded: succeededTools,
+            totalTools,
+            toolSuccessRate: succeededTools / totalTools,
+          } : {}),
+          // Langfuse Skill: 追踪环境/版本到 metadata（支持 Dashboard 筛选）
+          version: this.opts.client.version,
+          environment: this.opts.client.environment,
         },
-      })
+      } as any)
     } catch (err: any) {
       console.warn(`[langfuse-hook] failed to update trace: ${err.message}`)
     }

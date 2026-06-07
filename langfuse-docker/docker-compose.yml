@@ -3,6 +3,22 @@
 # 所有敏感凭据通过 .env 文件注入
 
 services:
+  # 初始化 MinIO bucket（一次性任务，确保 langfuse 事件存储 bucket 存在）
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minio} ${MINIO_ROOT_PASSWORD};
+      mc mb local/${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse} --ignore-existing;
+      echo 'MinIO bucket ready';
+      exit 0;
+      "
+    networks:
+      - default
+
   langfuse-worker:
     image: docker.io/langfuse/langfuse-worker:3
     restart: always
@@ -11,6 +27,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       clickhouse:

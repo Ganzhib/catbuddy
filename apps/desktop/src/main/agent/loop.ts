@@ -34,7 +34,9 @@ import {
 } from "../heartbeat/index.js";
 import type { RuntimeState } from "./tools/runtime_state";
 import { LLMProvider } from "../providers";
-import type { catbuddyConfig, TokenUsage } from "@catbuddy/shared";
+import type { catbuddyConfig, LangfuseConfig, TokenUsage } from "@catbuddy/shared";
+import { LangfuseAgentHook } from "./langfuse-hook";
+import type { LangfuseClient } from "./langfuse-client";
 import { type Logger, logger, trace as newTrace } from "../utils/logger";
 import type {
   InboundMessage,
@@ -167,6 +169,7 @@ export class AgentLoop implements RuntimeState {
   currentIteration = 0;
   private readonly _runtimeVars: Record<string, unknown> = {};
   private _lastUsage: TokenUsage | null = null;
+  private _langfuseClient: LangfuseClient | null = null;
   private _spawnContext: SpawnContext = {
     originChannel: "desktop",
     originChatId: "main",
@@ -275,6 +278,16 @@ export class AgentLoop implements RuntimeState {
 
     this.commands = new CommandRouter();
     registerBuiltinCommands(this.commands);
+  }
+
+  /** 注入 Langfuse 客户端（在 init-agent 中初始化后调用） */
+  setLangfuseClient(client: LangfuseClient): void {
+    this._langfuseClient = client
+  }
+
+  /** 获取 Langfuse 配置 */
+  get langfuseConfig(): LangfuseConfig | undefined {
+    return this._config?.langfuse
   }
 
   /** Switch the folder the agent operates on; app config/session/channel remain stable. */
@@ -862,6 +875,21 @@ export class AgentLoop implements RuntimeState {
     const persistFromIndex =
       (ctx.context.system ? 1 : 0) + ctx.context.messages.length;
     const fileStates = this.fileStateStore.forSession(ctx.sessionKey);
+
+    // ── Langfuse Hook ──
+    const langfuseHook =
+      this._langfuseClient?.enabled
+        ? new LangfuseAgentHook({
+            client: this._langfuseClient,
+            sessionKey: ctx.sessionKey,
+            workspace: this.workspace,
+            model: this.model,
+            temperature: this._config?.agents?.defaults?.temperature,
+            maxTokens: this._config?.agents?.defaults?.maxTokens,
+            userMessage: ctx.msg.content,
+          })
+        : undefined
+
     let result;
     try {
       result = await runWithFileStates(fileStates, async () => {
@@ -878,6 +906,7 @@ export class AgentLoop implements RuntimeState {
           contextWindowTokens: this.contextWindowTokens,
           providerRetryMode: this.providerRetryMode,
           abortSignal: ctx.msg._abortSignal,
+          hook: langfuseHook,
           progressCallback: async (ev) => cbs?.onToolProgress?.(ev),
           retryWaitCallback: async (msg) => cbs?.onRetryWait?.(msg),
           onStream: async (delta) => cbs?.onStreamDelta?.(delta, streamId),
@@ -897,6 +926,20 @@ export class AgentLoop implements RuntimeState {
     ctx.persistFromIndex = persistFromIndex;
     ctx.stopReason = result.stopReason;
     this._lastUsage = result.usage;
+
+    // ── Langfuse 指标日志 ──
+    if (langfuseHook) {
+      const metrics = langfuseHook.getMetrics()
+      logger.info(
+        `[langfuse] turn complete | iterations=${metrics.iterations} ` +
+        `tokens(in=${metrics.totalInputTokens}/out=${metrics.totalOutputTokens}) ` +
+        `tools=[${metrics.toolsUsed.join(',')}] stop=${result.stopReason}`,
+      )
+      // 异步 flush 非心跳消息的 trace 数据
+      if (!isHeartbeatMessage(ctx.msg)) {
+        this._langfuseClient?.flush().catch(() => {})
+      }
+    }
 
     // 通知流结束
     cbs?.onStreamEnd?.(streamId, false);

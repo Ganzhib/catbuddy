@@ -7,7 +7,7 @@ import { BOOTSTRAP_FILES } from './types.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export const TEMPLATES_DIR = path.resolve(__dirname, '../../templates')
+export const TEMPLATES_DIR = path.resolve(__dirname, '../templates')
 
 export interface FileSystem {
   readWorkspaceFile(name: string, workspaceDir?: string): string

@@ -61,6 +61,14 @@ export function getDefaultConfig(): catbuddyConfig {
       my: { enable: false, allowSet: false },
       imageGeneration: { enable: false },
     },
+    langfuse: {
+      enabled: false,
+      publicKey: process.env.LANGFUSE_PUBLIC_KEY?.trim() || '',
+      secretKey: process.env.LANGFUSE_SECRET_KEY?.trim() || '',
+      baseUrl: process.env.LANGFUSE_BASE_URL?.trim() || 'https://cloud.langfuse.com',
+      flushAt: 10,
+      flushInterval: 5000,
+    },
   }
 }
 

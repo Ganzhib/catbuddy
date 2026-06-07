@@ -195,6 +195,22 @@ export interface AgentStatus {
   activeSessions: number
 }
 
+// ── Langfuse 配置 ──
+export interface LangfuseConfig {
+  /** 是否启用 Langfuse 追踪 */
+  enabled: boolean
+  /** Langfuse Public Key (pk-lf-...) */
+  publicKey: string
+  /** Langfuse Secret Key (sk-lf-...) */
+  secretKey: string
+  /** Langfuse 服务地址，默认 https://cloud.langfuse.com */
+  baseUrl: string
+  /** 批量上报阈值，默认 10 */
+  flushAt?: number
+  /** 批量上报间隔(ms)，默认 5000 */
+  flushInterval?: number
+}
+
 // ── 配置 ──
 export interface catbuddyConfig {
   workspace: string
@@ -228,6 +244,8 @@ export interface catbuddyConfig {
   modelPresets?: Record<string, ModelPresetConfig>
   channels: ChannelsConfig
   tools: ToolsConfig
+  /** Langfuse LLM 可观测性追踪 */
+  langfuse?: LangfuseConfig
   cron?: CronSchedule[]
   /** Cross-device Gateway remote control (desktop runs Agent for Web). */
   gateway?: {

@@ -1,9 +1,12 @@
-# Langfuse v3 Docker Compose - 全栈部署
+# Langfuse v3 Docker Compose — 全栈部署（Nginx 由外部 Gateway 提供）
 # 来源: https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
-# 所有敏感凭据通过 .env 文件注入
+#
+# 网络架构:
+#   外部 Nginx (Gateway 80/443) → langfuse-web:3000 (127.0.0.1)
+#   deploy.cjs --nginx 自动配置外部 Nginx + SSL
 
 services:
-  # 初始化 MinIO bucket（一次性任务，确保 langfuse 事件存储 bucket 存在）
+  # ──────────────── MinIO 初始化 ────────────────
   minio-init:
     image: minio/mc:latest
     depends_on:
@@ -17,8 +20,9 @@ services:
       exit 0;
       "
     networks:
-      - default
+      - langfuse-net
 
+  # ──────────────── Langfuse 服务 ────────────────
   langfuse-worker:
     image: docker.io/langfuse/langfuse-worker:3
     restart: always
@@ -85,13 +89,22 @@ services:
       REDIS_TLS_KEY: ${REDIS_TLS_KEY:-/certs/redis.key}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
       SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
+    networks:
+      - langfuse-net
 
   langfuse-web:
     image: docker.io/langfuse/langfuse:3
+    container_name: langfuse-web
     restart: always
     depends_on: *langfuse-depends-on
     ports:
-      - 3001:3000
+      - 127.0.0.1:3000:3000   # 仅本地回环，由外部 Gateway Nginx 代理
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/public/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
     environment:
       <<: *langfuse-worker-env
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
@@ -104,6 +117,8 @@ services:
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
       LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-}
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
+    networks:
+      - langfuse-net
 
   clickhouse:
     image: docker.io/clickhouse/clickhouse-server
@@ -125,6 +140,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 1s
+    networks:
+      - langfuse-net
 
   minio:
     image: minio/minio:latest
@@ -144,6 +161,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 1s
+    networks:
+      - langfuse-net
 
   redis:
     image: docker.io/redis:7
@@ -160,6 +179,8 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
+    networks:
+      - langfuse-net
 
   postgres:
     image: docker.io/postgres:${POSTGRES_VERSION:-17}
@@ -179,6 +200,12 @@ services:
       - 127.0.0.1:5434:5432
     volumes:
       - langfuse_postgres_data:/var/lib/postgresql/data
+    networks:
+      - langfuse-net
+
+networks:
+  langfuse-net:
+    driver: bridge
 
 volumes:
   langfuse_postgres_data:

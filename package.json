@@ -39,7 +39,9 @@
     "deploy:gateway:pack": "node deploy/deploy.cjs --skip-upload",
     "deploy:gateway:nginx": "node deploy/deploy.cjs --nginx-only",
     "deploy:web": "node deploy/deploy-web.cjs",
-    "deploy:web:full": "node deploy/deploy-web.cjs --with-desktop"
+    "deploy:web:full": "node deploy/deploy-web.cjs --with-desktop",
+    "deploy:langfuse": "node langfuse-docker/deploy.cjs",
+    "deploy:langfuse:pack": "node langfuse-docker/deploy.cjs --skip-remote"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

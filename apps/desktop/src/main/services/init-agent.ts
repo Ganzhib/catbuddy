@@ -6,6 +6,7 @@ import { SessionManager } from "../session/session-manager.js";
 import { getDefaultConfig, normalizeConfigWithDefaults } from "../config/defaults.js";
 import { saveConfig } from "../config/persist.js";
 import { log } from "../utils/index.js";
+import { logger } from "../utils/logger.js";
 import { MessageBus } from "../bus/index.js";
 import { ChannelManager, DesktopChannel, GatewayChannel } from "../channels/index.js";
 import { registerIpcHandlers } from "../ipcHandlers/index.js";
@@ -20,6 +21,7 @@ import {
   getWorkspaceFolderById,
   listWorkspaceFolders,
 } from "./workspace-folders.js";
+import { getLangfuseClient, LangfuseClient } from "../agent/langfuse-client.js";
 
 export interface AgentRuntime {
   agentLoop: AgentLoop;
@@ -88,6 +90,15 @@ export async function initAgent(): Promise<AgentRuntime> {
 
   await agentLoop.connectMcp();
 
+  // ── Langfuse 初始化 ──
+  const langfuseClient = getLangfuseClient();
+  const lfOpts = LangfuseClient.buildOptions(config.langfuse);
+  langfuseClient.initialize(lfOpts);
+  if (langfuseClient.enabled) {
+    agentLoop.setLangfuseClient(langfuseClient);
+    logger.info('[init] Langfuse tracing enabled');
+  }
+
   const runtime: DesktopRuntimeRefs = {
     agentLoop,
     sessions,
@@ -110,6 +121,9 @@ export async function initAgent(): Promise<AgentRuntime> {
   app.on("will-quit", () => {
     cron.stopAll();
     heartbeat.stopAll();
+    langfuseClient.shutdown().catch((err) =>
+      console.warn(`[init] langfuse shutdown error: ${err.message}`),
+    );
   });
 
   channelManager.start();

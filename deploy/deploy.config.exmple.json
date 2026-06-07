@@ -10,5 +10,6 @@
   "setupNginx": false,
   "certEmail": "邮箱",
   "webDomain": "web端域名",
-  "webRemoteDir": "/opt/catbuddy/web"
+  "webRemoteDir": "/opt/catbuddy/web",
+  "langfuseRemoteDir": "/opt/catbuddy/langfuse"
 }

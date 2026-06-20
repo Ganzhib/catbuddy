@@ -1,7 +1,44 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node scripts/test-langfuse.mjs)"
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git stash *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(mkdir *)",
+      "Bash(echo *)",
+      "Bash(pnpm *)",
+      "Bash(npx tsc *)",
+      "Bash(node scripts/*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"var i=process.env.CLAUDE_TOOL_INPUT||'';if(i.includes('packages/shared/'))console.log('[!] shared包有变更，下游包需重建: pnpm -F @catbuddy/shared build')\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[catbuddy] 技能就绪 | 11个skill可用 | 常用: /catbuddy-dev /agent-system /architecture-guard'"
+          }
+        ]
+      }
     ]
   }
 }

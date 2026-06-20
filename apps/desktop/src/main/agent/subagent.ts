@@ -9,11 +9,13 @@ import type { MessageBus } from '../bus'
 import type { InboundMessage, ToolEvent } from '@catbuddy/shared'
 import { AgentRunner, type RunSpec } from './runner'
 import type { Context } from './context'
-import { AgentHook, type AgentHookContext } from './hook'
+import { AgentHook, type AgentHookContext, CompositeHook } from './hook'
 import { ToolRegistry } from './tools'
 import { builtinToolFactories } from './tools/builtin'
 import { FileStates, runWithFileStates } from './tools/file_state'
 import type { TemplateLoader } from './context/template-loader.js'
+import type { LangfuseClient } from './langfuse-client'
+import { LangfuseAgentHook } from './langfuse-hook'
 
 export interface SubagentStatus {
   taskId: string
@@ -59,6 +61,7 @@ export class SubagentManager {
   private _catbuddyDir: string
   private _restrictToWorkspace: boolean
   private templates: TemplateLoader
+  private _langfuseClient: LangfuseClient | null = null
 
   constructor(
     private provider: LLMProvider,
@@ -102,6 +105,11 @@ export class SubagentManager {
     this.provider = provider
     this.model = model
     this.runner.setProvider(provider)
+  }
+
+  /** 注入 Langfuse 客户端，为子代理启用 LLM 调用追踪 */
+  setLangfuseClient(client: LangfuseClient | null): void {
+    this._langfuseClient = client
   }
 
   private _buildTools(): ToolRegistry {
@@ -188,6 +196,25 @@ export class SubagentManager {
     status: SubagentStatus,
     temperature?: number,
   ): Promise<void> {
+    // ── Langfuse Hook（子代理 LLM 调用追踪）──
+    const langfuseHook =
+      this._langfuseClient?.enabled
+        ? new LangfuseAgentHook({
+            client: this._langfuseClient,
+            sessionKey: origin.sessionKey,
+            workspace: this.workspace,
+            model: this.model,
+            temperature,
+            userMessage: task,
+          })
+        : undefined
+
+    const statusHook = new SubagentHook(status)
+    const hook =
+      langfuseHook
+        ? new CompositeHook([statusHook, langfuseHook])
+        : statusHook
+
     try {
       const tools = this._buildTools()
       const fileStates = new FileStates()
@@ -214,10 +241,36 @@ export class SubagentManager {
           contextWindowTokens: 128_000,
           providerRetryMode: 'standard',
           temperature,
-          hook: new SubagentHook(status),
+          hook,
           maxIterationsMessage: this.templates.renderMaxIterationsMessage(this.maxIterations),
         }),
       )
+
+      // ── Langfuse Score 上报 ──
+      if (langfuseHook && this._langfuseClient?.enabled) {
+        const metrics = langfuseHook.getMetrics()
+        const trace = langfuseHook.getTrace()
+        if (trace?.traceId) {
+          const toolEvents = result.toolEvents ?? []
+          const succeeded = toolEvents.filter((e) => e.status === 'completed').length
+          const total = toolEvents.length
+          this._langfuseClient.createScore({
+            traceId: trace.traceId,
+            name: 'tool-success-rate',
+            value: total > 0 ? succeeded / total : 1,
+            dataType: 'NUMERIC',
+            comment: `subagent: ${label}`,
+          }).catch(() => {})
+          this._langfuseClient.createScore({
+            traceId: trace.traceId,
+            name: 'iterations',
+            value: metrics.iterations,
+            dataType: 'NUMERIC',
+            comment: `subagent: ${label}`,
+          }).catch(() => {})
+        }
+        this._langfuseClient.flush().catch(() => {})
+      }
 
       status.phase = 'done'
       status.stopReason = result.stopReason
@@ -225,6 +278,17 @@ export class SubagentManager {
         || 'Task completed but no final response was generated.'
       await this._announceResult(taskId, label, task, text, origin, 'ok')
     } catch (err: unknown) {
+      // ── Langfuse 错误 Trace ──
+      if (this._langfuseClient?.enabled) {
+        this._langfuseClient.createErrorTrace({
+          name: `subagent:${label}`,
+          sessionId: origin.sessionKey,
+          error: err instanceof Error ? err.message : String(err),
+          metadata: { taskId, label },
+        })
+        this._langfuseClient.flush().catch(() => {})
+      }
+
       status.phase = 'error'
       status.error = err instanceof Error ? err.message : String(err)
       await this._announceResult(

@@ -283,6 +283,12 @@ export class AgentLoop implements RuntimeState {
   /** 注入 Langfuse 客户端（在 init-agent 中初始化后调用） */
   setLangfuseClient(client: LangfuseClient): void {
     this._langfuseClient = client
+    // 级联注入到子代理管理器、会话压缩器与记忆处理器
+    if (this.subagents) {
+      this.subagents.setLangfuseClient(client)
+    }
+    this.consolidator.setLangfuseClient(client)
+    this.dream?.setLangfuseClient(client)
   }
 
   /** 获取 Langfuse 配置 */
@@ -940,16 +946,59 @@ export class AgentLoop implements RuntimeState {
     ctx.stopReason = result.stopReason;
     this._lastUsage = result.usage;
 
-    // ── Langfuse 指标日志 ──
+    // ── Langfuse 指标日志 + Score 上报 ──
     if (langfuseHook) {
       const metrics = langfuseHook.getMetrics()
+      const latencyMs = Math.round(performance.now() - ctx.startedAt)
       logger.info(
         `[langfuse] turn complete | iterations=${metrics.iterations} ` +
         `tokens(in=${metrics.totalInputTokens}/out=${metrics.totalOutputTokens}) ` +
-        `tools=[${metrics.toolsUsed.join(',')}] stop=${result.stopReason}`,
+        `tools=[${metrics.toolsUsed.join(',')}] stop=${result.stopReason} ` +
+        `latency=${latencyMs}ms`,
       )
       // 异步 flush 非心跳消息的 trace 数据
       if (!isHeartbeatMessage(ctx.msg)) {
+        // Langfuse Skill: 通过 Score 追踪质量指标
+        const trace = langfuseHook.getTrace()
+        if (trace?.traceId && this._langfuseClient) {
+          const { traceId } = trace
+          // 工具成功率
+          const toolEvents = result.toolEvents ?? []
+          const succeeded = toolEvents.filter((e) => e.status === 'completed').length
+          const totalTools = toolEvents.length
+          this._langfuseClient.createScore({
+            traceId,
+            name: 'tool-success-rate',
+            value: totalTools > 0 ? succeeded / totalTools : 1,
+            dataType: 'NUMERIC',
+            comment: `${succeeded}/${totalTools} tools succeeded`,
+          }).catch(() => {})
+          // 迭代次数
+          this._langfuseClient.createScore({
+            traceId,
+            name: 'iterations',
+            value: metrics.iterations,
+            dataType: 'NUMERIC',
+          }).catch(() => {})
+          // 响应延迟（毫秒）
+          this._langfuseClient.createScore({
+            traceId,
+            name: 'response-latency',
+            value: latencyMs,
+            dataType: 'NUMERIC',
+            comment: `${latencyMs}ms total turn time`,
+          }).catch(() => {})
+          // Token 效率（输出/输入比，评估模型利用效率）
+          if (metrics.totalInputTokens > 0) {
+            this._langfuseClient.createScore({
+              traceId,
+              name: 'token-efficiency',
+              value: metrics.totalOutputTokens / metrics.totalInputTokens,
+              dataType: 'NUMERIC',
+              comment: `out/in ratio: ${metrics.totalOutputTokens}/${metrics.totalInputTokens}`,
+            }).catch(() => {})
+          }
+        }
         this._langfuseClient?.flush().catch(() => {})
       }
     }

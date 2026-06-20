@@ -11,6 +11,8 @@ import {
 } from './layered-memory.js'
 import { getGlobalProfileWorkspace } from '../services/global-profile.js'
 import type { TemplateLoader } from './context/template-loader.js'
+import type { LangfuseClient } from './langfuse-client'
+import { maskSensitiveData } from './langfuse-client'
 
 export interface ConsolidatorOpts {
   provider: LLMProvider
@@ -35,6 +37,7 @@ export class Consolidator {
   private maxCompletionTokens: number
   private templates: TemplateLoader
   private _compacting = new Set<string>()
+  private _langfuseClient: LangfuseClient | null = null
 
   constructor(opts: ConsolidatorOpts) {
     this.provider = opts.provider
@@ -52,6 +55,11 @@ export class Consolidator {
     this.provider = provider
     this.model = model
     this.contextWindowTokens = contextWindowTokens
+  }
+
+  /** 注入 Langfuse 客户端，为会话压缩 LLM 调用启用追踪 */
+  setLangfuseClient(client: LangfuseClient | null): void {
+    this._langfuseClient = client
   }
 
   /** 压缩闲置 session 的旧消息到 MEMORY.md */
@@ -87,12 +95,58 @@ Conversation:
 ${conversationText}`)
 
       process.stderr.write(`[consolidator] STEP3: calling LLM...\n`)
+
+      // ── Langfuse Trace: 会话压缩 LLM 调用 ──
+      const lfTrace = this._langfuseClient?.enabled
+        ? this._langfuseClient.createTrace({
+            name: 'consolidator-summary',
+            sessionId: sessionKey,
+            metadata: {
+              messageCount: toArchive.length,
+              keptRecent: keepRecent,
+              model: this.model,
+            },
+            tags: ['consolidator', 'memory'],
+            input: maskSensitiveData(compactPrompt.slice(0, 2000)),
+          })
+        : null
+
+      const genStartTime = new Date()
       const response = await this.provider.chat({
         messages: [{ role: 'user', content: compactPrompt }],
         model: this.model,
         maxTokens: 1024,
         temperature: 0.3,
       })
+
+      // ── Langfuse Generation 结束 ──
+      if (lfTrace) {
+        try {
+          const gen = lfTrace.generation({
+            name: 'consolidator-llm',
+            model: this.model,
+            modelParameters: { temperature: 0.3, maxTokens: 1024 },
+            input: maskSensitiveData(compactPrompt.slice(0, 2000)),
+            startTime: genStartTime,
+          })
+          gen.end({
+            output: maskSensitiveData(response.content?.slice(0, 2000) ?? ''),
+            usage: response.usage
+              ? {
+                  promptTokens: response.usage.inputTokens,
+                  completionTokens: response.usage.outputTokens,
+                }
+              : undefined,
+          })
+          lfTrace.update({
+            output: maskSensitiveData(response.content?.slice(0, 1000) ?? ''),
+            metadata: {
+              finishReason: response.finishReason,
+              summaryLength: response.content?.length ?? 0,
+            },
+          } as any)
+        } catch { /* 静默失败，不影响主流程 */ }
+      }
 
       process.stderr.write(`[consolidator] STEP4: LLM response finishReason=${response.finishReason} contentLen=${response.content?.length || 0}\n`)
 

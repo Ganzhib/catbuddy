@@ -270,7 +270,7 @@ export function getLangfuseClient(): LangfuseClient {
  * 参考: https://langfuse.com/docs/security/data-masking
  */
 const SENSITIVE_KEY_PATTERNS = [
-  /(api[_-]?key|apikey|secret|password|token|auth|credential)/i,
+  /(api[_-]?key|apikey|secret|password|token|auth|credential|private[_-]?key|access[_-]?key)/i,
 ]
 
 const SENSITIVE_VALUE_PATTERNS = [
@@ -279,9 +279,81 @@ const SENSITIVE_VALUE_PATTERNS = [
   /pk-[a-zA-Z0-9_-]{20,}/g,
   // JWT tokens
   /eyJ[a-zA-Z0-9_-]{30,}\.[a-zA-Z0-9_-]{30,}\.[a-zA-Z0-9_-]{10,}/g,
+  // AWS Access Key ID (AKIA* — 20-char 大写字母数字)
+  /AKIA[0-9A-Z]{16}/g,
+  // GitHub tokens (ghp_, gho_, ghu_, ghs_, github_pat_)
+  /gh[pous]_[A-Za-z0-9_]{36,}/g,
+  /github_pat_[A-Za-z0-9_]{22,}/g,
+  // Authorization: Bearer tokens
+  /Bearer\s+([A-Za-z0-9_\-\.=]{20,})/gi,
+  /x-api-key\s*[:=]\s*[A-Za-z0-9_\-]{16,}/gi,
   // 常见 secret 格式
   /(secret|password|token)=[^&\s]{8,}/gi,
 ]
+
+/**
+ * 估算 LLM 调用成本（USD）
+ *
+ * Langfuse Skill 最佳实践:
+ * - 对于 Langfuse 定价表已知的模型，使用精确名称让 Dashboard 自动计算
+ * - 对于自定义/本地模型，通过 generation.costDetails 手动附加成本
+ * - 参考: https://langfuse.com/docs/model-usage-and-cost
+ *
+ * 定价参考（每 1M tokens, USD）:
+ * - deepseek-chat:    input $0.14  output $0.28
+ * - deepseek-reasoner: input $0.55  output $2.19
+ * - gpt-4o:           input $2.50  output $10.00
+ * - gpt-4o-mini:      input $0.15  output $0.60
+ * - claude-sonnet-4:  input $3.00  output $15.00
+ * - claude-haiku-4:   input $0.80  output $4.00
+ */
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'deepseek-chat': { input: 0.14, output: 0.28 },
+  'deepseek-reasoner': { input: 0.55, output: 2.19 },
+  'deepseek-v3': { input: 0.14, output: 0.28 },
+  'deepseek-r1': { input: 0.55, output: 2.19 },
+  'gpt-4o': { input: 2.50, output: 10.00 },
+  'gpt-4o-mini': { input: 0.15, output: 0.60 },
+  'gpt-4-turbo': { input: 10.00, output: 30.00 },
+  'claude-sonnet-4-20250514': { input: 3.00, output: 15.00 },
+  'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00 },
+  'claude-opus-4-20250514': { input: 15.00, output: 75.00 },
+}
+
+export interface CostEstimate {
+  inputCost: number
+  outputCost: number
+  totalCost: number
+  /** 是否为估算值（非精确定价表匹配） */
+  estimated: boolean
+}
+
+export function estimateCost(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+): CostEstimate {
+  const pricing = MODEL_PRICING[model]
+  if (pricing) {
+    const inputCost = (inputTokens / 1_000_000) * pricing.input
+    const outputCost = (outputTokens / 1_000_000) * pricing.output
+    return {
+      inputCost: Math.round(inputCost * 1e6) / 1e6,
+      outputCost: Math.round(outputCost * 1e6) / 1e6,
+      totalCost: Math.round((inputCost + outputCost) * 1e6) / 1e6,
+      estimated: false,
+    }
+  }
+  // 未知模型的粗略估算（$0.50/$2.00 每 1M tokens）
+  const inputCost = (inputTokens / 1_000_000) * 0.50
+  const outputCost = (outputTokens / 1_000_000) * 2.00
+  return {
+    inputCost: Math.round(inputCost * 1e6) / 1e6,
+    outputCost: Math.round(outputCost * 1e6) / 1e6,
+    totalCost: Math.round((inputCost + outputCost) * 1e6) / 1e6,
+    estimated: true,
+  }
+}
 
 export function maskSensitiveData(input: any): any {
   if (input === null || input === undefined) return input

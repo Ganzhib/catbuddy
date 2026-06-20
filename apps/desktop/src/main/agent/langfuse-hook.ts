@@ -31,7 +31,7 @@
  */
 import { AgentHook, type AgentHookContext } from './hook'
 import type { LangfuseClient } from './langfuse-client'
-import { maskSensitiveData } from './langfuse-client'
+import { maskSensitiveData, estimateCost } from './langfuse-client'
 import type { LangfuseTraceClient, LangfuseGenerationClient, LangfuseSpanClient } from 'langfuse'
 
 export interface LangfuseHookOptions {
@@ -58,7 +58,10 @@ export class LangfuseAgentHook extends AgentHook {
   private iterationCount = 0
   private totalInputTokens = 0
   private totalOutputTokens = 0
+  private totalCost = 0
   private allToolsUsed: Set<string> = new Set()
+  /** TTFT (Time-to-First-Token) — 首字延迟（毫秒） */
+  private firstTokenTime: Date | null = null
 
   constructor(private opts: LangfuseHookOptions) {
     super()
@@ -169,6 +172,11 @@ export class LangfuseAgentHook extends AgentHook {
       : 0
 
     try {
+      const iterInputTokens = ctx.response?.usage?.inputTokens ?? 0
+      const iterOutputTokens = ctx.response?.usage?.outputTokens ?? 0
+      const cost = estimateCost(this.opts.model, iterInputTokens, iterOutputTokens)
+      this.totalCost += cost.totalCost
+
       this.currentGeneration.end({
         output: ctx.response
           ? maskSensitiveData({
@@ -190,6 +198,20 @@ export class LangfuseAgentHook extends AgentHook {
           durationMs,
           streamedContent: ctx.streamedContent,
           streamedReasoning: ctx.streamedReasoning,
+          // Langfuse Skill: TTFT 首字延迟（流式体验关键指标）
+          ...(this.firstTokenTime && this.generationStartTime
+            ? {
+                ttftMs: this.firstTokenTime.getTime() - this.generationStartTime.getTime(),
+              }
+            : {}),
+          // Langfuse Skill: 成本归因 — 对 Langfuse 定价表不覆盖的模型手动附加 cost_details
+          costDetails: {
+            inputCost: cost.inputCost,
+            outputCost: cost.outputCost,
+            totalCost: cost.totalCost,
+            estimated: cost.estimated,
+            model: this.opts.model,
+          },
         },
       })
     } catch (err: any) {
@@ -198,6 +220,7 @@ export class LangfuseAgentHook extends AgentHook {
 
     this.currentGeneration = null
     this.generationStartTime = null
+    this.firstTokenTime = null
     this.activeSpans = []
 
     // 如果是最终响应（finalContent 已设置），更新 trace 输出
@@ -206,10 +229,17 @@ export class LangfuseAgentHook extends AgentHook {
     }
   }
 
-  // ── 流式回调（可选：如果想实时看流内容，在这里处理）──
+  // ── 流式回调（用于 TTFT 追踪）──
   override wantsStreaming(): boolean {
-    // 如果不需要实时流事件上报到 Langfuse，返回 false
-    return false
+    // 启用流事件以记录 Time-to-First-Token
+    return this.opts.client.enabled
+  }
+
+  override async onStream(_context: AgentHookContext, _delta: string): Promise<void> {
+    // 记录首次 token 到达时间（TTFT）
+    if (!this.firstTokenTime && this.generationStartTime) {
+      this.firstTokenTime = new Date()
+    }
   }
 
   // ── 清理 ──
@@ -323,7 +353,9 @@ export class LangfuseAgentHook extends AgentHook {
             totalTools,
             toolSuccessRate: succeededTools / totalTools,
           } : {}),
-          // Langfuse Skill: 追踪环境/版本到 metadata（支持 Dashboard 筛选）
+          // Langfuse Skill: 成本归因 + 追踪环境/版本
+          totalCost: Math.round(this.totalCost * 1e6) / 1e6,
+          model: this.opts.model,
           version: this.opts.client.version,
           environment: this.opts.client.environment,
         },

@@ -14,6 +14,9 @@
 import type { LLMProvider } from '../providers'
 import { LayeredMemoryStore } from './layered-memory.js'
 import type { TemplateLoader } from './context/template-loader.js'
+import type { LangfuseClient } from './langfuse-client'
+import { maskSensitiveData } from './langfuse-client'
+import type { LangfuseTraceClient } from 'langfuse'
 
 // ── 格式常量 ────────────────────────────────────────────────
 const REQUIRED_HEADERS = ['## User Profile', '## Project Context']
@@ -70,6 +73,7 @@ If a section has nothing new, write "(nothing)" under that header.`
 export class Dream {
   private _cursor = 0
   private _processedCursor = 0
+  private _langfuseClient: LangfuseClient | null = null
 
   constructor(
     private store: LayeredMemoryStore,
@@ -85,6 +89,11 @@ export class Dream {
   setProvider(provider: LLMProvider, model: string) {
     this.provider = provider
     this.model = model
+  }
+
+  /** 注入 Langfuse 客户端，为记忆处理 LLM 调用启用追踪 */
+  setLangfuseClient(client: LangfuseClient | null): void {
+    this._langfuseClient = client
   }
 
   // ── 游标管理 ────────────────────────────────────────────
@@ -145,10 +154,41 @@ New conversation entries (up to 30):
 ${newEntries.slice(-30).map(e => `- ${e.content.slice(0, 1000)}`).join('\n')}
 ${FORMAT_SUFFIX}`
 
+    // ── Langfuse Trace: 记忆处理周期 ──
+    const lfTrace = this._langfuseClient?.enabled
+      ? this._langfuseClient.createTrace({
+          name: 'dream-memory',
+          metadata: {
+            entryCount: newEntries.length,
+            model: this.model,
+          },
+          tags: ['dream', 'memory'],
+          input: maskSensitiveData(prompt.slice(0, 2000)),
+        })
+      : null
+
     // ── 首次调用 ────────────────────────────────────────
+    const gen1Start = new Date()
     let raw = await this._callLLM(prompt)
     let validation = validateFormat(raw)
     let retried = false
+
+    // ── Langfuse Generation（首次）──
+    if (lfTrace) {
+      try {
+        const gen1 = lfTrace.generation({
+          name: 'dream-llm-1',
+          model: this.model,
+          modelParameters: { temperature: 0.3, maxTokens: 2048 },
+          input: maskSensitiveData(prompt.slice(0, 2000)),
+          startTime: gen1Start,
+        })
+        gen1.end({
+          output: maskSensitiveData(raw.slice(0, 2000)),
+          metadata: { valid: validation.valid, reason: validation.reason },
+        })
+      } catch { /* 静默 */ }
+    }
 
     // ── 重试（格式不合法时） ────────────────────────────
     if (!validation.valid) {
@@ -159,9 +199,28 @@ Your previous output (which was rejected):
 ${raw.slice(0, 2000)}
 
 Now please regenerate following the instructions above.`
+      const gen2Start = new Date()
       const retryRaw = await this._callLLM(retryPrompt)
       retried = true
       const retryValidation = validateFormat(retryRaw)
+
+      // ── Langfuse Generation（重试）──
+      if (lfTrace) {
+        try {
+          const gen2 = lfTrace.generation({
+            name: 'dream-llm-2-retry',
+            model: this.model,
+            modelParameters: { temperature: 0.3, maxTokens: 2048 },
+            input: maskSensitiveData(retryPrompt.slice(0, 2000)),
+            startTime: gen2Start,
+          })
+          gen2.end({
+            output: maskSensitiveData(retryRaw.slice(0, 2000)),
+            metadata: { valid: retryValidation.valid, reason: retryValidation.reason },
+          })
+        } catch { /* 静默 */ }
+      }
+
       if (retryValidation.valid) {
         raw = retryRaw
         validation = retryValidation
@@ -169,6 +228,21 @@ Now please regenerate following the instructions above.`
         process.stderr.write(`[Dream] retry also invalid (${retryValidation.reason}), using raw fallback\n`)
         raw = retryRaw
       }
+    }
+
+    // ── 最终化 Langfuse Trace ──
+    if (lfTrace) {
+      try {
+        lfTrace.update({
+          output: maskSensitiveData(raw.slice(0, 1000)),
+          metadata: {
+            retried,
+            valid: validation.valid,
+            entryCount: newEntries.length,
+            contentLength: raw.length,
+          },
+        } as any)
+      } catch { /* 静默 */ }
     }
 
     // ── 空内容防护 ─────────────────────────────────────

@@ -131,12 +131,12 @@ export function useEmailAuth(onSuccess: () => void) {
     setCode('')
   }
 
-  const formEyebrow =
-    mode === 'login'
-      ? '欢迎回来'
-      : registerStep === 'verify'
-        ? '邮箱验证'
-        : '创建账号'
+  // const formEyebrow =
+  //   mode === 'login'
+  //     ? '欢迎回来'
+  //     : registerStep === 'verify'
+  //       ? '邮箱验证'
+  //       : '创建账号'
 
   const formTitle =
     mode === 'login'
@@ -145,12 +145,12 @@ export function useEmailAuth(onSuccess: () => void) {
         ? '验证邮箱'
         : '注册'
 
-  const formDescription =
-    mode === 'login'
-      ? '登录后网页与桌面实时同步。'
-      : registerStep === 'verify'
-        ? null
-        : '填写邮箱并设置密码（至少 8 位），我们将向邮箱发送验证码。'
+  // const formDescription =
+  //   mode === 'login'
+  //     ? '登录后网页与桌面实时同步。'
+  //     : registerStep === 'verify'
+  //       ? null
+  //       : '填写邮箱并设置密码（至少 8 位），我们将向邮箱发送验证码。'
 
   return {
     mode,
@@ -179,9 +179,9 @@ export function useEmailAuth(onSuccess: () => void) {
     goToLogin,
     onModeChange,
     backToRegisterForm,
-    formEyebrow,
+    // formEyebrow,
     formTitle,
-    formDescription,
+    // formDescription,
   }
 }
 

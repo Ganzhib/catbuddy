@@ -1,66 +1,87 @@
+import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/BrandMark'
 import { DesktopClientDownload } from '@/components/DesktopClientDownload'
 import { cn } from '@/lib/utils'
-import { FEATURES } from './constants'
-import { MascotHero } from './MascotHero'
-import {
-  authBadge,
-  authBodyStrong,
-  authBrandLabel,
-  authHeading,
-  authMuted,
-  authSubtle,
-  authTitle,
-  leftPanel,
-} from './styles'
+import Lightfall from './Lightfall'
+import { TextType } from './TextType'
+import { WigglyFigures } from './WigglyFigures'
+import { authBrandLabel, authSubtle, leftPanel } from './styles'
 
-export function LoginMarketingPanel() {
+export const LoginMarketingPanel = memo(function LoginMarketingPanel() {
+  const { t } = useTranslation()
+  const hint = t('desktopDownload.hint')
+
   return (
     <aside
       className={cn(
-        'relative z-10 flex w-full shrink-0 flex-col border-b border-sky-100/50 lg:h-full lg:min-h-0 lg:w-[min(44%,520px)] lg:justify-between lg:border-b-0',
+        'relative z-10 flex w-full shrink-0 flex-col lg:h-full lg:min-h-0 lg:w-1/2',
         leftPanel,
       )}
     >
-      <div className="relative flex min-h-0 flex-1 flex-col justify-center px-5 py-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-14 xl:py-10">
-        <MascotHero showBubble className="mb-5 shrink-0 lg:mb-6" />
-        <div className="mb-3 flex items-center gap-2.5 sm:mb-4 lg:mb-6 lg:gap-3">
-          <BrandMark className="h-7 w-7 object-contain opacity-80 sm:h-8 sm:w-8 lg:h-9 lg:w-9" />
-          <div>
-            <p className={authBrandLabel}>catbuddy</p>
-            <span className={cn('text-[15px] sm:text-base lg:text-lg', authTitle)}>智能学习助手</span>
-            <span> </span>
-            <span className={cn('text-[10px] sm:text-[11px] lg:text-[12px]', authSubtle)}>create by ganzhibin</span>
-          </div>
+      {/* WebGL 浅蓝流光背景 — 仅左侧面板 */}
+      <Lightfall
+        colors={['#0EA5E9', '#2DD4BF', '#BAE6FD']}
+        backgroundColor="#DBEAFE"
+        speed={0.3}
+        streakCount={2}
+        streakWidth={1}
+        streakLength={1.5}
+        glow={0.8}
+        density={0.4}
+        twinkle={0.6}
+        zoom={2.5}
+        backgroundGlow={0.3}
+        opacity={0.7}
+        mouseInteraction
+        mouseStrength={0.3}
+        mouseRadius={1}
+      />
+
+      {/* 暗色模式叠加 */}
+      <div className="absolute inset-0 pointer-events-none dark:bg-[#0a1628] dark:opacity-100 opacity-0 z-[1]" />
+
+      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 xl:px-14 z-[2]">
+        {/* 品牌信息 */}
+        <div className="mb-4 flex flex-col items-center text-center lg:mb-6">
+          <BrandMark className="h-10 w-10 object-contain drop-shadow-md sm:h-11 sm:w-11 lg:h-12 lg:w-12" />
+          <p className={cn('mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#0EA5E9]/80 sm:text-[11px]', authBrandLabel)}>
+            智能学习助手
+          </p>
+          {/* 渐变艺术字标题 */}
+          <span
+            className={cn(
+              'bg-gradient-to-r from-[#0EA5E9] via-[#2DD4BF] to-[#0EA5E9] bg-clip-text text-transparent',
+              'text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl',
+              'drop-shadow-sm',
+            )}
+          >
+            catbuddy
+          </span>
+          <span className={cn('mt-1 text-[11px] text-[#475569] sm:text-xs dark:text-slate-400', authSubtle)}>
+            create by ganzhibin
+          </span>
         </div>
-        <span className={cn('mb-3 w-fit lg:mb-4 lg:px-3.5 lg:py-1.5', authBadge)}>每一步，都算数 ✦</span>
-        <h1 className={cn('max-w-md text-lg leading-relaxed sm:text-xl lg:text-2xl xl:text-[26px]', authHeading)}>
-          你的 AI 学习助手，随时待命
-        </h1>
-        <p className={cn('mt-2 max-w-sm text-[11px] leading-[1.7] sm:text-xs lg:mt-3 lg:text-[13px] lg:leading-[1.75]', authMuted)}>
-          桌面端负责思考与执行，网页端随身接入——提问、跟进、远程遥控，一套账号打通。
-        </p>
-        <ul className="mt-4 space-y-2 sm:mt-5 lg:mt-7 lg:space-y-3">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <li
-              key={title}
-              className="flex items-start gap-2.5 rounded-xl bg-white/40 px-3 py-2 shadow-none backdrop-blur-sm sm:gap-3 sm:rounded-2xl sm:px-3.5 sm:py-2.5 lg:gap-3.5 lg:px-4 lg:py-3 dark:bg-white/[0.04]"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-50 to-teal-50/50 sm:h-8 sm:w-8 lg:h-9 lg:w-9 lg:rounded-xl dark:from-sky-500/10 dark:to-teal-500/10">
-                <Icon className="h-3.5 w-3.5 text-[#0EA5E9] dark:text-sky-400 sm:h-4 sm:w-4 lg:h-[18px] lg:w-[18px]" strokeWidth={1.5} />
-              </span>
-              <div className="min-w-0 pt-0.5">
-                <p className={cn('text-[11px] sm:text-xs lg:text-[13px]', authBodyStrong)}>{title}</p>
-                <p className={cn('auth-clamp-2 mt-0.5 text-[10px] leading-[1.55] sm:text-[11px] sm:leading-[1.6] lg:mt-1 lg:text-[12px] lg:leading-[1.65]', authMuted)}>
-                  {desc}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <DesktopClientDownload variant="login" className="auth-hide-short mt-5 max-w-sm lg:mt-8" />
+
+        {/* 小人 - 输入密码时探头 */}
+        <div className="mb-5 lg:mb-8">
+          <WigglyFigures />
+        </div>
+
+        {/* 桌面端下载 + 打字效果提示 */}
+        <div className="auth-hide-short w-full max-w-sm">
+          <DesktopClientDownload variant="login" showHint={false} className="!mt-0" />
+          <p className="mt-2 text-center text-xs leading-relaxed min-h-[3em] text-white">
+            <TextType
+              texts={[hint]}
+              typingSpeed={65}
+              pauseDuration={4000}
+              showCursor
+              cursorCharacter="_"
+            />
+          </p>
+        </div>
       </div>
-      <div className="h-10" />
     </aside>
   )
-}
+})

@@ -1,6 +1,5 @@
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { authSecondaryBtn, authBody } from './styles'
+import { authBody } from './styles'
 import type { AuthMode } from './types'
 import { resolveAuthErrorAction } from './utils'
 
@@ -21,50 +20,45 @@ export function AuthFeedback({
   return (
     <>
       {hint ? (
-        <p className={cn('rounded-xl border border-white/50 bg-white/45 px-3.5 py-2.5 text-xs leading-relaxed backdrop-blur-sm dark:border-sky-500/25 dark:bg-sky-500/10', authBody)}>
+        <p className={cn('px-1 py-2 text-xs leading-relaxed', authBody)}>
           {hint}
         </p>
       ) : null}
       {error ? (
         <div
           role="alert"
-          className={cn(
-            'rounded-xl border px-3.5 py-2.5',
-            guidance
-              ? 'border-teal-100/80 bg-white/40 backdrop-blur-sm dark:border-teal-500/25 dark:bg-teal-500/10'
-              : 'border-red-200 bg-red-50 dark:border-destructive/25 dark:bg-destructive/10',
-          )}
+          className="px-1 py-2"
         >
           <p
             className={cn(
               'text-xs leading-relaxed',
-              guidance ? 'text-muted-foreground' : 'text-destructive',
+              guidance ? 'text-[#0F766E] dark:text-teal-300' : 'text-red-600 dark:text-destructive',
             )}
           >
             {error}
+            {action === 'go_register' && onGoRegister ? (
+              <span>
+                ，<button
+                  type="button"
+                  onClick={onGoRegister}
+                  className="underline underline-offset-2 font-medium hover:text-[#0EA5E9] dark:hover:text-sky-400"
+                >
+                  去注册
+                </button>
+              </span>
+            ) : null}
+            {action === 'go_login' && onGoLogin ? (
+              <span>
+                ，<button
+                  type="button"
+                  onClick={onGoLogin}
+                  className="underline underline-offset-2 font-medium hover:text-[#0EA5E9] dark:hover:text-sky-400"
+                >
+                  去登录
+                </button>
+              </span>
+            ) : null}
           </p>
-          {action === 'go_register' && onGoRegister ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn('mt-2.5 w-full', authSecondaryBtn)}
-              onClick={onGoRegister}
-            >
-              去注册
-            </Button>
-          ) : null}
-          {action === 'go_login' && onGoLogin ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={cn('mt-2.5 w-full', authSecondaryBtn)}
-              onClick={onGoLogin}
-            >
-              去登录
-            </Button>
-          ) : null}
         </div>
       ) : null}
     </>
@@ -81,17 +75,16 @@ export function SwitchModeButton({
   onClick: () => void
 }) {
   return (
-    <div className="space-y-1.5 pt-1">
-      <p className="text-center text-xs text-muted-foreground">{label}</p>
-      <Button
+    <p className="pt-1 text-center text-xs text-[#94A3B8] dark:text-muted-foreground">
+      {label}{' '}
+      <button
         type="button"
-        variant="outline"
-        className={cn('w-full', authSecondaryBtn)}
         onClick={onClick}
+        className="font-medium text-[#0EA5E9] hover:text-[#0284C7] hover:underline underline-offset-2 transition-colors dark:text-sky-400 dark:hover:text-sky-300"
       >
         {actionLabel}
-      </Button>
-    </div>
+      </button>
+    </p>
   )
 }
 
@@ -104,10 +97,7 @@ export function ModeTabs({
 }) {
   return (
     <div
-      className={cn(
-        'mt-5 flex rounded-2xl border border-white/50 bg-white/35 p-1 backdrop-blur-sm',
-        'dark:border-white/10 dark:bg-white/[0.06]',
-      )}
+      className="mt-5 flex border-b border-[#E2E8F0] dark:border-white/10"
       role="tablist"
       aria-label="登录或注册"
     >
@@ -119,10 +109,11 @@ export function ModeTabs({
           aria-selected={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            'flex-1 rounded-lg py-2.5 text-sm font-medium transition-all duration-200',
+            'flex-1 py-2.5 text-sm font-medium transition-all duration-200',
+            'border-b-2 -mb-[1px]',
             mode === m
-              ? 'bg-white/90 text-[#0EA5E9] shadow-sm backdrop-blur-sm dark:bg-white/15 dark:text-sky-400'
-              : 'text-[#1E3A8A]/50 hover:text-[#0EA5E9] dark:text-muted-foreground dark:hover:text-sky-400',
+              ? 'border-b-[#0EA5E9] text-[#0EA5E9] dark:border-b-sky-400 dark:text-sky-400'
+              : 'border-b-transparent text-[#94A3B8] hover:text-[#64748B] dark:text-muted-foreground dark:hover:text-slate-300',
           )}
         >
           {m === 'login' ? '登录' : '注册'}

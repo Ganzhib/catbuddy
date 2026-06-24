@@ -9,7 +9,7 @@ export const FEATURES = [
   {
     icon: Laptop,
     title: '网页遥控桌面',
-    desc: '在浏览器提问，桌面应用替你执行；开启远程控制后，对话与进度实时同步，换设备也能接着聊。',
+    desc: '浏览器下发提问，桌面应用代为执行；开启远程控制，对话、进度跨设备实时同步接续。',
   },
   {
     icon: ShieldCheck,

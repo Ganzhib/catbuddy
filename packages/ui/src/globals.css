@@ -335,6 +335,36 @@
   }
 
   /* Login page mascot & ambient orbs */
+  @keyframes cat-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes cat-tail-wag {
+    0%,
+    100% {
+      transform: rotate(-5deg);
+    }
+    50% {
+      transform: rotate(15deg);
+    }
+  }
+  @keyframes cat-ear-twitch {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(5deg);
+    }
+    75% {
+      transform: rotate(-3deg);
+    }
+  }
   @keyframes auth-mascot-float {
     0%,
     100% {
@@ -455,6 +485,42 @@
   .auth-orb-drift-c {
     animation: auth-orb-drift-c 16s ease-in-out infinite 2s;
   }
+
+  /* 边界线小人 — 微微晃动 */
+  @keyframes wiggle-bounce-1 {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    30% { transform: translateY(-6px) rotate(2deg); }
+    60% { transform: translateY(3px) rotate(-2deg); }
+  }
+  @keyframes wiggle-bounce-2 {
+    0%, 100% { transform: translateY(0) rotate(1deg); }
+    40% { transform: translateY(-8px) rotate(-3deg); }
+    70% { transform: translateY(2px) rotate(2deg); }
+  }
+  @keyframes wiggle-bounce-3 {
+    0%, 100% { transform: translateY(0) rotate(2deg); }
+    35% { transform: translateY(-5px) rotate(-1deg); }
+    65% { transform: translateY(4px) rotate(-3deg); }
+  }
+  @keyframes wiggle-bounce-4 {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    25% { transform: translateY(-7px) rotate(3deg); }
+    55% { transform: translateY(2px) rotate(0deg); }
+    80% { transform: translateY(5px) rotate(-1deg); }
+  }
+  .wiggle-bounce-1 {
+    animation: wiggle-bounce-1 3.2s ease-in-out infinite;
+  }
+  .wiggle-bounce-2 {
+    animation: wiggle-bounce-2 3.8s ease-in-out infinite 0.4s;
+  }
+  .wiggle-bounce-3 {
+    animation: wiggle-bounce-3 3.5s ease-in-out infinite 0.2s;
+  }
+  .wiggle-bounce-4 {
+    animation: wiggle-bounce-4 4.1s ease-in-out infinite 0.6s;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auth-mascot-float,
     .auth-mascot-bubble,
@@ -466,6 +532,12 @@
     .auth-orb-drift-c,
     .auth-wave-drift-a,
     .auth-wave-drift-b {
+      animation: none;
+    }
+    .wiggle-bounce-1,
+    .wiggle-bounce-2,
+    .wiggle-bounce-3,
+    .wiggle-bounce-4 {
       animation: none;
     }
   }

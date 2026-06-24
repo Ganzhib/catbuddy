@@ -3,7 +3,18 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AuthFeedback, ModeTabs, SwitchModeButton } from './AuthFormControls'
 import { EmailField, OtpInput, PasswordField } from './AuthFormFields'
-import { authAccent, authHeading, authInput, authOutlineBtn, authPanel, authPrimaryBtn, authMuted, authSubtle, loginGlassCard } from './styles'
+import { usePeek } from './PeekContext'
+import {
+  authAccent,
+  authHeading,
+  authInput,
+  authOutlineBtn,
+  authPanel,
+  authPrimaryBtn,
+  authMuted,
+  authSubtle,
+  formCard,
+} from './styles'
 import type { EmailAuthState } from './useEmailAuth'
 
 export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
@@ -42,90 +53,94 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
   return (
     <main
       className={cn(
-        'relative z-10 flex w-full flex-1 flex-col items-center justify-start lg:h-full lg:min-h-0 lg:justify-center lg:overflow-hidden',
+        'relative z-10 flex w-full flex-1 flex-col items-center justify-start lg:w-1/2 lg:min-h-0 lg:justify-center lg:overflow-hidden',
+        'backdrop-blur-md bg-white/40 dark:bg-[#0c1929]/60',
+        'px-4 py-5 sm:px-6 sm:py-6 lg:px-16 lg:py-8 xl:px-20 xl:py-10',
         authPanel,
-        'px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6',
       )}
     >
-      <div className={loginGlassCard}>
-        <p className={cn('text-center text-[11px] font-semibold uppercase tracking-[0.2em]', authAccent)}>
-          {formEyebrow}
-        </p>
-        <h2 className={cn('mt-2 text-center text-xl sm:text-2xl', authHeading)}>
-          {formTitle}
-        </h2>
+      <div className="w-full max-w-[380px]">
+        <div className={formCard}>
+          <p className={cn('text-center text-[11px] font-semibold uppercase tracking-[0.2em]', authAccent)}>
+            {formEyebrow}
+          </p>
+          <h2 className={cn('mt-2 text-center text-xl tracking-tight sm:text-2xl', authHeading)}>
+            {formTitle}
+          </h2>
 
-        {mode === 'register' && registerStep === 'verify' ? null : (
-          <ModeTabs mode={mode} onChange={onModeChange} />
-        )}
-
-        <p className={cn('mb-5 mt-4 text-center text-xs leading-relaxed', authMuted)}>
-          {mode === 'register' && registerStep === 'verify' ? (
-            <>
-              我们已向{' '}
-              <span className="font-medium text-foreground">{email.trim()}</span>
-              {' '}发送验证码，请输入邮件中的 6 位数字完成注册。
-            </>
-          ) : (
-            formDescription
+          {mode === 'register' && registerStep === 'verify' ? null : (
+            <ModeTabs mode={mode} onChange={onModeChange} />
           )}
-        </p>
 
-        {mode === 'login' ? (
-          <LoginForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            busy={busy}
-            error={error}
-            canSubmit={canSubmitLogin}
-            onSubmit={onLoginSubmit}
-            onGoRegister={goToRegister}
-            onGoLogin={goToLogin}
-          />
-        ) : registerStep === 'form' ? (
-          <RegisterForm
-            email={email}
-            setEmail={setEmail}
-            password={password}
-            setPassword={setPassword}
-            confirmPassword={confirmPassword}
-            setConfirmPassword={setConfirmPassword}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            busy={busy}
-            error={error}
-            canSubmit={canSubmitRegisterForm}
-            onSubmit={onRegisterFormSubmit}
-            onGoRegister={goToRegister}
-            onGoLogin={goToLogin}
-          />
-        ) : (
-          <VerifyForm
-            code={code}
-            setCode={setCode}
-            busy={busy}
-            error={error}
-            hint={hint}
-            canSubmit={canSubmitVerify}
-            onSubmit={onVerifySubmit}
-            onResend={() => void resendCode()}
-            onBack={backToRegisterForm}
-            onGoRegister={goToRegister}
-            onGoLogin={goToLogin}
-          />
-        )}
+          <p className={cn('mb-5 mt-3 text-center text-[11px] leading-relaxed sm:mb-6 sm:mt-4 sm:text-xs', authMuted)}>
+            {mode === 'register' && registerStep === 'verify' ? (
+              <>
+                我们已向{' '}
+                <span className="font-semibold text-[#0F172A] dark:text-foreground">{email.trim()}</span>
+                {' '}发送验证码，请输入邮件中的 6 位数字完成注册。
+              </>
+            ) : (
+              formDescription
+            )}
+          </p>
 
-        <p className={cn('mt-5 text-center text-[10px] leading-relaxed', authSubtle)}>
-          继续即表示您同意 catbuddy 的服务条款与隐私政策。
+          {mode === 'login' ? (
+            <LoginForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              busy={busy}
+              error={error}
+              canSubmit={canSubmitLogin}
+              onSubmit={onLoginSubmit}
+              onGoRegister={goToRegister}
+              onGoLogin={goToLogin}
+            />
+          ) : registerStep === 'form' ? (
+            <RegisterForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              confirmPassword={confirmPassword}
+              setConfirmPassword={setConfirmPassword}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              busy={busy}
+              error={error}
+              canSubmit={canSubmitRegisterForm}
+              onSubmit={onRegisterFormSubmit}
+              onGoRegister={goToRegister}
+              onGoLogin={goToLogin}
+            />
+          ) : (
+            <VerifyForm
+              code={code}
+              setCode={setCode}
+              busy={busy}
+              error={error}
+              hint={hint}
+              canSubmit={canSubmitVerify}
+              onSubmit={onVerifySubmit}
+              onResend={() => void resendCode()}
+              onBack={backToRegisterForm}
+              onGoRegister={goToRegister}
+              onGoLogin={goToLogin}
+            />
+          )}
+
+          <p className={cn('mt-4 text-center text-[10px] leading-relaxed sm:mt-5', authSubtle)}>
+            继续即表示您同意 catbuddy 的服务条款与隐私政策。
+          </p>
+        </div>
+
+        <p className={cn('mt-2 text-center text-[10px] lg:hidden', authSubtle)}>
+          © catbuddy · 作者：甘智斌
         </p>
       </div>
-      <p className={cn('mt-1 text-center text-[10px] lg:hidden', authSubtle)}>
-          © catbuddy · 作者：甘智斌
-      </p>
     </main>
   )
 }
@@ -158,7 +173,7 @@ function LoginForm({
   onGoLogin: () => void
 }) {
   return (
-    <form className="space-y-3.5" onSubmit={(e) => void onSubmit(e)}>
+    <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
       <EmailField id="login-email" value={email} onChange={setEmail} />
       <PasswordField
         id="login-password"
@@ -173,7 +188,7 @@ function LoginForm({
       <AuthFeedback error={error} hint={null} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
       <Button
         type="submit"
-        className={cn('w-full', authPrimaryBtn)}
+        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
         size="default"
         disabled={busy || !canSubmit}
       >
@@ -222,8 +237,10 @@ function RegisterForm({
   onGoRegister: () => void
   onGoLogin: () => void
 }) {
+  const { setPeeking } = usePeek()
+
   return (
-    <form className="space-y-3.5" onSubmit={(e) => void onSubmit(e)}>
+    <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
       <EmailField id="register-email" value={email} onChange={setEmail} />
       <PasswordField
         id="register-password"
@@ -236,7 +253,7 @@ function RegisterForm({
         onToggleShow={() => setShowPassword((v) => !v)}
       />
       <div className="space-y-2">
-        <label htmlFor="register-password-confirm" className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
+        <label htmlFor="register-password-confirm" className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
           确认密码
         </label>
         <input
@@ -246,13 +263,15 @@ function RegisterForm({
           placeholder="再次输入密码"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          onFocus={() => setPeeking(true)}
+          onBlur={() => setPeeking(false)}
           className={authInput}
         />
       </div>
       <AuthFeedback error={error} hint={null} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
       <Button
         type="submit"
-        className={cn('w-full', authPrimaryBtn)}
+        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
         size="default"
         disabled={busy || !canSubmit}
       >
@@ -296,12 +315,12 @@ function VerifyForm({
   onGoLogin: () => void
 }) {
   return (
-    <form className="space-y-3.5" onSubmit={(e) => void onSubmit(e)}>
+    <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
       <OtpInput value={code} onChange={setCode} disabled={busy} />
       <AuthFeedback error={error} hint={hint} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
       <Button
         type="submit"
-        className={cn('w-full', authPrimaryBtn)}
+        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
         size="default"
         disabled={busy || !canSubmit}
       >

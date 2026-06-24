@@ -325,7 +325,7 @@ const Lightfall: React.FC<LightfallProps> = ({
       if (canvas.parentElement === container) {
         container.removeChild(canvas)
       }
-      renderer.destroy()
+      // ogl Renderer 没有 destroy 方法，直接移除 canvas 即可
     }
   }, [
     dpr, paused, colors, backgroundColor, speed, streakCount, streakWidth,

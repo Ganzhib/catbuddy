@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePeek } from './PeekContext'
 import { authInput, otpCell } from './styles'
 
 export function EmailField({
@@ -14,7 +15,7 @@ export function EmailField({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
+      <label htmlFor={id} className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
         邮箱地址
       </label>
       <input
@@ -50,9 +51,11 @@ export function PasswordField({
   showPassword: boolean
   onToggleShow: () => void
 }) {
+  const { setPeeking } = usePeek()
+
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-[#1E3A8A] sm:text-sm dark:text-foreground">
+      <label htmlFor={id} className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
         {label}
       </label>
       <div className="relative">
@@ -63,13 +66,15 @@ export function PasswordField({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setPeeking(true)}
+          onBlur={() => setPeeking(false)}
           className={cn(authInput, 'pr-10')}
         />
         <button
           type="button"
           tabIndex={-1}
           aria-label={showPassword ? '隐藏密码' : '显示密码'}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[#1E3A8A]/40 transition-all duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] dark:text-slate-400 dark:hover:bg-sky-500/15 dark:hover:text-sky-300"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[#94A3B8] transition-all duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] dark:text-slate-400 dark:hover:bg-sky-500/15 dark:hover:text-sky-300"
           onClick={onToggleShow}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -174,7 +179,7 @@ export function OtpInput({
             onFocus={(e) => e.target.select()}
             className={cn(
               otpCell,
-              digit && 'border-[#0EA5E9]/70 bg-white/70 text-[#1E3A8A] dark:bg-sky-500/10',
+              digit && 'border-b-[#0EA5E9] text-[#0EA5E9] dark:border-b-sky-400 dark:text-sky-400',
             )}
           />
         ))}

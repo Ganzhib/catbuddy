@@ -59,7 +59,7 @@ export const LoginMarketingPanel = memo(function LoginMarketingPanel() {
             catbuddy
           </span>
           <span className={cn('mt-1 text-[11px] text-[#475569] sm:text-xs dark:text-slate-400', authSubtle)}>
-            create by ganzhibin
+            create by catbuddy team
           </span>
         </div>
 

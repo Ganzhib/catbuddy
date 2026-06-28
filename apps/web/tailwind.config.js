@@ -8,5 +8,12 @@ export default {
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
+  theme: {
+    extend: {
+      fontFamily: {
+        alibaba: ['"Alibaba PuHuiTi"', 'Inter', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };

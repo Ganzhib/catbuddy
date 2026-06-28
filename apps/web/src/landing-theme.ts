@@ -8,7 +8,8 @@ export function isAppPathname(pathname: string): boolean {
 export function applyWebShellTheme(showApp: boolean): void {
   const root = document.documentElement
   if (!showApp) {
-    root.classList.add('dark')
+    // Landing uses a warm, light palette — never dark.
+    root.classList.remove('dark')
     return
   }
   try {

@@ -1,3 +1,19 @@
+/* Alibaba PuHuiTi — hero headline only */
+@font-face {
+  font-family: 'Alibaba PuHuiTi';
+  src: url('https://cdn.jsdelivr.net/npm/alibabapuhuiti-3-55-regular@1.0.0/AlibabaPuHuiTi-3-55-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Alibaba PuHuiTi';
+  src: url('https://cdn.jsdelivr.net/npm/alibabapuhuiti-3-85-bold@1.0.0/AlibabaPuHuiTi-3-85-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Web landing: scroll inside #landing-scroll-root; #root stays fixed like the chat app. */
 html.catbuddy-web-landing,
 html.catbuddy-web-landing body,
@@ -9,5 +25,325 @@ html.catbuddy-web-landing #root {
 
 html.catbuddy-web-landing #landing-scroll-root {
   -webkit-overflow-scrolling: touch;
-  color-scheme: dark;
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+/* ============================================================
+   Landing motion system — CSS-only, honors prefers-reduced-motion.
+   Mirrors the keyframe/utility idiom already used in globals.css
+   (auth-* drift/float/orbit) so the landing reads like the rest
+   of the codebase, with zero runtime dependency.
+   ============================================================ */
+
+/* --- Scroll-triggered reveal (class toggled by IntersectionObserver) --- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-y, 30px));
+  filter: blur(0);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+[data-reveal='left'] {
+  transform: translateX(-36px);
+}
+[data-reveal='right'] {
+  transform: translateX(36px);
+}
+[data-reveal='scale'] {
+  transform: scale(0.92);
+}
+[data-reveal='blur'] {
+  filter: blur(12px);
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+}
+
+/* --- On-load entrance (hero, above the fold) --- */
+.landing-enter {
+  opacity: 0;
+  animation: landing-enter-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes landing-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Animated gradient text --- */
+.landing-gradient-text {
+  background-image: linear-gradient(100deg, #0ea5e9 0%, #2dd4bf 36%, #fb923c 68%, #0ea5e9 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: landing-gradient-pan 6s linear infinite;
+}
+@keyframes landing-gradient-pan {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* --- Aurora mesh blobs (Stripe-style animated background) --- */
+.landing-aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform;
+  animation: landing-aurora 26s ease-in-out infinite;
+}
+@keyframes landing-aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(8%, -10%, 0) scale(1.18);
+  }
+  66% {
+    transform: translate3d(-6%, 8%, 0) scale(0.86);
+  }
+}
+
+/* --- Faint product grid (Linear-style), masked at the edges --- */
+.landing-grid {
+  background-image:
+    linear-gradient(to right, rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(2, 132, 199, 0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 78% 56% at 50% 0%, #000 32%, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 56% at 50% 0%, #000 32%, transparent 100%);
+}
+
+/* --- 3D tilt (driven by --tx / --ty set from JS pointer move) --- */
+.landing-tilt {
+  transform: perspective(1100px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+.landing-tilt-layer {
+  transform: translateZ(40px);
+}
+
+/* --- Float bob --- */
+.landing-float {
+  animation: landing-float-y 5.5s ease-in-out infinite;
+}
+.landing-float-slow {
+  animation: landing-float-y 7.5s ease-in-out infinite;
+}
+@keyframes landing-float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* --- Spinning conic-gradient ring (avatars / mascot) --- */
+.landing-ring {
+  position: relative;
+}
+.landing-ring::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #0ea5e9, #2dd4bf, #fb923c, #0ea5e9);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: landing-spin 7s linear infinite;
+}
+@keyframes landing-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* --- Marquee (seamless, pause on hover) --- */
+.landing-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.landing-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: landing-marquee 32s linear infinite;
+}
+.landing-marquee:hover .landing-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes landing-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* --- Shine sweep on hover --- */
+.landing-shine {
+  position: relative;
+  overflow: hidden;
+}
+.landing-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: translateX(-180%) skewX(-12deg);
+  pointer-events: none;
+}
+.landing-shine:hover::after {
+  animation: landing-shine-sweep 0.9s ease;
+}
+@keyframes landing-shine-sweep {
+  to {
+    transform: translateX(280%) skewX(-12deg);
+  }
+}
+
+/* --- Glow pulse --- */
+.landing-glow-pulse {
+  animation: landing-glow-pulse 4.5s ease-in-out infinite;
+}
+@keyframes landing-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* --- Scroll cue bob --- */
+.landing-bob {
+  animation: landing-bob 1.8s ease-in-out infinite;
+}
+@keyframes landing-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(7px);
+    opacity: 1;
+  }
+}
+
+/* --- Card hover lift + magnetic reset --- */
+.landing-card {
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s ease,
+    box-shadow 0.4s ease,
+    background-color 0.4s ease;
+  will-change: transform;
+}
+.landing-card:hover {
+  transform: translateY(-6px);
+}
+.landing-magnetic {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Feature showcase: auto-advance progress bar + media swap --- */
+.landing-progress {
+  transform: scaleX(0);
+  transform-origin: left;
+  animation-name: landing-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes landing-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.landing-media-in {
+  animation: landing-media-in 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes landing-media-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* --- Reduced motion: collapse everything to a calm static state --- */
+@media (prefers-reduced-motion: reduce) {
+  html.catbuddy-web-landing #landing-scroll-root {
+    scroll-behavior: auto;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .landing-enter {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .landing-aurora-blob,
+  .landing-float,
+  .landing-float-slow,
+  .landing-ring::before,
+  .landing-marquee-track,
+  .landing-gradient-text,
+  .landing-glow-pulse,
+  .landing-bob,
+  .landing-media-in {
+    animation: none !important;
+  }
+  .landing-progress {
+    animation: none !important;
+    transform: scaleX(1);
+  }
+  .landing-gradient-text {
+    background-position: 0 center;
+  }
+  .landing-tilt {
+    transform: none !important;
+  }
+  .landing-card:hover {
+    transform: none;
+  }
 }

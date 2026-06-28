@@ -192,6 +192,9 @@ set -euo pipefail
 REMOTE=${JSON.stringify(remoteDir)}
 cd "$REMOTE"
 
+# 强制固定项目名，防止被旧幽灵项目名污染
+export COMPOSE_PROJECT_NAME=langfuse
+
 # ── 安装 Docker ──
 if ! command -v docker >/dev/null 2>&1; then
   echo "==> 安装 Docker..."
@@ -206,7 +209,9 @@ fi
 
 # ── 清理旧容器 ──
 echo "==> 清理旧容器..."
-docker compose down --remove-orphans 2>/dev/null || true
+docker compose -p langfuse down --remove-orphans 2>/dev/null || true
+docker container prune -f 2>/dev/null || true
+docker network prune -f 2>/dev/null || true
 
 # ── 拉取镜像 ──
 SKIP_PULL=${JSON.stringify(skipPull)}
@@ -217,9 +222,26 @@ else
   docker compose pull
 fi
 
-# ── 启动 ──
+# ── 启动（自动检测并修复 dockerd 幽灵容器）──
 echo "==> 启动服务..."
-docker compose up -d
+
+# 预检：docker compose up 是否会撞幽灵容器
+UP_OUT=$(docker compose up -d --force-recreate 2>&1) || true
+if echo "$UP_OUT" | grep -q "No such container"; then
+  echo "  ⚠ 检测到 dockerd 幽灵容器，重启 dockerd 清理..."
+  docker compose down --remove-orphans 2>/dev/null || true
+  systemctl restart docker
+  sleep 3
+  echo "  ✓ dockerd 已重启，重新启动..."
+  docker compose up -d --force-recreate
+elif echo "$UP_OUT" | grep -q -i "error"; then
+  echo "  ⚠ 启动异常，重试一次..."
+  echo "$UP_OUT"
+  docker compose down --remove-orphans 2>/dev/null || true
+  docker compose up -d --force-recreate
+else
+  echo "$UP_OUT"
+fi
 
 # ── 等待 langfuse-web 就绪 ──
 echo "==> 等待 langfuse-web 就绪 (最长 5 分钟)..."

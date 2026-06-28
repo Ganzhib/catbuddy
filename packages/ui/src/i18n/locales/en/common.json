@@ -66,9 +66,38 @@
     "recent": "Recent",
     "refreshSessions": "Refresh sessions",
     "settings": "Settings",
+    "nav": {
+      "mcp": "MCP",
+      "skills": "SKILL",
+      "workspace": "Workspace"
+    },
     "language": {
       "label": "Language",
       "ariaLabel": "Change language"
+    }
+  },
+  "panels": {
+    "mcp": {
+      "subtitle": "Connect MCP servers and browse the marketplace."
+    },
+    "skills": {
+      "subtitle": "Install skills into your workspace with one click."
+    }
+  },
+  "workspace": {
+    "sidebarTitle": "Folders",
+    "loading": "Loading workspace…",
+    "emptyHint": "Upload a folder from the composer — it appears here with its chat history.",
+    "folderEmpty": "No chats in this workspace yet.",
+    "expandMore": "Show more ({{count}})",
+    "chatHistoryTitle": "Chat history",
+    "panelSubtitle": "Upload folder A to create A/.catbuddy. The AI can access all folders alongside it under A. Without upload, use home/.catbuddy.",
+    "toggleFolderChats": "Expand chats in {{name}}",
+    "importFolder": "Import folder",
+    "folderActions": {
+      "menu": "Actions for {{name}}",
+      "setActive": "Set as active workspace",
+      "remove": "Remove from list"
     }
   },
   "settings": {
@@ -79,7 +108,55 @@
     },
     "nav": {
       "general": "General",
-      "byok": "BYOK"
+      "byok": "BYOK",
+      "skills": "Skills",
+      "mcp": "MCP Tools"
+    },
+    "skills": {
+      "loading": "Loading skills…",
+      "installedTitle": "Installed in workspace",
+      "installedHelp": "Toggle takes effect immediately — the next message rebuilds agent context; unchanged system prompt sections are served from cache.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "enable": "Enable {{name}}",
+      "disable": "Disable {{name}}",
+      "marketplaceTitle": "Skill marketplace",
+      "marketplaceHelp": "Practical built-in skills, one-click install and auto-enable. No app restart or new chat — send your next message to use them.",
+      "featuredTitle": "Recommended",
+      "moreTitle": "More",
+      "oneClickInstall": "Install",
+      "install": "Install",
+      "installed": "Installed",
+      "installing": "Installing…",
+      "hotReloadHint": "Return to chat and keep going.",
+      "enabledHotReload": "Enabled {{name}} — effective on your next message.",
+      "disabledHotReload": "Disabled {{name}} — effective on your next message."
+    },
+    "mcp": {
+      "loading": "Loading MCP settings…",
+      "serversTitle": "Connected servers",
+      "serversHelp": "Changes apply immediately — no restart required.",
+      "empty": "No MCP servers yet. Add one from the marketplace or paste a config below.",
+      "connected": "{{count}} tools",
+      "disconnected": "Not connected",
+      "remove": "Remove {{name}}",
+      "saveAndConnect": "Reconnect",
+      "connecting": "Connecting…",
+      "marketplaceTitle": "MCP Marketplace",
+      "marketplaceHelp": "One-click install popular MCP servers. Edit env vars in config if needed.",
+      "add": "Add",
+      "added": "Added",
+      "docs": "Documentation",
+      "requiresEnv": "Requires env",
+      "pasteTitle": "Paste configuration",
+      "pasteHelp": "Paste a full tools.mcpServers object, a single server config, or one server entry.",
+      "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
+      "pasteApply": "Apply & connect",
+      "pasteInvalid": "Invalid JSON or MCP config format.",
+      "desktopOnly": "MCP settings are only available in the desktop app.",
+      "copyTemplate": "Copy config",
+      "templateCopied": "Config copied to clipboard and filled in the paste box below.",
+      "templateCopiedPaste": "Config filled in the paste box below."
     },
     "sections": {
       "interface": "Interface",
@@ -131,7 +208,7 @@
       "provider": "Select the provider that should serve new model requests.",
       "model": "Set the default model name used by catbuddy.",
       "configPath": "The gateway configuration file currently in use.",
-      "compactionEnable": "Automatically compress old conversations to save tokens.",
+      "compactionEnable": "Automatically compress old conversations to save tokens (Agent COMPACT step).",
       "compactionThreshold": "Compress when the number of messages exceeds this count."
     },
     "values": {
@@ -301,6 +378,9 @@
       "send": "Send message",
       "stop": "Stop response",
       "attachImage": "Attach image",
+      "uploadFolder": "Upload folder to workspace",
+      "folderImportFailed": "Could not import folder. Try again.",
+      "clearFolder": "Clear selected workspace folder",
       "imageMode": {
         "label": "Image Generation",
         "toggle": "Toggle image generation mode",
@@ -348,6 +428,14 @@
           "history": {
             "title": "Show conversation history",
             "description": "Print the last N persisted conversation messages."
+          },
+          "compact": {
+            "title": "Compact context",
+            "description": "Summarize older messages into MEMORY.md."
+          },
+          "model": {
+            "title": "Switch model",
+            "description": "Show or switch the model preset for this session."
           },
           "dream": {
             "title": "Run Dream",
@@ -416,7 +504,10 @@
     "openFileShort": "Open in default app",
     "copyReply": "Copy reply",
     "copiedReply": "Copied reply",
-    "turnLatencyTitle": "Response time (end-to-end)"
+    "turnLatencyTitle": "Response time (end-to-end)",
+    "turnTokensCompact": "↓{{in}} ↑{{out}}",
+    "turnTokensTitle": "Token usage: {{in}} input · {{out}} output",
+    "turnFooterSeparator": "·"
   },
   "lightbox": {
     "title": "Image preview",

@@ -1,3 +1,5 @@
+import type { McpServerConfig, TokenUsage } from './agent-types.js'
+
 export type Role = "user" | "assistant" | "tool" | "system";
 
 /** "trace" rows are intermediate agent breadcrumbs (tool-call hints,
@@ -59,6 +61,8 @@ export interface UIMessage {
   reasoningStreaming?: boolean;
   /** End-to-end wall time for this assistant turn (persisted ``latency_ms`` / ``turn_end``). */
   latencyMs?: number;
+  /** Aggregated LLM token usage for this assistant turn (``turn_end``). */
+  tokenUsage?: TokenUsage;
 }
 
 /** Structured UI blob on ``progress`` WS frames; channels may add more ``kind`` values later. */
@@ -115,6 +119,18 @@ export interface ChatSummary {
   updatedAt: string | null;
   title?: string;
   preview: string;
+  /** Logical workspace folder id grouping this chat history. */
+  workspaceFolderId?: string | null;
+}
+
+export interface WorkspaceFolder {
+  id: string;
+  name: string;
+  createdAt: string;
+  /** Project root directory (e.g. selected folder A). */
+  projectRoot: string;
+  /** `.catbuddy` inside project root. */
+  catbuddyDir: string;
 }
 
 export type GatewayMode = 'nanobot' | 'gateway'
@@ -179,6 +195,59 @@ export interface WebSearchSettingsUpdate {
   provider: string;
   apiKey?: string;
   baseUrl?: string;
+}
+
+export interface McpSettingsServer {
+  name: string;
+  config: McpServerConfig;
+  connected: boolean;
+  toolCount: number;
+  lastError?: string;
+}
+
+export interface McpSettingsPayload {
+  servers: McpSettingsServer[];
+}
+
+export interface McpSettingsUpdateResult extends McpSettingsPayload {
+  message: string;
+}
+
+export interface McpMarketplaceEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  config: Record<string, McpServerConfig>;
+  docsUrl?: string;
+  requiresEnv?: string[];
+  /** Extra setup steps shown in the marketplace card. */
+  setupNote?: string;
+  /** Remote HTTP MCP — cannot one-click connect until HTTP transport is supported. */
+  pasteOnly?: boolean;
+  /** JSON snippet to copy when pasteOnly is true. */
+  pasteTemplate?: string;
+}
+
+/** Built-in skill curated for one-click install into workspace/skills/. */
+export interface SkillMarketplaceEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  /** Directory name under apps/desktop/skills and workspace/skills. */
+  skillName: string;
+  emoji?: string;
+  /** Shown in the featured row at the top of the marketplace. */
+  featured?: boolean;
+  setupNote?: string;
+}
+
+export interface SkillInstallResult {
+  message: string;
+  skills: import('./agent-types.js').SkillInfo[];
+  /** Skill is enabled; next agent turn rebuilds system prompt (no restart / new chat). */
+  hotReload: boolean;
 }
 
 export interface SlashCommand {
@@ -254,6 +323,8 @@ export type InboundEvent =
       event: "turn_end";
       chat_id: string;
       latency_ms?: number;
+      /** Aggregated LLM token usage for the completed turn (desktop IPC). */
+      usage?: TokenUsage;
       /** Tools invoked during this turn (desktop IPC). */
       tools_used?: string[];
       /** Authoritative sustained-goal snapshot for this chat (same shape as ``goal_state`` events). */
@@ -314,3 +385,18 @@ export type Outbound =
        * generic websocket protocol for other clients. */
       webui?: true;
     };
+
+export interface WorkspaceProjectInfo {
+  projectRoot: string;
+  catbuddyDir: string;
+  workspace: string;
+}
+
+export interface WorkspaceTreeNode {
+  name: string;
+  path: string;
+  relativePath: string;
+  isDirectory: boolean;
+  isCatbuddyDir: boolean;
+  children?: WorkspaceTreeNode[];
+}

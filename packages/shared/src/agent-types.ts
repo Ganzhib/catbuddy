@@ -181,6 +181,12 @@ export interface catbuddyConfig {
       maxTokens: number
       timezone: string
       sessionTtlMinutes: number
+      /** Background Dream interval (minutes). Default 120 when omitted. */
+      dreamIntervalMinutes?: number
+      /** Periodic HEARTBEAT.md check (minutes). Default 30 when omitted. */
+      heartbeatIntervalMinutes?: number
+      /** Set false to disable background heartbeat. Default true when omitted. */
+      heartbeatEnabled?: boolean
       consolidationRatio: number
       disabledSkills: string[]
       unifiedSession: boolean

@@ -3,13 +3,15 @@
  * 对应原版 catbuddy/agent/loop.py
  */
 import { nanoid } from "nanoid";
-import { ContextBuilder } from "./context";
+import * as path from "node:path";
+import { ContextBuilder, type Context } from "./context";
 import { AgentRunner } from "./runner";
 import { ToolRegistry } from "./tools";
 import { SessionManager } from "../session/session-manager";
 import { Consolidator } from "./memory";
-import { MemoryStore } from "./memory-store";
+import { LayeredMemoryStore } from "./layered-memory.js";
 import { Dream } from "./dream";
+import { getGlobalProfileWorkspace } from "../services/global-profile.js";
 import { AutoCompact } from "./autocompact";
 import { SubagentManager } from "./subagent";
 import {
@@ -22,6 +24,14 @@ import { FileStateStore, runWithFileStates } from "./tools/file_state";
 import { createMyTool } from "./tools/self";
 import { createSpawnTool, type SpawnContext } from "./tools/spawn";
 import { McpManager } from "./tools/mcp";
+import {
+  isHeartbeatMessage,
+  shouldSuppressHeartbeatOutbound,
+} from "../heartbeat/prompt.js";
+import {
+  runHeartbeatOnce,
+  type HeartbeatRunResult,
+} from "../heartbeat/index.js";
 import type { RuntimeState } from "./tools/runtime_state";
 import { LLMProvider } from "../providers";
 import type { catbuddyConfig, TokenUsage } from "@catbuddy/shared";
@@ -98,6 +108,8 @@ interface TurnCtx {
   turnId: string;
   finalContent: string | null;
   toolsUsed: string[];
+  context: Context | null;
+  usage: TokenUsage | null;
   allMessages: LLMMessage[];
   /** Index into ``allMessages`` where this turn's new rows start (for SAVE). */
   persistFromIndex: number;
@@ -137,7 +149,7 @@ export class AgentLoop implements RuntimeState {
 
   readonly bus: MessageBus | null;
   readonly fileStateStore = new FileStateStore();
-  memoryStore: MemoryStore | null = null;
+  memoryStore: LayeredMemoryStore | null = null;
   dream: Dream | null = null;
   autoCompact: AutoCompact | null = null;
   subagents: SubagentManager | null = null;
@@ -158,6 +170,8 @@ export class AgentLoop implements RuntimeState {
   constructor(opts: {
     provider: LLMProvider;
     workspace: string;
+    projectRoot?: string;
+    catbuddyDir?: string;
     model?: string;
     maxIterations?: number;
     contextWindowTokens?: number;
@@ -181,15 +195,27 @@ export class AgentLoop implements RuntimeState {
     this.maxMessages = opts.maxMessages ?? 120;
     this.providerRetryMode = "standard";
 
+    const projectRoot =
+      opts.projectRoot ?? path.dirname(path.dirname(path.resolve(opts.workspace)));
+    const catbuddyDir =
+      opts.catbuddyDir ?? path.join(projectRoot, ".catbuddy");
+
+    const restrict = opts.restrictToWorkspace ?? false;
+
     this.sessions = opts.sessionManager ?? new SessionManager(opts.workspace);
+    const globalWorkspace = getGlobalProfileWorkspace();
     this.context = new ContextBuilder(opts.workspace, {
       timezone: opts.timezone,
       disabledSkills: opts.disabledSkills,
+      workRoot: restrict ? opts.workspace : projectRoot,
+      fileAccessMode: restrict ? 'internal' : 'project',
+      globalWorkspace,
     });
     // 首次运行时创建 workspace 引导文件
     this.context.ensureBootstrapFiles();
     this.tools = new ToolRegistry();
-    this.tools.setWorkspace(opts.workspace, opts.restrictToWorkspace ?? false);
+    this.tools.setWorkspace(opts.workspace, restrict);
+    this.tools.setProjectRoot(projectRoot, catbuddyDir);
     this.tools.registerBuiltinTools();
     this.runner = new AgentRunner(opts.provider);
 
@@ -198,13 +224,14 @@ export class AgentLoop implements RuntimeState {
       model: this.model,
       sessions: this.sessions,
       workspace: opts.workspace,
+      globalWorkspace,
       contextWindowTokens: this.contextWindowTokens,
       consolidationRatio: opts.consolidationRatio ?? 0.5,
     });
 
     if (opts.config) {
       this._config = opts.config;
-      this.memoryStore = new MemoryStore(opts.workspace);
+      this.memoryStore = new LayeredMemoryStore(opts.workspace, globalWorkspace);
       this.autoCompact = new AutoCompact(
         this.sessions,
         this.consolidator,
@@ -219,7 +246,9 @@ export class AgentLoop implements RuntimeState {
           this.model,
           this.maxToolResultChars,
           this.maxIterations,
-          opts.restrictToWorkspace ?? false,
+          restrict,
+          projectRoot,
+          catbuddyDir,
         );
       }
       this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
@@ -239,6 +268,63 @@ export class AgentLoop implements RuntimeState {
     registerBuiltinCommands(this.commands);
   }
 
+  /** Switch agent workspace + file-tool project root (e.g. after uploading folder A). */
+  reanchorProject(opts: {
+    workspace: string;
+    projectRoot: string;
+    catbuddyDir: string;
+    config?: catbuddyConfig;
+  }): void {
+    const workspace = path.resolve(opts.workspace);
+    const projectRoot = path.resolve(opts.projectRoot);
+    const catbuddyDir = path.resolve(opts.catbuddyDir);
+    const restrict = opts.config?.tools?.restrictToWorkspace ?? false;
+
+    (this as { workspace: string }).workspace = workspace;
+    (this as { sessions: SessionManager }).sessions = new SessionManager(workspace);
+
+    const globalWorkspace = getGlobalProfileWorkspace();
+    this.context = new ContextBuilder(workspace, {
+      timezone: opts.config?.agents?.defaults?.timezone ?? this._config?.agents?.defaults?.timezone,
+      disabledSkills: opts.config?.agents?.defaults?.disabledSkills ?? this._config?.agents?.defaults?.disabledSkills,
+      workRoot: restrict ? workspace : projectRoot,
+      fileAccessMode: restrict ? 'internal' : 'project',
+      globalWorkspace,
+    });
+    this.context.ensureBootstrapFiles();
+
+    this.tools.setWorkspace(workspace, restrict);
+    this.tools.setProjectRoot(projectRoot, catbuddyDir);
+
+    this.subagents?.setWorkArea({
+      workspace,
+      projectRoot,
+      catbuddyDir,
+      restrictToWorkspace: restrict,
+    });
+
+    if (opts.config) {
+      this._config = opts.config;
+      this.memoryStore = new LayeredMemoryStore(workspace, globalWorkspace);
+      if (this.provider) {
+        this.dream = new Dream(this.memoryStore, this.provider, this.model);
+      }
+      if (this.mcpManager) {
+        this.mcpManager = new McpManager(opts.config.tools?.mcpServers);
+      }
+    }
+
+    (this as { consolidator: Consolidator }).consolidator = new Consolidator({
+      provider: this.provider,
+      model: this.model,
+      sessions: this.sessions,
+      workspace,
+      globalWorkspace,
+      contextWindowTokens: this.contextWindowTokens,
+      consolidationRatio: opts.config?.agents?.defaults?.consolidationRatio ?? 0.5,
+    });
+  }
+
   /** Connect MCP servers from config (call after construction). */
   async connectMcp(): Promise<void> {
     if (!this.mcpManager) return;
@@ -247,6 +333,31 @@ export class AgentLoop implements RuntimeState {
       "[McpManager] tools:",
       names.filter((n) => n.startsWith("mcp_")).join(", ") || "(none)",
     );
+  }
+
+  /** Update MCP server config, persist, and reconnect without restart. */
+  async setMcpServers(
+    servers: Record<string, import("@catbuddy/shared").McpServerConfig> | undefined,
+  ): Promise<string> {
+    if (!this.mcpManager) return "MCP manager not initialized";
+    if (this._config) {
+      if (!this._config.tools) {
+        this._config.tools = {
+          restrictToWorkspace: false,
+          exec: { enable: true },
+          web: { enable: true },
+          my: { enable: false, allowSet: false },
+          imageGeneration: { enable: false },
+        };
+      }
+      this._config.tools.mcpServers = servers;
+    }
+    this.mcpManager.updateServers(servers);
+    return this.mcpManager.reload();
+  }
+
+  getMcpServerStatus() {
+    return this.mcpManager?.getServerStatus() ?? [];
   }
 
   // ═══ 公开属性 ═══
@@ -311,7 +422,8 @@ export class AgentLoop implements RuntimeState {
     /** 本 turn 是否已通过 delta 推送过正文（跨 stream segment 累计，不在 segment 结束时清零） */
     let hadStreamedContent = false;
 
-    const cbs: StreamCallbacks = {
+    const heartbeatTurn = isHeartbeatMessage(msg);
+    const cbs: StreamCallbacks = heartbeatTurn ? {} : {
       onStreamDelta: (delta) => {
         hadStreamedContent = true;
         streamChunks++;
@@ -395,6 +507,13 @@ export class AgentLoop implements RuntimeState {
     try {
       turnLog.step("process");
       const response = await this.process(msg, cbs);
+      if (
+        heartbeatTurn &&
+        shouldSuppressHeartbeatOutbound(response?.content)
+      ) {
+        turnLog.debug("heartbeat suppressed (nothing to notify)");
+        return;
+      }
       if (response?.content?.trim()) {
         if (hadStreamedContent) {
           turnLog.debug("skip duplicate outbound (already streamed)");
@@ -462,6 +581,8 @@ export class AgentLoop implements RuntimeState {
       turnId: nanoid(),
       finalContent: null,
       toolsUsed: [],
+      context: null,
+      usage: null,
       allMessages: [],
       persistFromIndex: 0,
       stopReason: "",
@@ -483,6 +604,8 @@ export class AgentLoop implements RuntimeState {
     }
 
     const trace = newTrace(`sm:${turn.turnId.slice(0, 6)}`);
+
+    this._lastUsage = null;
 
     while (turn.state !== State.DONE) {
       const fromState = turn.state;
@@ -533,12 +656,21 @@ export class AgentLoop implements RuntimeState {
       turn.state = toState;
     }
 
-    streamCallbacks?.onTurnComplete?.({
-      content: turn.finalContent ?? "",
-      toolsUsed: turn.toolsUsed,
-      usage: { inputTokens: 0, outputTokens: 0 },
-      latencyMs: Math.round(performance.now() - turn.startedAt),
-    });
+    const suppressComplete =
+      isHeartbeatMessage(turn.msg) &&
+      shouldSuppressHeartbeatOutbound(turn.finalContent);
+    if (!suppressComplete) {
+      const usage =
+        turn.usage
+        ?? this._lastUsage
+        ?? { inputTokens: 0, outputTokens: 0 };
+      streamCallbacks?.onTurnComplete?.({
+        content: turn.finalContent ?? "",
+        toolsUsed: turn.toolsUsed,
+        usage,
+        latencyMs: Math.round(performance.now() - turn.startedAt),
+      });
+    }
 
     return turn.outbound;
   }
@@ -551,6 +683,8 @@ export class AgentLoop implements RuntimeState {
   }
 
   private async _state_compact(ctx: TurnCtx): Promise<string> {
+    if (isHeartbeatMessage(ctx.msg)) return "ok";
+
     const allMessages = this.sessions.getHistory(ctx.sessionKey, {
       maxMessages: 9999,
     });
@@ -610,9 +744,6 @@ export class AgentLoop implements RuntimeState {
 
     if (result !== null) {
       ctx.outbound = result;
-      if (result.content) {
-        await ctx.onAssistantMessage?.(result.content);
-      }
       return "shortcut";
     }
 
@@ -637,7 +768,7 @@ export class AgentLoop implements RuntimeState {
       }):\n${lastSummary.text}`;
     }
 
-    ctx.allMessages = this.context.buildMessages({
+    ctx.context = this.context.build({
       history,
       currentMessage: ctx.msg.content,
       media: ctx.msg.media,
@@ -654,13 +785,14 @@ export class AgentLoop implements RuntimeState {
     ctx: TurnCtx,
     cbs?: StreamCallbacks,
   ): Promise<string> {
-    // 持久化用户消息
-    this.sessions.addMessage(ctx.sessionKey, {
-      role: "user",
-      content: ctx.msg.content,
-      media: ctx.msg.media,
-      timestamp: new Date().toISOString(),
-    });
+    if (!isHeartbeatMessage(ctx.msg)) {
+      this.sessions.addMessage(ctx.sessionKey, {
+        role: "user",
+        content: ctx.msg.content,
+        media: ctx.msg.media,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     const streamId = `${ctx.sessionKey}:${Date.now()}`;
 
@@ -674,14 +806,18 @@ export class AgentLoop implements RuntimeState {
         ? async (edit) => { await cbs.onFileEdit!(edit) }
         : undefined,
     );
-    const persistFromIndex = ctx.allMessages.length
+    if (!ctx.context) {
+      throw new Error("RUN called without BUILD context");
+    }
+    const persistFromIndex =
+      (ctx.context.system ? 1 : 0) + ctx.context.messages.length;
     const fileStates = this.fileStateStore.forSession(ctx.sessionKey);
     let result;
     try {
       result = await runWithFileStates(fileStates, async () => {
         this.currentIteration = 0;
         return this.runner.run({
-          initialMessages: ctx.allMessages,
+          context: ctx.context!,
           tools: this.tools,
           model: this.model,
           maxIterations: this.maxIterations,
@@ -697,7 +833,6 @@ export class AgentLoop implements RuntimeState {
           onReasoning: async (delta) => cbs?.onReasoningDelta?.(delta),
         });
       });
-      this._lastUsage = result.usage;
     } finally {
       this.tools.setFileEditCallback(undefined);
     }
@@ -705,8 +840,10 @@ export class AgentLoop implements RuntimeState {
     ctx.finalContent = result.finalContent;
     ctx.toolsUsed = result.toolsUsed;
     ctx.allMessages = result.messages;
+    ctx.usage = result.usage;
     ctx.persistFromIndex = persistFromIndex;
     ctx.stopReason = result.stopReason;
+    this._lastUsage = result.usage;
 
     // 通知流结束
     cbs?.onStreamEnd?.(streamId, false);
@@ -715,6 +852,8 @@ export class AgentLoop implements RuntimeState {
   }
 
   private async _state_save(ctx: TurnCtx): Promise<string> {
+    if (isHeartbeatMessage(ctx.msg)) return "ok";
+
     const now = new Date().toISOString()
 
     for (const msg of ctx.allMessages.slice(ctx.persistFromIndex)) {
@@ -748,7 +887,27 @@ export class AgentLoop implements RuntimeState {
       });
     }
 
+    this._appendTurnHistory(ctx);
+
     return "ok";
+  }
+
+  /** Feed Dream: append completed turn to project history.jsonl. */
+  private _appendTurnHistory(ctx: TurnCtx): void {
+    if (!this.memoryStore) return;
+    const slice = ctx.allMessages.slice(ctx.persistFromIndex);
+    const lines: string[] = [];
+    for (const msg of slice) {
+      if (msg.role !== "user" && msg.role !== "assistant") continue;
+      const text =
+        typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content);
+      if (!text.trim()) continue;
+      lines.push(`[${msg.role}] ${text.slice(0, 2000)}`);
+    }
+    if (lines.length === 0) return;
+    this.memoryStore.project.appendHistory(lines.join("\n"));
   }
 
   private async _state_respond(ctx: TurnCtx): Promise<string> {
@@ -899,6 +1058,20 @@ export class AgentLoop implements RuntimeState {
   /** Background Dream cycle (optional cron). */
   async runDreamOnce(): Promise<string | null> {
     return this.dream?.runOnce() ?? null;
+  }
+
+  /** Dispatch a heartbeat check (cron or /heartbeat). */
+  runHeartbeatOnce(opts?: { force?: boolean }): HeartbeatRunResult {
+    if (!this._config || !this.bus) return "skipped";
+    return runHeartbeatOnce(
+      {
+        agentLoop: this,
+        sessions: this.sessions,
+        config: this._config,
+        configFile: "",
+      },
+      opts,
+    );
   }
 
   listSkills(): SkillInfo[] {

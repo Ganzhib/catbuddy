@@ -102,6 +102,14 @@ export function SettingsView({
     model: "",
     provider: "",
   });
+  const settingsNavItems = useMemo(
+    () =>
+      ([
+        { key: "general" as const, icon: Settings },
+        { key: "byok" as const, icon: KeyRound },
+      ] as const),
+    [],
+  );
 
   const applyPayload = useCallback((payload: SettingsPayload) => {
     setSettings(payload);
@@ -325,12 +333,14 @@ export function SettingsView({
         onSelectSection={setActiveSection}
         onBackToChat={onBackToChat}
         onLogout={onLogout}
+        navItems={settingsNavItems}
       />
       <SettingsSidebar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
         onBackToChat={onBackToChat}
         onLogout={onLogout}
+        navItems={settingsNavItems}
       />
 
       <main className="min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
@@ -423,21 +433,23 @@ export function SettingsView({
   );
 }
 
-const SETTINGS_NAV_ITEMS = [
-  { key: "general", icon: Settings },
-  { key: "byok", icon: KeyRound },
-] as const;
+type SettingsNavItem = {
+  key: SettingsSectionKey;
+  icon: LucideIcon;
+};
 
 function SettingsMobileNav({
   activeSection,
   onSelectSection,
   onBackToChat,
   onLogout,
+  navItems,
 }: {
   activeSection: SettingsSectionKey;
   onSelectSection: (section: SettingsSectionKey) => void;
   onBackToChat: () => void;
   onLogout?: () => void;
+  navItems: readonly SettingsNavItem[];
 }) {
   const { t } = useTranslation();
   return (
@@ -466,9 +478,16 @@ function SettingsMobileNav({
       </div>
       <nav
         aria-label={t("settings.sidebar.ariaLabel")}
-        className="grid grid-cols-2 gap-1 rounded-[14px] bg-muted/45 p-1"
+        className={cn(
+          "grid gap-1 rounded-[14px] bg-muted/45 p-1",
+          navItems.length >= 4
+            ? "grid-cols-2 sm:grid-cols-4"
+            : navItems.length >= 3
+              ? "grid-cols-3"
+              : "grid-cols-2",
+        )}
       >
-        {SETTINGS_NAV_ITEMS.map(({ key, icon: Icon }) => {
+        {navItems.map(({ key, icon: Icon }) => {
           const active = key === activeSection;
           return (
             <button
@@ -498,11 +517,13 @@ function SettingsSidebar({
   onSelectSection,
   onBackToChat,
   onLogout,
+  navItems,
 }: {
   activeSection: SettingsSectionKey;
   onSelectSection: (section: SettingsSectionKey) => void;
   onBackToChat: () => void;
   onLogout?: () => void;
+  navItems: readonly SettingsNavItem[];
 }) {
   const { t } = useTranslation();
   return (
@@ -522,7 +543,7 @@ function SettingsSidebar({
       </div>
 
       <nav aria-label={t("settings.sidebar.ariaLabel")} className="space-y-1">
-        {SETTINGS_NAV_ITEMS.map(({ key, icon: Icon }) => {
+        {navItems.map(({ key, icon: Icon }) => {
           const active = key === activeSection;
           return (
             <button

@@ -13,6 +13,15 @@ function inferSupportsVision(apiBase?: string, providerName?: string): boolean {
   return true
 }
 
+/** Whether the upstream API accepts ``stream_options.include_usage`` on chat completions. */
+function inferStreamUsage(apiBase?: string, providerName?: string): boolean {
+  const base = (apiBase ?? '').toLowerCase()
+  const name = (providerName ?? '').toLowerCase()
+  if (name === 'deepseek' || base.includes('deepseek.com')) return false
+  if (base.includes('localhost') || base.includes('127.0.0.1') || base.includes('ollama')) return false
+  return true
+}
+
 function formatContentForApi(
   content: LLMMessage['content'],
   supportsVision: boolean,
@@ -43,6 +52,7 @@ export class OpenAICompatProvider extends LLMProvider {
 
   private client: OpenAI
   private readonly supportsVision: boolean
+  private readonly supportsStreamUsage: boolean
 
   constructor(opts: {
     apiKey: string
@@ -55,6 +65,7 @@ export class OpenAICompatProvider extends LLMProvider {
     this.defaultModel = opts.defaultModel ?? 'gpt-4o'
     this.supportsVision =
       opts.supportsVision ?? inferSupportsVision(opts.apiBase, opts.providerName)
+    this.supportsStreamUsage = inferStreamUsage(opts.apiBase, opts.providerName)
     this.client = new OpenAI({
       apiKey: opts.apiKey || 'sk-placeholder',
       baseURL: opts.apiBase || 'https://api.openai.com/v1',
@@ -80,6 +91,12 @@ export class OpenAICompatProvider extends LLMProvider {
 
   async chatStream(opts: ChatStreamOpts): Promise<LLMResponse> {
     try {
+      let content = ''
+      let reasoningContent = ''
+      let inputTokens = 0
+      let outputTokens = 0
+      const toolCallMap = new Map<number, { id: string; name: string; args: string }>()
+
       const stream = await this.client.chat.completions.create({
         model: opts.model ?? this.defaultModel,
         messages: this.toOpenAIMessages(opts.messages) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
@@ -88,13 +105,15 @@ export class OpenAICompatProvider extends LLMProvider {
         max_tokens: opts.maxTokens ?? this.generation.maxTokens,
         temperature: opts.temperature ?? this.generation.temperature,
         stream: true,
+        ...(this.supportsStreamUsage ? { stream_options: { include_usage: true } } : {}),
       })
 
-      let content = ''
-      let reasoningContent = ''
-      const toolCallMap = new Map<number, { id: string; name: string; args: string }>()
-
       for await (const chunk of stream) {
+        const usage = chunk.usage
+        if (usage) {
+          inputTokens = usage.prompt_tokens ?? inputTokens
+          outputTokens = usage.completion_tokens ?? outputTokens
+        }
         const delta = chunk.choices?.[0]?.delta
         if (!delta) continue
 
@@ -135,7 +154,7 @@ export class OpenAICompatProvider extends LLMProvider {
         content: content || null,
         toolCalls,
         finishReason: toolCalls.length > 0 ? 'tool_calls' : 'stop',
-        usage: { inputTokens: 0, outputTokens: 0 },
+        usage: { inputTokens, outputTokens },
         reasoningContent: reasoningContent || undefined,
       }
     } catch (err: any) {

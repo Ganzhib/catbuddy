@@ -6,7 +6,7 @@
 
 `index.ts` → `createMainWindow()` → `initAgent()`（`services/init-agent.ts`）：
 
-1. 读取/创建 `~/.catbuddy-desktop/config/config.json`
+1. 读取/创建 `~/.catbuddy/config/config.json`
 2. `SessionManager(workspace)`
 3. `MessageBus` + `ChannelManager` + 注册 `DesktopChannel`
 4. `applyGatewayRemote()`（若配置与环境允许）

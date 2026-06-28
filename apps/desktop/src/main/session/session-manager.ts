@@ -99,6 +99,20 @@ export class SessionManager {
     this._cache.set(sessionKey, info)
   }
 
+  /** Full persisted transcript (for compact / dream / history command). */
+  getAllMessages(sessionKey: string, opts?: { maxMessages?: number }): MessageRecord[] {
+    const fp = this._filePath(sessionKey)
+    if (!fs.existsSync(fp)) return []
+
+    const { messages } = this._load(fp)
+    const limit = opts?.maxMessages ?? MAX_MESSAGES
+    return messages.slice(-limit)
+  }
+
+  /**
+   * Messages for the current turn (from last user message onward).
+   * Used when building LLM context so prior turns stay summarized separately.
+   */
   getHistory(sessionKey: string, opts?: { maxMessages?: number; maxTokens?: number }): MessageRecord[] {
     const fp = this._filePath(sessionKey)
     if (!fs.existsSync(fp)) return []
@@ -117,6 +131,27 @@ export class SessionManager {
     const info = this._createEmptyInfo(key)
     this._save(info, [])
     this._cache.set(key, info)
+  }
+
+  setMetadata(key: string, patch: Record<string, unknown>) {
+    const fp = this._filePath(key)
+    if (!fs.existsSync(fp)) {
+      const info = this.getOrCreate(key)
+      info.metadata = { ...info.metadata, ...patch }
+      this._cache.set(key, info)
+      return info
+    }
+    const { info, messages } = this._load(fp)
+    info.metadata = { ...info.metadata, ...patch }
+    this._save(info, messages)
+    this._cache.set(key, info)
+    return info
+  }
+
+  getMetadataValue<T>(key: string, field: string): T | undefined {
+    const info = this.get(key) ?? this._cache.get(key)
+    if (!info) return undefined
+    return info.metadata[field] as T | undefined
   }
 
   delete(key: string): boolean {

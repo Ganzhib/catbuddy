@@ -5,13 +5,16 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import type { LLMProvider } from '../providers/base-provider'
-import { MemoryStore } from './memory-store'
+import {
+  LayeredMemoryStore,
+  memoryExtractionPrompt,
+} from './layered-memory.js'
 
 const STALE_THRESHOLD_DAYS = 14
 
 export class Dream {
   constructor(
-    readonly store: MemoryStore,
+    readonly store: LayeredMemoryStore,
     private provider: LLMProvider,
     private model: string,
     private readonly maxBatchSize = 20,
@@ -22,29 +25,31 @@ export class Dream {
     this.model = model
   }
 
-  /** Run one Dream cycle: summarize recent history into MEMORY.md. */
+  /** Run one Dream cycle: summarize recent history into layered MEMORY.md. */
   async runOnce(): Promise<string | null> {
+    const projectStore = this.store.project
     const entries: { cursor: number; content: string }[] = []
     let lastCursor = 0
     try {
-      const dreamCursorPath = path.join(this.store.memoryDir, '.dream_cursor')
+      const dreamCursorPath = path.join(projectStore.memoryDir, '.dream_cursor')
       lastCursor = parseInt(fs.readFileSync(dreamCursorPath, 'utf-8'), 10) || 0
     } catch {
       lastCursor = 0
     }
 
-    for (const entry of this.store.readEntriesSince(lastCursor)) {
+    for (const entry of projectStore.readEntriesSince(lastCursor)) {
       entries.push(entry)
       if (entries.length >= this.maxBatchSize) break
     }
     if (entries.length === 0) return null
 
     const batch = entries.map((e) => e.content).join('\n---\n')
-    const prompt = `Analyze these conversation history excerpts. Extract durable facts for MEMORY.md.
+    const prompt = memoryExtractionPrompt(
+      `Analyze these conversation history excerpts. Extract durable facts for long-term memory.
 Mark items older than ${STALE_THRESHOLD_DAYS} days as stale if no longer relevant.
-Return bullet points only.
 
-${batch}`
+${batch}`,
+    )
 
     const response = await this.provider.chat({
       messages: [{ role: 'user', content: prompt }],
@@ -56,14 +61,11 @@ ${batch}`
     const summary = response.content?.trim()
     if (!summary || summary === '(nothing)') return null
 
-    const existing = this.store.readMemory()
-    const now = new Date().toISOString().slice(0, 10)
-    const block = `\n\n## Dream — ${now}\n${summary}\n`
-    fs.writeFileSync(this.store.memoryFile, existing + block, 'utf-8')
+    this.store.appendMemorySummary(summary, 'Dream')
 
     const last = entries[entries.length - 1]!.cursor
     fs.writeFileSync(
-      path.join(this.store.memoryDir, '.dream_cursor'),
+      path.join(projectStore.memoryDir, '.dream_cursor'),
       String(last),
       'utf-8',
     )

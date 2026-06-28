@@ -81,6 +81,8 @@ Session 键默认规则（`ipcHandlers/index.ts`）：
 | `workspace:open-file` | invoke | 用系统默认应用打开工作区内的文件 |
 | `skills:list` | invoke | Skill 列表 |
 | `skills:toggle` | invoke | 启用/禁用 Skill |
+| `skills:marketplace-list` | invoke | 内置精选 Skill 市场条目 |
+| `skills:marketplace-install` | invoke | 将内置 Skill 复制到 `workspace/skills/` |
 
 ### App / Channels / Gateway
 

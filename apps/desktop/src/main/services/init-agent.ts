@@ -10,6 +10,19 @@ import { MessageBus } from "../bus/index.js";
 import { ChannelManager, DesktopChannel } from "../channels/index.js";
 import { registerIpcHandlers } from "../ipcHandlers/index.js";
 import {
+  applyProjectAnchor,
+  getDefaultHomeAnchor,
+  getHomeCatbuddyDir,
+  type DesktopRuntimeRefs,
+} from "./workspace-anchor.js";
+import { startDesktopCron } from "../cron/index.js";
+import { startDesktopHeartbeat } from "../heartbeat/index.js";
+import {
+  getActiveWorkspaceFolderId,
+  getWorkspaceFolderById,
+  listWorkspaceFolders,
+} from "./workspace-folders.js";
+import {
   applyGatewayRemote,
   registerGatewayRemoteIpc,
   type GatewayRemoteState,
@@ -26,10 +39,10 @@ export interface AgentRuntime {
 }
 
 export async function initAgent(): Promise<AgentRuntime> {
-  const home = app.getPath("home");
-  const catbuddyDir = path.join(home, ".catbuddy-desktop");
-  const workspace = path.join(catbuddyDir, "workspace");
-  const configFile = path.join(catbuddyDir, "config", "config.json");
+  const defaultAnchor = getDefaultHomeAnchor();
+  const homeDir = defaultAnchor.catbuddyDir;
+  const workspace = defaultAnchor.workspace;
+  let configFile = defaultAnchor.configFile;
 
   const fs = await import("node:fs");
   fs.mkdirSync(path.dirname(configFile), { recursive: true });
@@ -48,7 +61,7 @@ export async function initAgent(): Promise<AgentRuntime> {
   (config as any).runtime = { config_path: configFile };
   console.log("[main] Workspace:", workspace);
 
-  const sessions = new SessionManager(workspace);
+  let sessions = new SessionManager(workspace);
   const bus = new MessageBus();
   const channelManager = new ChannelManager(bus);
   channelManager.register(new DesktopChannel());
@@ -70,11 +83,13 @@ export async function initAgent(): Promise<AgentRuntime> {
   const agentLoop = new AgentLoop({
     provider,
     workspace,
+    projectRoot: defaultAnchor.projectRoot,
+    catbuddyDir: defaultAnchor.catbuddyDir,
     model: config.agents.defaults.model,
     maxIterations: config.agents.defaults.maxToolIterations,
     maxMessages: config.agents.defaults.maxMessages,
     contextWindowTokens: config.agents.defaults.contextWindowTokens,
-    restrictToWorkspace: config.tools.restrictToWorkspace,
+    restrictToWorkspace: true,
     disabledSkills: config.agents.defaults.disabledSkills ?? [],
     sessionManager: sessions,
     bus,
@@ -84,13 +99,35 @@ export async function initAgent(): Promise<AgentRuntime> {
 
   await agentLoop.connectMcp();
 
-  registerIpcHandlers(
+  const runtime: DesktopRuntimeRefs = {
     agentLoop,
     sessions,
     config,
     configFile,
-    () => gatewayState.gatewayWsClient,
-  );
+  };
+
+  const registry = listWorkspaceFolders(homeDir);
+  if (registry.activeFolderId) {
+    const folder = getWorkspaceFolderById(homeDir, registry.activeFolderId);
+    if (folder) {
+      applyProjectAnchor(runtime, folder);
+      sessions = runtime.sessions;
+      config = runtime.config;
+      configFile = runtime.configFile;
+      gatewayState.appConfig = config;
+      gatewayState.appConfigFile = configFile;
+      gatewayState.appSessions = sessions;
+    }
+  }
+
+  registerIpcHandlers(runtime, () => gatewayState.gatewayWsClient);
+
+  const cron = startDesktopCron(runtime);
+  const heartbeat = startDesktopHeartbeat(runtime);
+  app.on("will-quit", () => {
+    cron.stopAll();
+    heartbeat.stopAll();
+  });
 
   channelManager.start();
   agentLoop.run().catch((err) =>

@@ -28,6 +28,19 @@ interface McpServerHandle {
   name: string
   client: Client
   transport: StdioClientTransport
+  toolCount: number
+}
+
+export interface McpServerStatus {
+  name: string
+  connected: boolean
+  toolCount: number
+  lastError?: string
+}
+
+export interface McpConnectFailure {
+  name: string
+  error: string
 }
 
 /** Sanitize MCP-derived names for model API compatibility. */
@@ -273,19 +286,55 @@ async function executeMcpTool(
   return '(MCP tool call failed)'
 }
 
+function attachStderrCapture(transport: StdioClientTransport): () => string {
+  const chunks: string[] = []
+  const stderr = (transport as { stderr?: NodeJS.ReadableStream | null }).stderr
+  if (!stderr) return () => ''
+  const onData = (buf: Buffer | string) => {
+    chunks.push(typeof buf === 'string' ? buf : buf.toString())
+  }
+  stderr.on('data', onData)
+  return () => {
+    stderr.off('data', onData)
+    return chunks.join('').trim()
+  }
+}
+
+function formatConnectFailure(
+  name: string,
+  cfg: McpServerConfig,
+  err: unknown,
+  stderr: string,
+): string {
+  const errMessage = err instanceof Error ? err.message : String(err)
+  const combined = `${stderr}\n${errMessage}`.toLowerCase()
+  if (combined.includes('404') || combined.includes('not found') || combined.includes('e404')) {
+    const pkg = cfg.args?.find((a) => a.startsWith('@') || a.includes('/')) ?? cfg.command
+    return `Package or command not found (${pkg}). Check the marketplace entry or your config.`
+  }
+  if (combined.includes('connection closed') && stderr) {
+    return stderr.split('\n').filter(Boolean).slice(-3).join(' ')
+  }
+  if (stderr) return stderr.split('\n').filter(Boolean).slice(-2).join(' ')
+  return errMessage
+}
+
 /** Connect to configured MCP servers and register their tools. */
 export async function connectMcpServers(
   mcpServers: Record<string, McpServerConfig>,
   registry: ToolRegistry,
-): Promise<McpServerHandle[]> {
+): Promise<{ handles: McpServerHandle[]; failures: McpConnectFailure[] }> {
   const handles: McpServerHandle[] = []
+  const failures: McpConnectFailure[] = []
 
   for (const [name, cfg] of Object.entries(mcpServers)) {
     if (!cfg.command?.trim()) {
       console.warn(`[McpManager] server '${name}': no command, skipping`)
+      failures.push({ name, error: 'No command configured.' })
       continue
     }
 
+    let releaseStderr: (() => string) | null = null
     try {
       const { command, args, env } = normalizeWindowsStdioCommand(
         cfg.command,
@@ -299,6 +348,7 @@ export async function connectMcpServers(
         cwd: cfg.cwd,
         stderr: 'pipe',
       })
+      releaseStderr = attachStderrCapture(transport)
       const client = new Client({ name: 'catbuddy-desktop', version: '0.1.0' })
       await client.connect(transport)
 
@@ -327,21 +377,47 @@ export async function connectMcpServers(
       }
 
       console.info(`[McpManager] '${name}': connected, ${registered} tool(s)`)
-      handles.push({ name, client, transport })
+      handles.push({ name, client, transport, toolCount: registered })
     } catch (err) {
-      console.error(`[McpManager] failed to connect '${name}':`, err)
+      const error = formatConnectFailure(name, cfg, err, releaseStderr?.() ?? '')
+      failures.push({ name, error })
+      console.error(`[McpManager] failed to connect '${name}':`, error)
     }
   }
 
-  return handles
+  return { handles, failures }
 }
 
 export class McpManager {
   private _handles: McpServerHandle[] = []
   private _registry: ToolRegistry | null = null
   private _connected = false
+  private _lastFailures: McpConnectFailure[] = []
 
-  constructor(private readonly _servers: ToolsConfig['mcpServers']) {}
+  constructor(private _servers: ToolsConfig['mcpServers']) {}
+
+  updateServers(servers: ToolsConfig['mcpServers']): void {
+    this._servers = servers
+  }
+
+  get lastFailures(): McpConnectFailure[] {
+    return this._lastFailures
+  }
+
+  getServerStatus(): McpServerStatus[] {
+    const servers = this._servers ?? {}
+    const connected = new Map(this._handles.map((h) => [h.name, h]))
+    const failureMap = new Map(this._lastFailures.map((f) => [f.name, f.error]))
+    return Object.keys(servers).map((name) => {
+      const handle = connected.get(name)
+      return {
+        name,
+        connected: !!handle,
+        toolCount: handle?.toolCount ?? 0,
+        lastError: handle ? undefined : failureMap.get(name),
+      }
+    })
+  }
 
   get connected(): boolean {
     return this._connected
@@ -389,10 +465,17 @@ export class McpManager {
     await this._connectAll()
     const toolCount = this._listMcpToolNames().length
     this._connected = this._handles.length > 0
-    return (
+    let message = (
       `MCP reloaded: ${this._handles.length}/${count} server(s) connected, `
       + `${toolCount} tool(s) registered.`
     )
+    if (this._lastFailures.length > 0) {
+      const details = this._lastFailures
+        .map((f) => `${f.name}: ${f.error}`)
+        .join('; ')
+      message += ` Failed: ${details}`
+    }
+    return message
   }
 
   async disconnect(): Promise<void> {
@@ -402,7 +485,9 @@ export class McpManager {
 
   private async _connectAll(): Promise<void> {
     if (!this._registry || !this._servers) return
-    this._handles = await connectMcpServers(this._servers, this._registry)
+    const { handles, failures } = await connectMcpServers(this._servers, this._registry)
+    this._handles = handles
+    this._lastFailures = failures
     this._connected = this._handles.length > 0
   }
 

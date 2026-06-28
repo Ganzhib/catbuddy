@@ -5,13 +5,14 @@
 import { LLMProvider } from '../providers'
 import { ToolRegistry } from './tools'
 import { AgentHook, type AgentHookContext } from './hook'
+import type { Context } from './context'
 import type {
   LLMMessage, ToolCallRequest, ToolEvent,
   AgentRunResult, TokenUsage,
 } from "@catbuddy/shared"
 
 export interface RunSpec {
-  initialMessages: LLMMessage[]
+  context: Context
   tools: ToolRegistry
   model: string
   maxIterations: number
@@ -64,7 +65,11 @@ export class AgentRunner {
   }
 
   async run(spec: RunSpec): Promise<AgentRunResult> {
-    const messages: LLMMessage[] = [...spec.initialMessages]
+    const messages: LLMMessage[] = []
+    if (spec.context.system) {
+      messages.push({ role: 'system', content: spec.context.system })
+    }
+    messages.push(...spec.context.messages)
     const toolsUsed: string[] = []
     const toolEvents: ToolEvent[] = []
     const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }

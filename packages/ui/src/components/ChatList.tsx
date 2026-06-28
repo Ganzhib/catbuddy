@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deriveTitle } from "@/lib/format";
+import { sb, sbGroupLabel } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { ChatSummary } from "@catbuddy/shared";
 
@@ -31,7 +32,7 @@ export function ChatList({
   const { t } = useTranslation();
   if (loading && sessions.length === 0) {
     return (
-      <div className="px-4 py-8 text-[13px] text-muted-foreground">
+      <div className={cn("py-8 text-[14px]", sb.px, sb.textMuted)}>
         {t("chat.loading")}
       </div>
     );
@@ -39,7 +40,7 @@ export function ChatList({
 
   if (sessions.length === 0) {
     return (
-      <div className="px-4 py-8 text-[13px] leading-6 text-muted-foreground/80">
+      <div className={cn("py-8 text-[14px] leading-6", sb.px, sb.textMuted)}>
         {emptyLabel ?? t("chat.noSessions")}
       </div>
     );
@@ -52,14 +53,12 @@ export function ChatList({
   });
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-subtle">
-      <div className="min-w-0 space-y-4 px-3 py-2.5">
+    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-none">
+      <div className={cn("min-w-0 space-y-4 py-2", sb.px)}>
         {groups.map((group) => (
           <section key={group.label} aria-label={group.label}>
-            <div className="px-2.5 pb-2 text-[13px] font-medium text-muted-foreground/65">
-              {group.label}
-            </div>
-            <ul className="space-y-1">
+            <div className={cn("mb-2", sbGroupLabel)}>{group.label}</div>
+            <ul className="space-y-2">
               {group.sessions.map((s) => {
                 const active = s.key === activeKey;
                 const fallbackTitle = t("chat.fallbackTitle", {
@@ -74,47 +73,50 @@ export function ChatList({
                   <li key={s.key} className="min-w-0">
                     <div
                       className={cn(
-                        "group flex min-h-9 min-w-0 max-w-full items-center gap-2.5 rounded-xl px-2.5 text-[13.5px] transition-colors",
-                        active
-                          ? "bg-sidebar-accent/70 text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_hsl(var(--sidebar-border)/0.28)]"
-                          : "text-sidebar-foreground/82 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                        "group flex min-w-0 max-w-full items-stretch rounded-lg text-[14px] transition-colors duration-200",
+                        active ? sb.active : cn(sb.surface, sb.bubbleHover),
                       )}
                     >
                       <button
                         type="button"
                         onClick={() => onSelect(s.key)}
                         title={tooltipTitle}
-                        className="min-w-0 flex-1 overflow-hidden py-2 text-left"
+                        className={cn(
+                          "min-w-0 flex-1 rounded-lg px-3 py-3 text-left",
+                          sb.text,
+                        )}
                       >
-                        <span className="block w-full truncate font-medium leading-[1.35]">{title}</span>
+                        <span className="block w-full truncate leading-[1.4]">{title}</span>
                       </button>
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger
-                          className={cn(
-                            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/75 opacity-40 transition-opacity",
-                            "hover:bg-sidebar-accent hover:text-sidebar-foreground group-hover:opacity-100",
-                            "focus-visible:opacity-100",
-                            active && "opacity-100",
-                          )}
-                          aria-label={t("chat.actions", { title })}
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          onCloseAutoFocus={(event) => event.preventDefault()}
-                        >
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              window.setTimeout(() => onRequestDelete(s.key, title), 0);
-                            }}
-                            className="text-destructive focus:text-destructive"
+                      <div className="flex shrink-0 items-center pr-2">
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger
+                            className={cn(
+                              "inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200",
+                              sb.iconMuted,
+                              sb.iconHover,
+                              sb.iconButtonHover,
+                            )}
+                            aria-label={t("chat.actions", { title })}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {t("chat.delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            onCloseAutoFocus={(event) => event.preventDefault()}
+                          >
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                window.setTimeout(() => onRequestDelete(s.key, title), 0);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {t("chat.delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </li>
                 );

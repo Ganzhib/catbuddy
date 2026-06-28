@@ -133,7 +133,7 @@ export function createExecSessionTool(ctx: ToolContext): Tool {
         if (!command) return 'Error: command required'
         const cwd = args.working_dir
           ? ctx.resolvePath(String(args.working_dir))
-          : ctx.workspace
+          : ctx.workRoot
         const timeout = args.timeout != null ? Number(args.timeout) : null
         const id = _manager.start(command, cwd, timeout)
         return `Started background exec session: ${id}`

@@ -45,15 +45,51 @@ export interface CatbuddyPreloadApi {
   listModels(): Promise<ModelPresetConfig[]>
   setModel(presetName: string): Promise<void>
 
+  getMcpSettings?(): Promise<import('@catbuddy/shared').McpSettingsPayload>
+  updateMcpServers?(
+    servers: Record<string, import('@catbuddy/shared').McpServerConfig>,
+  ): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+  listMcpMarketplace?(): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]>
+  addMcpFromMarketplace?(id: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
+
   selectWorkspace(): Promise<string>
   getWorkspace(): Promise<string>
   openWorkspaceFile(
     path: string,
     absolutePath?: string,
   ): Promise<{ ok: boolean; path?: string; error?: string }>
+  getWorkspaceProjectInfo?(): Promise<import('@catbuddy/shared').WorkspaceProjectInfo>
+  listWorkspaceEntries?(): Promise<import('@catbuddy/shared').WorkspaceTreeNode[]>
+  listWorkspaceChildren?(dirPath: string): Promise<import('@catbuddy/shared').WorkspaceTreeNode[]>
+  importProjectFolder?(): Promise<{
+    ok: boolean
+    cancelled?: boolean
+    folder?: import('@catbuddy/shared').WorkspaceFolder
+    created?: boolean
+    activeFolderId?: string | null
+    folders?: import('@catbuddy/shared').WorkspaceFolder[]
+    error?: string
+  }>
+  listWorkspaceFolders?(): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
+  setActiveWorkspaceFolder?(folderId: string | null): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
+  removeWorkspaceFolder?(folderId: string): Promise<{
+    activeFolderId: string | null
+    folders: import('@catbuddy/shared').WorkspaceFolder[]
+  }>
 
   listSkills(): Promise<SkillInfo[]>
   toggleSkill(name: string, enabled: boolean): Promise<void>
+  listSlashCommands(): Promise<import('@catbuddy/shared').SlashCommand[]>
+  listSkillMarketplace?(): Promise<import('@catbuddy/shared').SkillMarketplaceEntry[]>
+  installSkillFromMarketplace?(
+    id: string,
+  ): Promise<import('@catbuddy/shared').SkillInstallResult>
 
   restartApp(): Promise<void>
 

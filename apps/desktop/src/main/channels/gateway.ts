@@ -109,6 +109,7 @@ export class GatewayChannel implements BaseChannel {
       event: "turn_end",
       chat_id: chatId,
       latency_ms: data.latencyMs,
+      usage: data.usage,
       tools_used: data.toolsUsed?.length
         ? [...new Set(data.toolsUsed)]
         : undefined,

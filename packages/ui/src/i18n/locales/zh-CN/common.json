@@ -54,9 +54,38 @@
     "recent": "最近对话",
     "refreshSessions": "刷新会话",
     "settings": "设置",
+    "nav": {
+      "mcp": "MCP",
+      "skills": "SKILL",
+      "workspace": "工作空间"
+    },
     "language": {
       "label": "语言",
       "ariaLabel": "切换语言"
+    }
+  },
+  "panels": {
+    "mcp": {
+      "subtitle": "连接 MCP 服务并浏览市场。"
+    },
+    "skills": {
+      "subtitle": "一键安装 Skill 到工作区。"
+    }
+  },
+  "workspace": {
+    "sidebarTitle": "文件夹",
+    "loading": "正在加载工作空间…",
+    "emptyHint": "在对话框上传文件夹后，会在这里显示该工作空间及其对话记录。",
+    "folderEmpty": "该工作空间还没有对话。",
+    "expandMore": "展开更多 ({{count}})",
+    "chatHistoryTitle": "聊天记录",
+    "panelSubtitle": "上传文件夹 A 后，会在 A 下创建 .catbuddy；AI 可操作 A 内与其同级的所有子文件夹。未上传时默认使用用户目录下的 .catbuddy。",
+    "toggleFolderChats": "展开 {{name}} 的对话",
+    "importFolder": "导入文件夹",
+    "folderActions": {
+      "menu": "{{name}} 操作",
+      "setActive": "设为当前工作空间",
+      "remove": "从列表移除"
     }
   },
   "settings": {
@@ -67,7 +96,55 @@
     },
     "nav": {
       "general": "通用",
-      "byok": "BYOK"
+      "byok": "BYOK",
+      "skills": "Skills",
+      "mcp": "MCP 工具"
+    },
+    "skills": {
+      "loading": "正在加载 Skills…",
+      "installedTitle": "工作区已安装",
+      "installedHelp": "切换启用状态会立即生效；下一条消息会重新组装 Agent 上下文，未改动的系统提示词会使用缓存。",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "enable": "启用 {{name}}",
+      "disable": "禁用 {{name}}",
+      "marketplaceTitle": "Skill 市场",
+      "marketplaceHelp": "精选实用能力，一键安装到工作区并自动启用。无需重启应用或新开对话，回到聊天发送下一条消息即可使用。",
+      "featuredTitle": "推荐",
+      "moreTitle": "更多",
+      "oneClickInstall": "一键安装",
+      "install": "安装",
+      "installed": "已安装",
+      "installing": "安装中…",
+      "hotReloadHint": "回到对话直接继续即可。",
+      "enabledHotReload": "已启用 {{name}}，下一条消息生效。",
+      "disabledHotReload": "已禁用 {{name}}，下一条消息生效。"
+    },
+    "mcp": {
+      "loading": "正在加载 MCP 设置…",
+      "serversTitle": "已配置的服务",
+      "serversHelp": "保存后立即生效，无需重启应用。",
+      "empty": "还没有 MCP 服务。可从下方市场添加，或粘贴配置。",
+      "connected": "{{count}} 个工具",
+      "disconnected": "未连接",
+      "remove": "删除 {{name}}",
+      "saveAndConnect": "重新连接",
+      "connecting": "连接中…",
+      "marketplaceTitle": "MCP 市场",
+      "marketplaceHelp": "一键添加常用 MCP 服务。如需 API Key，请在配置中修改 env。",
+      "add": "添加",
+      "added": "已添加",
+      "docs": "文档",
+      "requiresEnv": "需要环境变量",
+      "pasteTitle": "粘贴配置",
+      "pasteHelp": "可粘贴完整的 tools.mcpServers 对象、单个 server 配置，或一个 server 条目。",
+      "pastePlaceholder": "{\n  \"github\": {\n    \"command\": \"npx\",\n    \"args\": [\"-y\", \"@modelcontextprotocol/server-github\"],\n    \"env\": { \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"...\" }\n  }\n}",
+      "pasteApply": "应用并连接",
+      "pasteInvalid": "JSON 格式无效或不符合 MCP 配置结构。",
+      "desktopOnly": "MCP 设置仅在桌面客户端可用。",
+      "copyTemplate": "复制配置",
+      "templateCopied": "配置已复制到剪贴板，并填入下方粘贴框。",
+      "templateCopiedPaste": "配置已填入下方粘贴框。"
     },
     "sections": {
       "interface": "界面",
@@ -119,7 +196,7 @@
       "provider": "选择新模型请求使用的服务提供商。",
       "model": "设置 catbuddy 默认使用的模型名称。",
       "configPath": "当前网关正在使用的配置文件。",
-      "compactionEnable": "自动压缩旧对话以节省 token。",
+      "compactionEnable": "自动压缩旧对话以节省 token（Agent 状态机 COMPACT 步骤）。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
     },
     "values": {
@@ -288,6 +365,9 @@
       "send": "发送消息",
       "stop": "停止响应",
       "attachImage": "添加图片",
+      "uploadFolder": "上传文件夹到工作空间",
+      "folderImportFailed": "文件夹导入失败，请重试。",
+      "clearFolder": "清除已选工作空间文件夹",
       "imageMode": {
         "label": "图片生成",
         "toggle": "切换图片生成模式",
@@ -335,6 +415,14 @@
           "history": {
             "title": "查看对话历史",
             "description": "打印最近 N 条已持久化的对话消息。"
+          },
+          "compact": {
+            "title": "压缩上下文",
+            "description": "将较早对话摘要写入 MEMORY.md。"
+          },
+          "model": {
+            "title": "切换模型",
+            "description": "显示或切换当前会话的模型预设。"
           },
           "dream": {
             "title": "运行 Dream",
@@ -402,7 +490,10 @@
     "imageAttachment": "图片附件",
     "copyReply": "复制回复",
     "copiedReply": "已复制回复",
-    "turnLatencyTitle": "本轮耗时（端到端）"
+    "turnLatencyTitle": "本轮耗时（端到端）",
+    "turnTokensCompact": "↓{{in}} ↑{{out}}",
+    "turnTokensTitle": "Token 用量：输入 {{in}} · 输出 {{out}}",
+    "turnFooterSeparator": "·"
   },
   "lightbox": {
     "title": "图片预览",

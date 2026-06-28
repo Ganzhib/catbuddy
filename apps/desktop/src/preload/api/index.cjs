@@ -48,6 +48,11 @@ function createCatbuddyApi() {
     listModels: () => ipcRenderer.invoke(IPC.CONFIG_LIST_MODELS),
     setModel: (name) => ipcRenderer.invoke(IPC.CONFIG_SET_MODEL, { presetName: name }),
 
+    getMcpSettings: () => ipcRenderer.invoke('mcp:get'),
+    updateMcpServers: (servers) => ipcRenderer.invoke('mcp:update-and-reload', { servers }),
+    listMcpMarketplace: () => ipcRenderer.invoke('mcp:marketplace-list'),
+    addMcpFromMarketplace: (id) => ipcRenderer.invoke('mcp:marketplace-add', { id }),
+
     selectWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_SELECT),
     getWorkspace: () => ipcRenderer.invoke(IPC.WORKSPACE_GET),
     openWorkspaceFile: (filePath, absolutePath) =>
@@ -55,9 +60,23 @@ function createCatbuddyApi() {
         path: filePath,
         absolute_path: absolutePath,
       }),
+    getWorkspaceProjectInfo: () => ipcRenderer.invoke(IPC.WORKSPACE_PROJECT_INFO),
+    listWorkspaceEntries: () => ipcRenderer.invoke(IPC.WORKSPACE_LIST_ENTRIES),
+    listWorkspaceChildren: (dirPath) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_LIST_CHILDREN, { dirPath }),
+    importProjectFolder: () => ipcRenderer.invoke(IPC.WORKSPACE_IMPORT_FOLDER),
+    listWorkspaceFolders: () => ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_LIST),
+    setActiveWorkspaceFolder: (folderId) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_SET_ACTIVE, { folderId }),
+    removeWorkspaceFolder: (folderId) =>
+      ipcRenderer.invoke(IPC.WORKSPACE_FOLDERS_REMOVE, { folderId }),
 
     listSkills: () => ipcRenderer.invoke(IPC.SKILLS_LIST),
     toggleSkill: (name, enabled) => ipcRenderer.invoke(IPC.SKILLS_TOGGLE, { name, enabled }),
+    listSlashCommands: () => ipcRenderer.invoke(IPC.COMMANDS_LIST),
+    listSkillMarketplace: () => ipcRenderer.invoke(IPC.SKILLS_MARKETPLACE_LIST),
+    installSkillFromMarketplace: (id) =>
+      ipcRenderer.invoke(IPC.SKILLS_MARKETPLACE_INSTALL, { id }),
 
     restartApp: () => ipcRenderer.invoke('app:restart'),
 

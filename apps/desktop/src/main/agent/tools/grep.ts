@@ -16,7 +16,7 @@ export function createGrepTool(ctx: ToolContext): Tool {
           type: 'object',
           properties: {
             pattern: { type: 'string', description: 'Search pattern (literal or regex)' },
-            path: { type: 'string', description: 'Directory or file to search in (defaults to workspace)' },
+            path: { type: 'string', description: 'Directory or file to search in (defaults to project root)' },
             glob: { type: 'string', description: 'Optional glob filter (e.g. "*.ts", "*.md")' },
             output_mode: {
               type: 'string',
@@ -35,7 +35,7 @@ export function createGrepTool(ctx: ToolContext): Tool {
     execute: async (call) => {
       const a = call.arguments as Record<string, unknown>
       const pattern = String(a.pattern)
-      const baseDir = ctx.resolvePath(String(a.path || ctx.workspace))
+      const baseDir = ctx.resolvePath(String(a.path || ctx.workRoot))
       const glob = String(a.glob || '*')
       const fixedStrings = !!a.fixed_strings
       const outputMode = String(a.output_mode || 'content')

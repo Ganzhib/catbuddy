@@ -10,12 +10,12 @@ export function createExecTool(ctx: ToolContext): Tool {
       function: {
         name: 'exec',
         description:
-          'Execute a shell command with timeout. Working directory defaults to workspace. Output is truncated.',
+          'Execute a shell command with timeout. Working directory defaults to the project root (alongside .catbuddy). Output is truncated.',
         parameters: {
           type: 'object',
           properties: {
             command: { type: 'string', description: 'Shell command to execute' },
-            working_dir: { type: 'string', description: 'Working directory (default: workspace)' },
+            working_dir: { type: 'string', description: 'Working directory (default: project root)' },
             timeout: { type: 'number', description: 'Timeout in seconds (default 30, max 120)' },
           },
           required: ['command'],
@@ -25,7 +25,7 @@ export function createExecTool(ctx: ToolContext): Tool {
     execute: async (call) => {
       const { command, working_dir, timeout = 30 } = call.arguments as Record<string, unknown>
       const cmd = String(command)
-      const cwd = working_dir ? ctx.resolvePath(String(working_dir)) : ctx.workspace
+      const cwd = working_dir ? ctx.resolvePath(String(working_dir)) : ctx.workRoot
       const to = Math.min(Number(timeout) || 30, 120)
 
       const dangerous = /\brm\s+-rf\b|\bformat\b|\bdd\b|\bmkfs\b|\b:\(\)\b|\bchmod\s+777\b/i

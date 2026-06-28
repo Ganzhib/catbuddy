@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setupApplicationMenu } from "../menu/index.js";
@@ -33,7 +33,43 @@ export function createMainWindow(): BrowserWindow {
     show: false,
   });
 
+
   win.on("ready-to-show", () => win.show());
+
+  if(!app.isPackaged) {
+    win.webContents.on("before-input-event", (_event, input) => {
+      if (input.type !== "keyDown") return;
+      const toggle =
+        input.key === "F12" ||
+        (input.control && input.shift && input.key.toLowerCase() === "i");
+      if (toggle) win.webContents.toggleDevTools();
+    });
+  }
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        void shell.openExternal(url);
+      }
+    } catch {
+      // ignore invalid URLs
+    }
+    return { action: "deny" };
+  });
+
+  win.webContents.on("will-navigate", (event, url) => {
+    if (url === win.webContents.getURL()) return;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        event.preventDefault();
+        void shell.openExternal(url);
+      }
+    } catch {
+      event.preventDefault();
+    }
+  });
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);

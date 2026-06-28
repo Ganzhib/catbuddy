@@ -69,8 +69,8 @@ export function listDiscoverableSkills(
   const seen = new Set<string>()
   const result: SkillInfo[] = []
 
-  scanSkillsRoot(resolveBuiltinSkillsDir(), true, disabled, seen, result)
   scanSkillsRoot(path.join(workspace, 'skills'), false, disabled, seen, result)
+  scanSkillsRoot(resolveBuiltinSkillsDir(), true, disabled, seen, result)
 
   return result.sort((a, b) => a.name.localeCompare(b.name))
 }

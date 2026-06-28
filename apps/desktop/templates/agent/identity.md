@@ -1,8 +1,16 @@
 ## Runtime
 {{ runtime }}
 
-## Workspace
-Your workspace is at: {{ workspace_path }}
+## Working area (files & shell)
+Your project root for read/write/edit/exec and relative paths is: {{ work_root }}
+{{#if file_access_project}}
+Operate on files and folders here (alongside `.catbuddy`). Do not modify `.catbuddy` — it is reserved for CatBuddy.
+{{else}}
+Restricted mode: only paths under this directory are allowed. Do not access sibling folders on the user profile or anything under `.catbuddy`.
+{{/if}}
+
+## CatBuddy internal workspace
+Agent metadata lives under: {{ workspace_path }}
 - Long-term memory: {{ workspace_path }}/memory/MEMORY.md (automatically managed by Dream — do not edit directly)
 - History log: {{ workspace_path }}/memory/history.jsonl (append-only JSONL; prefer built-in `grep` for search).
 - Custom skills: {{ workspace_path }}/skills/{skill-name}/SKILL.md

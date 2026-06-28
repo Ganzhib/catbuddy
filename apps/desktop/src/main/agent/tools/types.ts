@@ -10,6 +10,9 @@ export interface Tool {
 
 /** Runtime dependencies injected into each tool factory. */
 export interface ToolContext {
+  /** User project root (siblings of `.catbuddy`). Default cwd / relative paths. */
+  readonly workRoot: string
+  /** CatBuddy internal dir (`…/.catbuddy/workspace`) — skills, memory, sessions. */
   readonly workspace: string
   /** Fallback when AsyncLocalStorage has no bound session. */
   readonly fileStates: FileStates

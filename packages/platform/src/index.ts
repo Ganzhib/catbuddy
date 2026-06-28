@@ -17,6 +17,15 @@ export {
 } from './desktop-download'
 export { openWorkspaceFile } from './workspace-file'
 export {
+  fetchWorkspaceFolders,
+  setActiveWorkspaceFolder,
+  removeWorkspaceFolder,
+  importProjectFolder,
+  type WorkspaceFolderStore,
+  type WorkspaceImportResult,
+} from './workspace-folders'
+export { fetchWorkspaceProjectInfo } from './workspace-project-legacy'
+export {
   resolveGatewayAccountEmail,
   syncDesktopGatewayAccountEmail,
 } from './gateway-account-sync'
@@ -66,5 +75,19 @@ export const updateProviderSettings = (...args: Parameters<ReturnType<typeof cre
   platform().updateProviderSettings(...args)
 export const updateWebSearchSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateWebSearchSettings']>) =>
   platform().updateWebSearchSettings(...args)
+export const fetchMcpSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchMcpSettings']>) =>
+  platform().fetchMcpSettings(...args)
+export const updateMcpServers = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateMcpServers']>) =>
+  platform().updateMcpServers(...args)
+export const fetchMcpMarketplace = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchMcpMarketplace']>) =>
+  platform().fetchMcpMarketplace(...args)
+export const addMcpFromMarketplace = (...args: Parameters<ReturnType<typeof createPlatformApi>['addMcpFromMarketplace']>) =>
+  platform().addMcpFromMarketplace(...args)
+export {
+  fetchSkillMarketplaceIpc as fetchSkillMarketplace,
+  installSkillFromMarketplaceIpc as installSkillFromMarketplace,
+  listSkillsIpc as listSkills,
+  toggleSkillIpc as toggleSkill,
+} from './ipc-api'
 export const listSlashCommands = (...args: Parameters<ReturnType<typeof createPlatformApi>['listSlashCommands']>) =>
   platform().listSlashCommands(...args)

@@ -13,7 +13,7 @@ export function createReadFileTool(ctx: ToolContext): Tool {
         parameters: {
           type: 'object',
           properties: {
-            path: { type: 'string', description: 'File path (relative to workspace or absolute)' },
+            path: { type: 'string', description: 'File path (relative to project root alongside .catbuddy, or absolute)' },
             offset: { type: 'number', description: 'Line number to start reading from (0-indexed)' },
             limit: { type: 'number', description: 'Maximum number of lines to read' },
           },

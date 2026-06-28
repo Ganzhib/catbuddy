@@ -79,7 +79,7 @@ export function createGenerateImageTool(ctx: ToolContext): Tool {
         const imgRes = await fetch(imageUrl)
         const buf = Buffer.from(await imgRes.arrayBuffer())
         const filename = `generated_${Date.now()}.png`
-        const filePath = path.join(ctx.workspace, 'images', filename)
+        const filePath = path.join(ctx.workRoot, 'images', filename)
         fs.mkdirSync(path.dirname(filePath), { recursive: true })
         fs.writeFileSync(filePath, buf)
 

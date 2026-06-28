@@ -33,13 +33,21 @@ export interface CommandLoopAPI {
       role: string;
       content: string;
     }>;
-  };
-
-  readonly tools: {
-    readonly toolNames: string[];
+    getAllMessages(key: string, opts?: { maxMessages?: number }): Array<{
+      role: string;
+      content: string;
+    }>;
   };
 
   readonly consolidator: {
     compactIdleSession(key: string, keepRecent: number): Promise<string | null>;
+  };
+
+  runDreamOnce(): Promise<string | null>;
+
+  runHeartbeatOnce?(opts?: { force?: boolean }): "skipped" | "no-tasks" | "dispatched";
+
+  readonly tools: {
+    readonly toolNames: string[];
   };
 }

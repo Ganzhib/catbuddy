@@ -8,6 +8,7 @@ import type {
   ProviderSettingsUpdate,
   WebSearchSettingsUpdate,
 } from '@catbuddy/shared'
+import { DESKTOP_BUILTIN_SLASH_COMMANDS } from '@catbuddy/shared'
 import { requireIpcBridge } from './ipc-bridge'
 
 export class ApiError extends Error {
@@ -37,6 +38,10 @@ export async function listSessionsIpc(
     updatedAt: s.updatedAt,
     title: s.title ?? '',
     preview: s.preview ?? '',
+    workspaceFolderId:
+      typeof s.metadata?.workspaceFolderId === 'string'
+        ? s.metadata.workspaceFolderId
+        : null,
   }))
 }
 
@@ -148,13 +153,113 @@ export async function updateWebSearchSettingsIpc(
   return fetchSettingsIpc(_token, _base)
 }
 
+export async function fetchMcpSettingsIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsPayload> {
+  const api = requireIpcBridge()
+  if (!api.getMcpSettings) {
+    throw new ApiError(501, 'MCP settings are only available in the desktop app.')
+  }
+  return api.getMcpSettings()
+}
+
+export async function updateMcpServersIpc(
+  _token: string,
+  servers: Record<string, import('@catbuddy/shared').McpServerConfig>,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsUpdateResult> {
+  const api = requireIpcBridge()
+  if (!api.updateMcpServers) {
+    throw new ApiError(501, 'MCP settings are only available in the desktop app.')
+  }
+  return api.updateMcpServers(servers)
+}
+
+export async function fetchMcpMarketplaceIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpMarketplaceEntry[]> {
+  const api = requireIpcBridge()
+  if (!api.listMcpMarketplace) {
+    throw new ApiError(501, 'MCP marketplace is only available in the desktop app.')
+  }
+  return api.listMcpMarketplace()
+}
+
+export async function addMcpFromMarketplaceIpc(
+  _token: string,
+  id: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').McpSettingsUpdateResult> {
+  const api = requireIpcBridge()
+  if (!api.addMcpFromMarketplace) {
+    throw new ApiError(501, 'MCP marketplace is only available in the desktop app.')
+  }
+  return api.addMcpFromMarketplace(id)
+}
+
+export async function fetchSkillMarketplaceIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillMarketplaceEntry[]> {
+  const api = requireIpcBridge()
+  if (!api.listSkillMarketplace) {
+    throw new ApiError(501, 'Skill marketplace is only available in the desktop app.')
+  }
+  return api.listSkillMarketplace()
+}
+
+export async function installSkillFromMarketplaceIpc(
+  _token: string,
+  id: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillInstallResult> {
+  const api = requireIpcBridge()
+  if (!api.installSkillFromMarketplace) {
+    throw new ApiError(501, 'Skill marketplace is only available in the desktop app.')
+  }
+  return api.installSkillFromMarketplace(id)
+}
+
+export async function listSkillsIpc(
+  _token: string,
+  _base: string = '',
+): Promise<import('@catbuddy/shared').SkillInfo[]> {
+  const api = requireIpcBridge()
+  if (!api.listSkills) {
+    throw new ApiError(501, 'Skills are only available in the desktop app.')
+  }
+  return api.listSkills()
+}
+
+export async function toggleSkillIpc(
+  _token: string,
+  name: string,
+  enabled: boolean,
+  _base: string = '',
+): Promise<void> {
+  const api = requireIpcBridge()
+  if (!api.toggleSkill) {
+    throw new ApiError(501, 'Skills are only available in the desktop app.')
+  }
+  await api.toggleSkill(name, enabled)
+}
+
 export async function listSlashCommandsIpc(
   _token: string,
   _base: string = '',
 ): Promise<SlashCommand[]> {
-  return [
-    { command: '/new', title: 'New Chat', description: 'Start a fresh conversation', icon: '✨', argHint: '' },
-    { command: '/history', title: 'History', description: 'Show conversation history', icon: '📜', argHint: '' },
-    { command: '/model', title: 'Switch Model', description: 'Switch the AI model for this session', icon: '🧠', argHint: '[model]' },
-  ]
+  try {
+    const api = requireIpcBridge()
+    if (typeof api.listSlashCommands === 'function') {
+      const commands = await api.listSlashCommands()
+      if (Array.isArray(commands) && commands.length > 0) {
+        return commands
+      }
+    }
+  } catch {
+    /* fall through to bundled list */
+  }
+  return DESKTOP_BUILTIN_SLASH_COMMANDS
 }

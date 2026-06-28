@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/BrandMark'
 import { DesktopClientDownload } from '@/components/DesktopClientDownload'
 import { cn } from '@/lib/utils'
-import Lightfall from './Lightfall'
 import { TextType } from './TextType'
 import { WigglyFigures } from './WigglyFigures'
 import { authBrandLabel, authSubtle, leftPanel } from './styles'
@@ -19,29 +18,8 @@ export const LoginMarketingPanel = memo(function LoginMarketingPanel() {
         leftPanel,
       )}
     >
-      {/* WebGL 浅蓝流光背景 — 仅左侧面板 */}
-      <Lightfall
-        colors={['#0EA5E9', '#2DD4BF', '#BAE6FD']}
-        backgroundColor="#DBEAFE"
-        speed={0.3}
-        streakCount={2}
-        streakWidth={1}
-        streakLength={1.5}
-        glow={0.8}
-        density={0.4}
-        twinkle={0.6}
-        zoom={2.5}
-        backgroundGlow={0.3}
-        opacity={0.7}
-        mouseInteraction
-        mouseStrength={0.3}
-        mouseRadius={1}
-      />
-
-      {/* 暗色模式叠加 */}
-      <div className="absolute inset-0 pointer-events-none dark:bg-[#0a1628] dark:opacity-100 opacity-0 z-[1]" />
-
-      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 xl:px-14 z-[2]">
+      {/* 背景由全局 AmbientBackground（极光网格）统一承载，此处保持透明透出 */}
+      <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 xl:px-14">
         {/* 品牌信息 */}
         <div className="mb-4 flex flex-col items-center text-center lg:mb-6">
           <BrandMark className="h-10 w-10 object-contain drop-shadow-md sm:h-11 sm:w-11 lg:h-12 lg:w-12" />
@@ -59,7 +37,7 @@ export const LoginMarketingPanel = memo(function LoginMarketingPanel() {
             catbuddy
           </span>
           <span className={cn('mt-1 text-[11px] text-[#475569] sm:text-xs dark:text-slate-400', authSubtle)}>
-            create by catbuddy team
+            created by catbuddy team
           </span>
         </div>
 
@@ -71,7 +49,7 @@ export const LoginMarketingPanel = memo(function LoginMarketingPanel() {
         {/* 桌面端下载 + 打字效果提示 */}
         <div className="auth-hide-short w-full max-w-sm">
           <DesktopClientDownload variant="login" showHint={false} className="!mt-0" />
-          <p className="mt-2 text-center text-xs leading-relaxed min-h-[3em] text-white">
+          <p className="mt-2 min-h-[3em] text-center text-xs leading-relaxed text-[#475569] dark:text-slate-300">
             <TextType
               texts={[hint]}
               typingSpeed={65}

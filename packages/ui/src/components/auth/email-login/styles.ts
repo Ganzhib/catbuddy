@@ -36,10 +36,18 @@ export const authOutlineBtn = cn(
 )
 
 export const authPrimaryBtn = cn(
-  'rounded-xl bg-[#0EA5E9] text-white font-medium shadow-md shadow-sky-500/20',
-  'hover:bg-[#0284C7] hover:shadow-lg hover:shadow-sky-500/25 transition-all duration-200',
-  'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md',
-  'dark:bg-sky-500 dark:hover:bg-sky-600',
+  // 海蓝渐变 + 高光扫过；语义清晰的禁用态（浅灰底，不再像「坏掉」）
+  'auth-cta rounded-xl font-semibold text-white',
+  'bg-gradient-to-br from-[#0284C7] to-[#0E7490]',
+  'shadow-lg shadow-sky-700/25',
+  'transition-[transform,box-shadow,filter] duration-200 ease-out',
+  'hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-700/30 hover:brightness-[1.07]',
+  'active:translate-y-0 active:scale-[0.985] active:brightness-100',
+  'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+  'disabled:opacity-100 disabled:bg-none disabled:bg-[#E2E8F0] disabled:text-[#94A3B8]',
+  'disabled:shadow-none disabled:cursor-not-allowed disabled:translate-y-0 disabled:brightness-100',
+  'dark:from-sky-500 dark:to-cyan-600 dark:shadow-sky-500/25',
+  'dark:disabled:bg-white/10 dark:disabled:text-white/40',
 )
 
 /** 右侧表单卡片 — 无边框无背景 */
@@ -47,13 +55,31 @@ export const formCard = cn(
   'w-full px-1 py-2',
 )
 
-/** 输入框 — 极简底线风格 */
+/** 输入框 — 极简底线风格；焦点高亮交给下方的渐变下划线（authFieldUnderline） */
 export const authInput = cn(
   'flex h-10 w-full border-0 border-b border-[#E2E8F0] bg-transparent px-1 py-2.5 text-sm text-[#0F172A]',
-  'placeholder:text-[#94A3B8] transition-all duration-150',
-  'focus-visible:outline-none focus-visible:border-b-[#0EA5E9] focus-visible:bg-transparent',
+  'placeholder:text-[#94A3B8] transition-colors duration-150',
+  'focus-visible:outline-none focus-visible:bg-transparent',
   'dark:border-white/10 dark:bg-transparent dark:text-foreground dark:placeholder:text-muted-foreground/60',
-  'dark:focus-visible:border-b-sky-500',
+)
+
+/** 字段标签 */
+export const authLabel = cn(
+  'text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground',
+)
+
+/** 输入框左侧图标 — 聚焦时染成品牌色 */
+export const authFieldIcon = cn(
+  'pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]',
+  'transition-colors duration-200 peer-focus:text-[#0EA5E9] dark:peer-focus:text-sky-400',
+)
+
+/** 聚焦时从左侧生长的渐变下划线 */
+export const authFieldUnderline = cn(
+  'pointer-events-none absolute -bottom-px left-0 h-[2px] w-full origin-left scale-x-0',
+  'bg-gradient-to-r from-[#0EA5E9] to-[#2DD4BF]',
+  'transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+  'peer-focus:scale-x-100 motion-reduce:transition-none',
 )
 
 export const leftPanel = cn(

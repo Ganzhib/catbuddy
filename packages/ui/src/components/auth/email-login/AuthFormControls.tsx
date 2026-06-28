@@ -20,18 +20,20 @@ export function AuthFeedback({
   return (
     <>
       {hint ? (
-        <p className={cn('px-1 py-2 text-xs leading-relaxed', authBody)}>
+        <p className={cn('auth-pop px-1 py-2 text-xs leading-relaxed', authBody)}>
           {hint}
         </p>
       ) : null}
       {error ? (
+        // key={error} 让每次新报错都重新触发抖动动画
         <div
+          key={error}
           role="alert"
-          className="px-1 py-2"
+          className="auth-shake px-1 py-2"
         >
           <p
             className={cn(
-              'text-xs leading-relaxed',
+              'auth-pop text-xs leading-relaxed',
               guidance ? 'text-[#0F766E] dark:text-teal-300' : 'text-red-600 dark:text-destructive',
             )}
           >
@@ -97,7 +99,7 @@ export function ModeTabs({
 }) {
   return (
     <div
-      className="mt-5 flex border-b border-[#E2E8F0] dark:border-white/10"
+      className="relative mt-5 flex border-b border-[#E2E8F0] dark:border-white/10"
       role="tablist"
       aria-label="登录或注册"
     >
@@ -109,16 +111,27 @@ export function ModeTabs({
           aria-selected={mode === m}
           onClick={() => onChange(m)}
           className={cn(
-            'flex-1 py-2.5 text-sm font-medium transition-all duration-200',
-            'border-b-2 -mb-[1px]',
+            'relative z-10 flex-1 py-2.5 text-sm font-medium transition-colors duration-200',
             mode === m
-              ? 'border-b-[#0EA5E9] text-[#0EA5E9] dark:border-b-sky-400 dark:text-sky-400'
-              : 'border-b-transparent text-[#94A3B8] hover:text-[#64748B] dark:text-muted-foreground dark:hover:text-slate-300',
+              ? 'text-[#0EA5E9] dark:text-sky-400'
+              : 'text-[#94A3B8] hover:text-[#64748B] dark:text-muted-foreground dark:hover:text-slate-300',
           )}
         >
           {m === 'login' ? '登录' : '注册'}
         </button>
       ))}
+      {/* 在两个 Tab 之间滑动的渐变指示条 */}
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute -bottom-px left-0 h-[2px] w-1/2 rounded-full',
+          'bg-gradient-to-r from-[#0EA5E9] to-[#2DD4BF] dark:from-sky-400 dark:to-teal-400',
+          'transition-transform duration-[450ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+          'motion-reduce:transition-none',
+        )}
+        style={{ transform: mode === 'login' ? 'translateX(0%)' : 'translateX(100%)' }}
+      />
     </div>
   )
 }
+

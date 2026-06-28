@@ -3,11 +3,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { AuthFeedback, ModeTabs, SwitchModeButton } from './AuthFormControls'
 import { EmailField, OtpInput, PasswordField } from './AuthFormFields'
-import { usePeek } from './PeekContext'
 import {
-  authAccent,
   authHeading,
-  authInput,
   authOutlineBtn,
   authPanel,
   authPrimaryBtn,
@@ -16,6 +13,15 @@ import {
   formCard,
 } from './styles'
 import type { EmailAuthState } from './useEmailAuth'
+
+/** 表单内的逐项入场——每项依次淡入上移，切换登录/注册时重新播放 */
+function Stagger({ index, children }: { index: number; children: React.ReactNode }) {
+  return (
+    <div className="auth-enter" style={{ animationDelay: `${60 + index * 70}ms` }}>
+      {children}
+    </div>
+  )
+}
 
 export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
   const {
@@ -45,9 +51,7 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
     goToLogin,
     onModeChange,
     backToRegisterForm,
-    formEyebrow,
     formTitle,
-    formDescription,
   } = auth
 
   return (
@@ -61,28 +65,23 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
     >
       <div className="w-full max-w-[380px]">
         <div className={formCard}>
-          <p className={cn('text-center text-[11px] font-semibold uppercase tracking-[0.2em]', authAccent)}>
-            {formEyebrow}
-          </p>
-          <h2 className={cn('mt-2 text-center text-xl tracking-tight sm:text-2xl', authHeading)}>
+          <h2 className={cn('auth-enter text-center text-xl tracking-tight sm:text-2xl', authHeading)}>
             {formTitle}
           </h2>
 
           {mode === 'register' && registerStep === 'verify' ? null : (
-            <ModeTabs mode={mode} onChange={onModeChange} />
+            <div className="auth-enter" style={{ animationDelay: '70ms' }}>
+              <ModeTabs mode={mode} onChange={onModeChange} />
+            </div>
           )}
 
-          <p className={cn('mb-5 mt-3 text-center text-[11px] leading-relaxed sm:mb-6 sm:mt-4 sm:text-xs', authMuted)}>
-            {mode === 'register' && registerStep === 'verify' ? (
-              <>
-                我们已向{' '}
-                <span className="font-semibold text-[#0F172A] dark:text-foreground">{email.trim()}</span>
-                {' '}发送验证码，请输入邮件中的 6 位数字完成注册。
-              </>
-            ) : (
-              formDescription
-            )}
-          </p>
+          {mode === 'register' && registerStep === 'verify' ? (
+            <p className={cn('auth-pop mb-5 mt-3 text-center text-[11px] leading-relaxed sm:mb-6 sm:mt-4 sm:text-xs', authMuted)}>
+              我们已向{' '}
+              <span className="font-semibold text-[#0F172A] dark:text-foreground">{email.trim()}</span>
+              {' '}发送验证码，请输入邮件中的 6 位数字完成注册。
+            </p>
+          ) : null}
 
           {mode === 'login' ? (
             <LoginForm
@@ -132,7 +131,7 @@ export function EmailAuthPanel({ auth }: { auth: EmailAuthState }) {
             />
           )}
 
-          <p className={cn('mt-4 text-center text-[10px] leading-relaxed sm:mt-5', authSubtle)}>
+          <p className={cn('auth-enter mt-4 text-center text-[10px] leading-relaxed sm:mt-5', authSubtle)} style={{ animationDelay: '320ms' }}>
             继续即表示您同意 catbuddy 的服务条款与隐私政策。
           </p>
         </div>
@@ -174,34 +173,42 @@ function LoginForm({
 }) {
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-      <EmailField id="login-email" value={email} onChange={setEmail} />
-      <PasswordField
-        id="login-password"
-        label="密码"
-        autoComplete="current-password"
-        placeholder="请输入密码"
-        value={password}
-        onChange={setPassword}
-        showPassword={showPassword}
-        onToggleShow={() => setShowPassword((v) => !v)}
-      />
+      <Stagger index={0}>
+        <EmailField id="login-email" value={email} onChange={setEmail} />
+      </Stagger>
+      <Stagger index={1}>
+        <PasswordField
+          id="login-password"
+          label="密码"
+          autoComplete="current-password"
+          placeholder=""
+          value={password}
+          onChange={setPassword}
+          showPassword={showPassword}
+          onToggleShow={() => setShowPassword((v) => !v)}
+        />
+      </Stagger>
       <AuthFeedback error={error} hint={null} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
-      <Button
-        type="submit"
-        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
-        size="default"
-        disabled={busy || !canSubmit}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            登录中…
-          </>
-        ) : (
-          '登录'
-        )}
-      </Button>
-      <SwitchModeButton label="还没有账号？" actionLabel="去注册" onClick={onGoRegister} />
+      <Stagger index={2}>
+        <Button
+          type="submit"
+          className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
+          size="default"
+          disabled={busy || !canSubmit}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              登录中…
+            </>
+          ) : (
+            '登录'
+          )}
+        </Button>
+      </Stagger>
+      <Stagger index={3}>
+        <SwitchModeButton label="还没有账号？" actionLabel="去注册" onClick={onGoRegister} />
+      </Stagger>
     </form>
   )
 }
@@ -237,54 +244,56 @@ function RegisterForm({
   onGoRegister: () => void
   onGoLogin: () => void
 }) {
-  const { setPeeking } = usePeek()
-
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-      <EmailField id="register-email" value={email} onChange={setEmail} />
-      <PasswordField
-        id="register-password"
-        label="密码"
-        autoComplete="new-password"
-        placeholder="至少 8 位"
-        value={password}
-        onChange={setPassword}
-        showPassword={showPassword}
-        onToggleShow={() => setShowPassword((v) => !v)}
-      />
-      <div className="space-y-2">
-        <label htmlFor="register-password-confirm" className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
-          确认密码
-        </label>
-        <input
+      <Stagger index={0}>
+        <EmailField id="register-email" value={email} onChange={setEmail} />
+      </Stagger>
+      <Stagger index={1}>
+        <PasswordField
+          id="register-password"
+          label="密码"
+          autoComplete="new-password"
+          placeholder="至少 8 位"
+          value={password}
+          onChange={setPassword}
+          showPassword={showPassword}
+          onToggleShow={() => setShowPassword((v) => !v)}
+        />
+      </Stagger>
+      <Stagger index={2}>
+        <PasswordField
           id="register-password-confirm"
-          type={showPassword ? 'text' : 'password'}
+          label="确认密码"
           autoComplete="new-password"
           placeholder="再次输入密码"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          onFocus={() => setPeeking(true)}
-          onBlur={() => setPeeking(false)}
-          className={authInput}
+          onChange={setConfirmPassword}
+          showPassword={showPassword}
+          onToggleShow={() => setShowPassword((v) => !v)}
         />
-      </div>
+      </Stagger>
       <AuthFeedback error={error} hint={null} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
-      <Button
-        type="submit"
-        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
-        size="default"
-        disabled={busy || !canSubmit}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            发送验证码…
-          </>
-        ) : (
-          '获取验证码'
-        )}
-      </Button>
-      <SwitchModeButton label="已有账号？" actionLabel="去登录" onClick={onGoLogin} />
+      <Stagger index={3}>
+        <Button
+          type="submit"
+          className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
+          size="default"
+          disabled={busy || !canSubmit}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              发送验证码…
+            </>
+          ) : (
+            '获取验证码'
+          )}
+        </Button>
+      </Stagger>
+      <Stagger index={4}>
+        <SwitchModeButton label="已有账号？" actionLabel="去登录" onClick={onGoLogin} />
+      </Stagger>
     </form>
   )
 }
@@ -316,43 +325,49 @@ function VerifyForm({
 }) {
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-      <OtpInput value={code} onChange={setCode} disabled={busy} />
+      <Stagger index={0}>
+        <OtpInput value={code} onChange={setCode} disabled={busy} />
+      </Stagger>
       <AuthFeedback error={error} hint={hint} onGoRegister={onGoRegister} onGoLogin={onGoLogin} />
-      <Button
-        type="submit"
-        className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
-        size="default"
-        disabled={busy || !canSubmit}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            验证中…
-          </>
-        ) : (
-          '验证并登录'
-        )}
-      </Button>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <Stagger index={1}>
         <Button
-          type="button"
-          variant="outline"
-          className={cn('w-full', authOutlineBtn)}
-          disabled={busy}
-          onClick={onResend}
+          type="submit"
+          className={cn('w-full h-11 text-[15px]', authPrimaryBtn)}
+          size="default"
+          disabled={busy || !canSubmit}
         >
-          重新发送验证码
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              验证中…
+            </>
+          ) : (
+            '验证并登录'
+          )}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className={cn('w-full', authOutlineBtn)}
-          disabled={busy}
-          onClick={onBack}
-        >
-          修改邮箱或密码
-        </Button>
-      </div>
+      </Stagger>
+      <Stagger index={2}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className={cn('w-full', authOutlineBtn)}
+            disabled={busy}
+            onClick={onResend}
+          >
+            重新发送验证码
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn('w-full', authOutlineBtn)}
+            disabled={busy}
+            onClick={onBack}
+          >
+            修改邮箱或密码
+          </Button>
+        </div>
+      </Stagger>
     </form>
   )
 }

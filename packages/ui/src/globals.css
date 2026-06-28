@@ -521,6 +521,119 @@
     animation: wiggle-bounce-4 4.1s ease-in-out infinite 0.6s;
   }
 
+  /* 登录表单 — 入场编排 / CTA 流光 / 错误抖动 等微交互 */
+  @keyframes auth-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .auth-enter {
+    animation: auth-enter 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes auth-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(6px) scale(0.97);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .auth-pop {
+    animation: auth-pop 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes auth-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    18% {
+      transform: translateX(-7px);
+    }
+    38% {
+      transform: translateX(6px);
+    }
+    58% {
+      transform: translateX(-4px);
+    }
+    78% {
+      transform: translateX(2px);
+    }
+  }
+  .auth-shake {
+    animation: auth-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  /* 主按钮高光扫过 — sheen 置于背景与文字之间，不遮挡文案 */
+  .auth-cta {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .auth-cta::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      120deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 75%
+    );
+    transform: translateX(-130%);
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+  .auth-cta:hover:not(:disabled)::after {
+    transform: translateX(130%);
+  }
+  .auth-cta:disabled::after {
+    display: none;
+  }
+
+  /* 登录背景 — Stripe 风极光团 + Linear 风细网格（浅/暗双适配） */
+  @keyframes auth-aurora {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(8%, -10%, 0) scale(1.18);
+    }
+    66% {
+      transform: translate3d(-6%, 8%, 0) scale(0.86);
+    }
+  }
+  .auth-aurora-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    will-change: transform;
+    animation: auth-aurora 26s ease-in-out infinite;
+  }
+  .auth-grid {
+    background-image:
+      linear-gradient(to right, rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(2, 132, 199, 0.06) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(ellipse 92% 62% at 50% 0%, #000 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 92% 62% at 50% 0%, #000 30%, transparent 100%);
+  }
+  .dark .auth-grid {
+    background-image:
+      linear-gradient(to right, rgba(125, 211, 252, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(125, 211, 252, 0.06) 1px, transparent 1px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auth-mascot-float,
     .auth-mascot-bubble,
@@ -539,6 +652,15 @@
     .wiggle-bounce-3,
     .wiggle-bounce-4 {
       animation: none;
+    }
+    .auth-enter,
+    .auth-pop,
+    .auth-shake,
+    .auth-aurora-blob {
+      animation: none;
+    }
+    .auth-cta::after {
+      display: none;
     }
   }
 }

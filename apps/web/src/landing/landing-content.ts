@@ -29,7 +29,7 @@ export const LANDING_COPY = {
   badge: '本地 AI 伙伴 · 跨端遥控 ✦',
 
   // Layered hero: the headline says what it *is*, the cat says how it *feels*.
-  headlineLead: '养一只猫🐱, 你的catbuddy',
+  headlineLead: '养一只catbuddy',
   headlineAccent: '会动手的 AI 伙伴',
   subhead:
     '它就跑在你自己的电脑上——读写文件、调用工具、写代码，一步步把活干完。手机或浏览器，随时远程指挥。',

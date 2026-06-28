@@ -1,8 +1,8 @@
 import { useCallback, useRef } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePeek } from './PeekContext'
-import { authInput, otpCell } from './styles'
+import { authFieldIcon, authFieldUnderline, authInput, authLabel, otpCell } from './styles'
 
 export function EmailField({
   id,
@@ -14,20 +14,25 @@ export function EmailField({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={authLabel}>
         邮箱地址
       </label>
-      <input
-        id={id}
-        type="email"
-        autoComplete="email"
-        placeholder="you@email.com"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={authInput}
-        autoFocus
-      />
+      {/* input 标记为 peer，图标与下划线作为其后继兄弟，故能用 peer-focus 联动 */}
+      <div className="relative">
+        <input
+          id={id}
+          type="email"
+          autoComplete="email"
+          placeholder=""
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(authInput, 'peer pl-7')}
+          autoFocus
+        />
+        <Mail className={authFieldIcon} aria-hidden />
+        <span className={authFieldUnderline} aria-hidden />
+      </div>
     </div>
   )
 }
@@ -54,8 +59,8 @@ export function PasswordField({
   const { setPeeking } = usePeek()
 
   return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-[#0F172A] sm:text-sm dark:text-foreground">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={authLabel}>
         {label}
       </label>
       <div className="relative">
@@ -68,17 +73,19 @@ export function PasswordField({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setPeeking(true)}
           onBlur={() => setPeeking(false)}
-          className={cn(authInput, 'pr-10')}
+          className={cn(authInput, 'peer pl-7 pr-10')}
         />
+        <Lock className={authFieldIcon} aria-hidden />
         <button
           type="button"
           tabIndex={-1}
           aria-label={showPassword ? '隐藏密码' : '显示密码'}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[#94A3B8] transition-all duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] dark:text-slate-400 dark:hover:bg-sky-500/15 dark:hover:text-sky-300"
+          className="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-lg p-1.5 text-[#94A3B8] transition-colors duration-150 hover:bg-sky-50 hover:text-[#0EA5E9] active:scale-90 dark:text-slate-400 dark:hover:bg-sky-500/15 dark:hover:text-sky-300"
           onClick={onToggleShow}
         >
           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
+        <span className={authFieldUnderline} aria-hidden />
       </div>
     </div>
   )

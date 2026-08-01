@@ -125,10 +125,11 @@ export class LangfuseClient {
   /** 从 catbuddy 配置和环境变量构建初始化选项 */
   static buildOptions(config?: LangfuseConfig): LangfuseInitOptions {
     const envEnabled = process.env.LANGFUSE_ENABLED?.toLowerCase()
-    const enabled =
-      config?.enabled ??
-      (envEnabled === 'true' || envEnabled === '1') ??
-      false
+    // 优先级：环境变量 > config 显式配置 > 默认关闭
+    // 注意：不能用 ?? 连接，因为 false ?? true 返回 false（?? 不跳过 false）
+    const enabled = envEnabled === 'true' || envEnabled === '1'
+      ? true
+      : config?.enabled ?? false
 
     return {
       enabled,

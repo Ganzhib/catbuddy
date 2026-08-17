@@ -167,6 +167,15 @@ export const LANDING_COPY = {
       ],
     },
     {
+      name: '过宇鑫 · 全栈',
+      handle: '@guoyuxin',
+      role: '开发者',
+      avatar: '/avatar/guoyuxin.png',
+      avatarFallback: '/brand/catbuddy_icon.png',
+      bio: '用工程化的方式打磨细节，一起把 catbuddy 养大。',
+      links: [{ label: 'GitHub', href: 'https://github.com' }],
+    },
+    {
       name: '李庆援 · 全栈',
       handle: '@Objecteee',
       role: '开发者',
@@ -192,7 +201,7 @@ export const LANDING_COPY = {
       avatarFallback: '/brand/catbuddy_icon.png',
       bio: '把复杂留给自己，把简单留给用户，一起把 catbuddy 养大。',
       links: [{ label: 'GitHub', href: 'https://github.com' }],
-    },
+    }
   ] as LandingAuthor[],
   // Tasteful ghost card that shows the multi-author layout and invites contributors.
   joinCard: {

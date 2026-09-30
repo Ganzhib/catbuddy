@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -18,9 +19,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Gateway and Web
+  scope:
+    name: Detect deployment scope
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.scope.outputs.gateway }}
+      web: ${{ steps.scope.outputs.web }}
+    steps:
+      - name: Download scope from CI
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-scope
+          path: ${{ runner.temp }}/deployment-scope
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Read deployment scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            gateway=true
+            web=true
+          else
+            manifest="$RUNNER_TEMP/deployment-scope/deployment-scope.json"
+            gateway="$(node -p "require(process.argv[1]).gateway" "$manifest")"
+            web="$(node -p "require(process.argv[1]).web" "$manifest")"
+          fi
+          printf 'gateway=%s\nweb=%s\n' "$gateway" "$web" | tee -a "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy affected services
+    needs: scope
+    if: needs.scope.outputs.gateway == 'true' || needs.scope.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: production
@@ -64,7 +100,7 @@ jobs:
             echo "Missing production secret: DEPLOY_SSH_KEY" >&2
             exit 1
           fi
-          if [[ -z "$PRODUCTION_ENV" ]]; then
+          if [[ "${{ needs.scope.outputs.gateway }}" == "true" && -z "$PRODUCTION_ENV" ]]; then
             echo "Missing production secret: PRODUCTION_ENV" >&2
             exit 1
           fi
@@ -76,7 +112,9 @@ jobs:
           install -m 700 -d "$RUNNER_TEMP/catbuddy-ssh"
           printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$RUNNER_TEMP/catbuddy-ssh/deploy_key"
           chmod 600 "$RUNNER_TEMP/catbuddy-ssh/deploy_key"
-          printf '%s\n' "$PRODUCTION_ENV" > .env.production
+          if [[ "${{ needs.scope.outputs.gateway }}" == "true" ]]; then
+            printf '%s\n' "$PRODUCTION_ENV" > .env.production
+          fi
 
           node <<'NODE'
           const fs = require('node:fs')
@@ -100,9 +138,11 @@ jobs:
           NODE
 
       - name: Deploy Gateway
+        if: needs.scope.outputs.gateway == 'true'
         run: pnpm deploy:gateway
 
       - name: Verify Gateway
+        if: needs.scope.outputs.gateway == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -118,12 +158,15 @@ jobs:
           exit 1
 
       - name: Build Web
+        if: needs.scope.outputs.web == 'true'
         run: pnpm build:web:only
 
       - name: Deploy Web
+        if: needs.scope.outputs.web == 'true'
         run: node deploy/deploy-web.cjs --skip-build
 
       - name: Verify Web
+        if: needs.scope.outputs.web == 'true'
         run: curl --fail --silent --show-error --max-time 15 "https://$WEB_DOMAIN/" > /dev/null
 
       - name: Remove temporary secrets

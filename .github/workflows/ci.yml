@@ -25,6 +25,72 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect affected deployment targets
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          gateway=false
+          web=false
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            gateway=true
+            web=true
+            changed_files="<manual full build>"
+          else
+            base_sha="$BEFORE_SHA"
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              base_sha="$PR_BASE_SHA"
+            fi
+
+            if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+              gateway=true
+              web=true
+              changed_files="<no base revision; full build>"
+            else
+              changed_files="$(git diff --name-only "$base_sha" "$HEAD_SHA")"
+              while IFS= read -r file; do
+                [[ -z "$file" ]] && continue
+                case "$file" in
+                  gateway/*|packages/shared/*|deploy/deploy.cjs)
+                    gateway=true
+                    ;;
+                esac
+                case "$file" in
+                  apps/web/*|packages/ui/*|packages/client/*|packages/platform/*|packages/shared/*|deploy/deploy-web.cjs)
+                    web=true
+                    ;;
+                esac
+                case "$file" in
+                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json)
+                    gateway=true
+                    web=true
+                    ;;
+                esac
+              done <<< "$changed_files"
+            fi
+          fi
+
+          printf '%s\n' "$changed_files"
+          printf 'gateway=%s\nweb=%s\n' "$gateway" "$web" | tee -a "$GITHUB_OUTPUT"
+          printf '{"gateway":%s,"web":%s}\n' "$gateway" "$web" > deployment-scope.json
+
+      - name: Upload deployment scope
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-scope
+          path: deployment-scope.json
+          retention-days: 1
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -45,7 +111,9 @@ jobs:
         run: pnpm lint
 
       - name: Build Gateway
+        if: steps.changes.outputs.gateway == 'true'
         run: pnpm gateway:build
 
       - name: Build Web
+        if: steps.changes.outputs.web == 'true'
         run: pnpm build:web:only

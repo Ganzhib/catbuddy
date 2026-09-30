@@ -332,6 +332,7 @@ function sshArgs(cfg, { tty = false } = {}) {
 
 function scpArgs(cfg) {
   const args = [
+    '-C',
     '-P', String(cfg.port),
     '-o', 'StrictHostKeyChecking=accept-new',
     '-o', 'ConnectTimeout=15',

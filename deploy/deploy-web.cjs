@@ -73,7 +73,7 @@ function sshArgs(cfg) {
 }
 
 function scpArgs(cfg) {
-  const args = ['-P', String(cfg.port), '-o', 'StrictHostKeyChecking=accept-new']
+  const args = ['-C', '-P', String(cfg.port), '-o', 'StrictHostKeyChecking=accept-new']
   if (cfg.identityFile) args.push('-i', cfg.identityFile)
   return args
 }

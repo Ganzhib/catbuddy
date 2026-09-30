@@ -6,8 +6,7 @@ import path from 'node:path'
 import { ipcMain, app, BrowserWindow, shell } from 'electron'
 import { AgentLoop } from '../agent/loop'
 import { SessionManager } from '../session/session-manager'
-import { saveConfig } from '../config/persist'
-import { buildSettingsPayload } from '../config/env-provider-fallback'
+import { sanitizeConfigForRenderer, saveConfig } from '../config/persist'
 import { MCP_MARKETPLACE, resolveMarketplaceConfig } from '../config/mcp-marketplace.js'
 import { SKILL_MARKETPLACE } from '../config/skill-marketplace.js'
 import { installBuiltinSkillToWorkspace } from '../agent/skill-install.js'
@@ -31,6 +30,8 @@ import type { catbuddyConfig, McpServerConfig, WorkspaceFolder } from "@catbuddy
 import { DESKTOP_BUILTIN_SLASH_COMMANDS } from "@catbuddy/shared"
 import type { GatewayChannel } from '../channels/gateway.js'
 import type { ChannelManager } from '../channels/manager.js'
+import type { ProviderSettingsService } from '../services/provider-settings.js'
+import { registerProviderSettingsHandlers } from './provider-settings.js'
 import {
   deleteDesktopSession,
   getDesktopSessionDetail,
@@ -40,7 +41,9 @@ import {
 export function registerIpcHandlers(
   runtime: DesktopRuntimeRefs,
   channelManager: ChannelManager,
+  providerSettings: ProviderSettingsService,
 ) {
+  registerProviderSettingsHandlers(providerSettings)
   const gatewayChannel = () =>
     channelManager.get('gateway') as GatewayChannel | undefined
   const getGatewayClient = () => gatewayChannel()?.client ?? null
@@ -204,9 +207,24 @@ export function registerIpcHandlers(
   })
 
   // ═══ Config ═══
-  ipcMain.handle('config:get', async () => runtime.config)
-  ipcMain.handle('settings:get', async () => buildSettingsPayload(runtime.config))
+  ipcMain.handle('config:get', async () => sanitizeConfigForRenderer(runtime.config))
   ipcMain.handle('config:update', async (_event, { path, value }: { path: string; value: unknown }) => {
+    if (path !== 'agents.defaults.autoCompact') {
+      throw new Error(`Config path is not writable: ${path}`)
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error('autoCompact must be an object')
+    }
+    const compact = value as { enabled?: unknown; threshold?: unknown }
+    if (compact.enabled !== undefined && typeof compact.enabled !== 'boolean') {
+      throw new Error('autoCompact.enabled must be boolean')
+    }
+    if (
+      compact.threshold !== undefined
+      && (!Number.isFinite(compact.threshold) || Number(compact.threshold) < 1 || Number(compact.threshold) > 100)
+    ) {
+      throw new Error('autoCompact.threshold must be between 1 and 100')
+    }
     const keys = path.split('.')
     let obj: any = runtime.config
     for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]]
@@ -219,33 +237,7 @@ export function registerIpcHandlers(
     }
 
     // Model 切换实时生效
-    if (path === 'agents.defaults.model' && typeof value === 'string') {
-      agentLoop.setModel(value)
-    }
-
-    if (path === 'agents.defaults.disabledSkills' && Array.isArray(value)) {
-      agentLoop.setDisabledSkills(value as string[])
-    }
-
     // Provider API key 变更 → 重建 fallback provider
-    if (path.startsWith('providers.') && path.endsWith('.apiKey')) {
-      try {
-        const { createProvider } = await import('../providers/factory.js')
-        const newProvider = createProvider(runtime.config)
-        agentLoop.setProvider(newProvider)
-        const agentLoop2: any = agentLoop
-        if (agentLoop2._provider_snapshot_loader) agentLoop2._provider_signature = null
-      } catch (err: any) {
-        console.error('[config] Failed to reload provider:', err.message)
-        throw err
-      }
-    }
-
-    if (path === 'tools.mcpServers') {
-      agentLoop.mcpManager?.updateServers(value as Record<string, McpServerConfig> | undefined)
-      await agentLoop.mcpManager?.reload()
-    }
-
     persistConfig()
   })
 

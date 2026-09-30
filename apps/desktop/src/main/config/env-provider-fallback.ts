@@ -1,26 +1,45 @@
 import type { catbuddyConfig, SettingsPayload } from '@catbuddy/shared'
 
+let secureCredentialResolver: ((providerName: string) => string | undefined) | null = null
+
+export function setProviderCredentialResolver(
+  resolver: ((providerName: string) => string | undefined) | null,
+): void {
+  secureCredentialResolver = resolver
+}
+
+export function resolveProviderEnvApiKey(providerName: string): string {
+  if (providerName === 'anthropic') {
+    return process.env.ANTHROPIC_API_KEY?.trim()
+      || process.env.CLAUDE_CODE_API_KEY?.trim()
+      || ''
+  }
+  if (providerName === 'deepseek') {
+    return process.env.DEEPSEEK_KEY?.trim() || process.env.DEEPSEEK_API_KEY?.trim() || ''
+  }
+  if (providerName === 'openai') return process.env.OPENAI_API_KEY?.trim() || ''
+  return ''
+}
+
 /** Env fallbacks for built-in providers (never persisted — see `stripEnvProviderKeys`). */
 export function resolveProviderApiKey(providerName: string, stored?: string): string {
   const fromConfig = stored?.trim() ?? ''
   if (fromConfig) return fromConfig
-  if (providerName === 'deepseek') {
-    return process.env.DEEPSEEK_KEY?.trim() || process.env.DEEPSEEK_API_KEY?.trim() || ''
-  }
-  if (providerName === 'openai') {
-    return process.env.OPENAI_API_KEY?.trim() || ''
-  }
-  return ''
+  const secure = secureCredentialResolver?.(providerName)?.trim() ?? ''
+  return secure || resolveProviderEnvApiKey(providerName)
 }
 
 export function resolveProviderApiBase(providerName: string, stored?: string): string | undefined {
   const fromConfig = stored?.trim()
   if (fromConfig) return fromConfig
   if (providerName === 'deepseek') {
-    return process.env.DEEPSEEK_BASE?.trim() || 'https://api.deepseek.com/v1'
+    return process.env.DEEPSEEK_BASE?.trim() || 'https://api.deepseek.com'
   }
   if (providerName === 'openai') {
     return process.env.OPENAI_API_BASE?.trim() || 'https://api.openai.com/v1'
+  }
+  if (providerName === 'anthropic') {
+    return process.env.ANTHROPIC_BASE_URL?.trim() || 'https://api.anthropic.com'
   }
   return stored
 }
@@ -29,13 +48,10 @@ export function isProviderConfigured(providerName: string, stored?: string): boo
   return !!resolveProviderApiKey(providerName, stored)
 }
 
-/** Remove apiKeys that only mirror env (keep user-entered keys on disk). */
+/** Provider secrets are never persisted in config.json. */
 export function stripEnvProviderKeys(config: catbuddyConfig): void {
-  for (const [name, provider] of Object.entries(config.providers)) {
-    const stored = provider.apiKey?.trim() ?? ''
-    if (!stored) continue
-    const fromEnv = resolveProviderApiKey(name, '')
-    if (stored === fromEnv) provider.apiKey = ''
+  for (const provider of Object.values(config.providers)) {
+    delete provider.apiKey
   }
 }
 

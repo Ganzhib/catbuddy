@@ -22,7 +22,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "gateway:dev": "pnpm --filter @catbuddy/gateway dev",
-    "gateway:test": "node ../../gateway/test-all.mjs",
+    "gateway:test": "node ../../gateway/test/test-all.mjs",
     "brand:generate": "node ../../scripts/generate-brand.mjs",
     "brand:cutout": "node ../../scripts/remove-icon-background.mjs"
   },

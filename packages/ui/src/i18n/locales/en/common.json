@@ -112,7 +112,8 @@
     },
     "nav": {
       "general": "General",
-      "byok": "BYOK",
+      "byok": "Models & API keys",
+      "providers": "Models & API keys",
       "skills": "Skills",
       "mcp": "MCP Tools"
     },
@@ -165,7 +166,8 @@
     "sections": {
       "interface": "Interface",
       "ai": "AI",
-      "system": "System"
+      "system": "System",
+      "currentModel": "Current model"
     },
     "gatewayRemote": {
       "section": "Remote control (Gateway)",
@@ -205,6 +207,8 @@
       "compaction": "Auto Compaction",
       "compactionEnable": "Enable",
       "compactionThreshold": "Message Threshold"
+      ,"currentProvider": "Active provider"
+      ,"manageProviders": "Provider configuration"
     },
     "help": {
       "theme": "Switch between light and dark appearance.",
@@ -214,6 +218,8 @@
       "configPath": "The gateway configuration file currently in use.",
       "compactionEnable": "Automatically compress old conversations to save tokens (Agent COMPACT step).",
       "compactionThreshold": "Compress when the number of messages exceeds this count."
+      ,"currentProvider": "The provider and model used for new agent requests."
+      ,"manageProviders": "Test connections, replace credentials, and choose the active model."
     },
     "values": {
       "light": "Light",
@@ -225,12 +231,41 @@
       "loadError": "Could not load settings",
       "unsaved": "Unsaved changes.",
       "savedRestart": "Saved. Restart catbuddy to apply."
+      ,"saved": "Saved."
+      ,"saveFailed": "Could not save the setting."
     },
     "actions": {
       "save": "Save",
       "saving": "Saving",
       "edit": "Edit",
       "cancel": "Cancel"
+      ,"openProviderSettings": "Open model settings"
+    },
+    "providers": {
+      "title": "Provider connections",
+      "description": "Credentials stay on this computer. Test a provider before saving and activating it.",
+      "active": "Active",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "credentialSaved": "Credential saved",
+      "environmentManaged": "Managed by an environment variable",
+      "environmentManagedHint": "Change or remove this credential outside catbuddy, then restart the desktop app. You can still test it here.",
+      "secureStorage": "Protected by system credential storage · {{backend}}",
+      "configureHint": "Add credentials and verify the connection",
+      "setActive": "Set active",
+      "saveAndKeepActive": "Save changes",
+      "saveAndActivate": "Save and activate",
+      "activated": "{{provider}} is now active with {{model}}.",
+      "saved": "{{provider}} was saved and activated.",
+      "deleted": "Removed credentials for {{provider}}.",
+      "delete": "Delete credential",
+      "deleteNamed": "Delete credentials for {{provider}}",
+      "deleteActiveHint": "Choose another active provider before deleting this credential.",
+      "deleteTitle": "Delete credentials for {{provider}}?",
+      "deleteDescription": "catbuddy will remove the saved credential from this computer. This does not revoke the key at the provider.",
+      "desktopOnlyTitle": "Provider credentials are managed on desktop",
+      "desktopOnlyDescription": "The web app can control your desktop agent, but it cannot read, test, replace, or delete provider credentials.",
+      "desktopOnlySecurity": "Open Settings in the desktop app. API keys never pass through the web gateway."
     },
     "byok": {
       "description": "Bring your own provider keys. catbuddy reads these values from the current config and only configured providers can be selected in General.",
@@ -273,6 +308,73 @@
         "missingCredential": "Add the required credential before saving.",
         "saveHint": "Changes apply to new web search requests."
       }
+    }
+  },
+  "providerSetup": {
+    "step": "Provider setup",
+    "title": "Connect a model provider",
+    "description": "Use your own provider account to run catbuddy. Verify the connection here, choose a model, and start working without editing config files.",
+    "formAria": "Provider connection setup",
+    "loading": "Loading provider settings",
+    "trust": {
+      "localTitle": "Your key stays on this computer",
+      "localBody": "Credentials are stored in catbuddy's local configuration and are never sent through the web gateway.",
+      "secureStorageBody": "Credentials are protected by the system credential store ({{backend}}) and never sent through the web gateway.",
+      "verifyTitle": "Verify before activating",
+      "verifyBody": "catbuddy tests the endpoint, credential, and model before making it the active configuration."
+    },
+    "fields": {
+      "provider": "Provider",
+      "providerHint": "Choose the account or local runtime you want catbuddy to use.",
+      "apiKey": "API key",
+      "apiKeyHint": "The key is saved locally and is never shown in full again.",
+      "apiKeyReplaceHint": "Leave blank to keep the saved key, or enter a new one to replace it.",
+      "apiKeyConfigured": "A key is already configured",
+      "apiKeyPlaceholder": "Paste API key",
+      "model": "Model",
+      "modelRecommended": "Choose a suggested model or enter another model ID.",
+      "modelManual": "Enter the exact model ID provided by your provider.",
+      "modelPlaceholder": "e.g. deepseek-chat",
+      "showAdvanced": "Show advanced endpoint settings",
+      "hideAdvanced": "Hide advanced endpoint settings",
+      "apiBase": "API base URL",
+      "apiBaseHint": "Keep the provider default unless you use a proxy, self-hosted service, or compatible endpoint."
+    },
+    "local": {
+      "title": "No API key required",
+      "description": "This provider runs locally. Make sure its server is running before testing."
+    },
+    "test": {
+      "hint": "Test the connection before saving it as the active provider.",
+      "action": "Test connection",
+      "testing": "Testing...",
+      "success": "Connection verified in {{latency}} ms."
+    },
+    "actions": {
+      "saveAndContinue": "Save and continue"
+    },
+    "errors": {
+      "apiKeyRequired": "Enter an API key for this provider.",
+      "modelRequired": "Choose or enter a model.",
+      "invalidBaseUrl": "Enter a valid HTTP or HTTPS URL.",
+      "testFirst": "Test this connection before saving.",
+      "testFailed": "The provider could not verify this connection.",
+      "testUnavailable": "Connection testing is not available in this build yet. Update the desktop app and try again."
+    },
+    "desktopOnly": {
+      "title": "Manage providers in the desktop app",
+      "description": "This browser controls your desktop agent, but it cannot read or store provider credentials. Open catbuddy on the computer that runs the agent to finish setup.",
+      "security": "API keys never pass through the catbuddy web gateway."
+    },
+    "noProviders": {
+      "title": "No providers are available",
+      "description": "Update or restart the desktop app, then try loading provider settings again."
+    },
+    "loadError": {
+      "title": "Provider settings could not be loaded",
+      "description": "catbuddy has paused chat so a message is not sent with an incomplete model configuration.",
+      "details": "View error details",
+      "retry": "Try again"
     }
   },
   "chat": {

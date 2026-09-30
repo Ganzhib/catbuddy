@@ -100,7 +100,8 @@
     },
     "nav": {
       "general": "通用",
-      "byok": "BYOK",
+      "byok": "模型与 API 密钥",
+      "providers": "模型与 API 密钥",
       "skills": "Skills",
       "mcp": "MCP 工具"
     },
@@ -153,7 +154,8 @@
     "sections": {
       "interface": "界面",
       "ai": "AI",
-      "system": "系统"
+      "system": "系统",
+      "currentModel": "当前模型"
     },
     "gatewayRemote": {
       "section": "远程控制",
@@ -193,6 +195,8 @@
       "compaction": "自动压缩",
       "compactionEnable": "启用",
       "compactionThreshold": "消息阈值"
+      ,"currentProvider": "当前服务提供商"
+      ,"manageProviders": "模型服务配置"
     },
     "help": {
       "theme": "在浅色和深色外观之间切换。",
@@ -202,6 +206,8 @@
       "configPath": "当前网关正在使用的配置文件。",
       "compactionEnable": "自动压缩旧对话以节省 token（Agent 状态机 COMPACT 步骤）。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
+      ,"currentProvider": "新的 Agent 请求将使用这个服务提供商和模型。"
+      ,"manageProviders": "测试连接、替换凭证，并选择当前模型。"
     },
     "values": {
       "light": "浅色",
@@ -213,12 +219,41 @@
       "loadError": "无法加载设置",
       "unsaved": "有未保存的更改。",
       "savedRestart": "已保存。重启 catbuddy 后生效。"
+      ,"saved": "已保存。"
+      ,"saveFailed": "无法保存此设置。"
     },
     "actions": {
       "save": "保存",
       "saving": "保存中",
       "edit": "编辑",
       "cancel": "取消"
+      ,"openProviderSettings": "打开模型设置"
+    },
+    "providers": {
+      "title": "模型服务连接",
+      "description": "凭证只保存在这台电脑上。保存并启用前，请先测试服务连接。",
+      "active": "当前使用",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "credentialSaved": "已保存凭证",
+      "environmentManaged": "由环境变量托管",
+      "environmentManagedHint": "请在 catbuddy 外部修改或删除该凭证，然后重启桌面客户端。你仍可在这里测试连接。",
+      "secureStorage": "由系统凭据存储保护 · {{backend}}",
+      "configureHint": "添加凭证并验证连接",
+      "setActive": "设为当前",
+      "saveAndKeepActive": "保存更改",
+      "saveAndActivate": "保存并启用",
+      "activated": "已启用 {{provider}}，当前模型为 {{model}}。",
+      "saved": "已保存并启用 {{provider}}。",
+      "deleted": "已删除 {{provider}} 的凭证。",
+      "delete": "删除凭证",
+      "deleteNamed": "删除 {{provider}} 的凭证",
+      "deleteActiveHint": "请先选择其他当前服务，再删除此凭证。",
+      "deleteTitle": "删除 {{provider}} 的凭证？",
+      "deleteDescription": "catbuddy 会从这台电脑移除已保存的凭证，但不会在服务提供商处吊销该密钥。",
+      "desktopOnlyTitle": "请在桌面客户端管理模型凭证",
+      "desktopOnlyDescription": "网页可以遥控桌面 Agent，但不能读取、测试、替换或删除模型凭证。",
+      "desktopOnlySecurity": "请在桌面客户端打开设置。API 密钥不会经过网页 Gateway。"
     },
     "byok": {
       "description": "自带 provider key。catbuddy 会从当前 config 读取这些值，只有已配置的 provider 才能在通用设置里选择。",
@@ -261,6 +296,73 @@
         "missingCredential": "填写所需凭证后才能保存。",
         "saveHint": "改动会应用到新的 web search 请求。"
       }
+    }
+  },
+  "providerSetup": {
+    "step": "配置模型服务",
+    "title": "连接你的模型服务",
+    "description": "使用你自己的模型服务账号运行 catbuddy。在这里验证连接、选择模型，无需手动编辑配置文件即可开始工作。",
+    "formAria": "模型服务连接配置",
+    "loading": "正在加载模型服务设置",
+    "trust": {
+      "localTitle": "密钥只保存在这台电脑上",
+      "localBody": "凭证保存在 catbuddy 本地配置中，不会经过网页 Gateway。",
+      "secureStorageBody": "凭证由系统凭据存储（{{backend}}）保护，不会经过网页 Gateway。",
+      "verifyTitle": "启用前先验证",
+      "verifyBody": "catbuddy 会先检查服务地址、凭证和模型，再把它设为当前配置。"
+    },
+    "fields": {
+      "provider": "服务提供商",
+      "providerHint": "选择 catbuddy 要使用的云端账号或本地模型服务。",
+      "apiKey": "API 密钥",
+      "apiKeyHint": "密钥保存在本机，保存后不会再次完整显示。",
+      "apiKeyReplaceHint": "留空会保留现有密钥；输入新密钥可替换。",
+      "apiKeyConfigured": "已经配置密钥",
+      "apiKeyPlaceholder": "粘贴 API 密钥",
+      "model": "模型",
+      "modelRecommended": "选择推荐模型，或输入其他模型 ID。",
+      "modelManual": "请输入服务提供商给出的准确模型 ID。",
+      "modelPlaceholder": "例如 deepseek-chat",
+      "showAdvanced": "显示高级服务地址设置",
+      "hideAdvanced": "收起高级服务地址设置",
+      "apiBase": "API Base URL",
+      "apiBaseHint": "除非使用代理、自托管服务或兼容接口，否则请保留默认地址。"
+    },
+    "local": {
+      "title": "无需 API 密钥",
+      "description": "这是本地模型服务。测试连接前请确认它已经启动。"
+    },
+    "test": {
+      "hint": "保存为当前模型服务前，请先测试连接。",
+      "action": "测试连接",
+      "testing": "正在测试...",
+      "success": "连接验证成功，用时 {{latency}} 毫秒。"
+    },
+    "actions": {
+      "saveAndContinue": "保存并继续"
+    },
+    "errors": {
+      "apiKeyRequired": "请输入该服务提供商的 API 密钥。",
+      "modelRequired": "请选择或输入模型。",
+      "invalidBaseUrl": "请输入有效的 HTTP 或 HTTPS 地址。",
+      "testFirst": "保存前请先测试连接。",
+      "testFailed": "模型服务未能验证此连接。",
+      "testUnavailable": "当前版本还不能测试连接，请更新桌面客户端后重试。"
+    },
+    "desktopOnly": {
+      "title": "请在桌面客户端管理模型服务",
+      "description": "浏览器可以遥控桌面 Agent，但不能读取或保存模型凭证。请在运行 Agent 的电脑上打开 catbuddy 完成配置。",
+      "security": "API 密钥不会经过 catbuddy 网页 Gateway。"
+    },
+    "noProviders": {
+      "title": "没有可用的模型服务",
+      "description": "请更新或重启桌面客户端，然后重新加载模型服务设置。"
+    },
+    "loadError": {
+      "title": "无法加载模型服务设置",
+      "description": "catbuddy 已暂停聊天，避免消息被发送到不完整的模型配置。",
+      "details": "查看错误详情",
+      "retry": "重试"
     }
   },
   "chat": {

@@ -18,3 +18,19 @@ export function saveConfig(configFile: string, config: catbuddyConfig): void {
   fs.writeFileSync(tmp, JSON.stringify(snapshot, null, 2), 'utf-8')
   fs.renameSync(tmp, configFile)
 }
+
+/** Renderer-safe snapshot; no credential-bearing field crosses the IPC boundary. */
+export function sanitizeConfigForRenderer(config: catbuddyConfig): catbuddyConfig {
+  const snapshot = JSON.parse(JSON.stringify(config)) as catbuddyConfig
+  stripEnvProviderKeys(snapshot)
+  for (const provider of Object.values(snapshot.providers)) {
+    delete provider.extraHeaders
+    delete provider.extraBody
+  }
+  if (snapshot.gateway?.secret) snapshot.gateway.secret = ''
+  if (snapshot.langfuse?.secretKey) snapshot.langfuse.secretKey = ''
+  for (const server of Object.values(snapshot.tools?.mcpServers ?? {})) {
+    if (server.env) server.env = {}
+  }
+  return snapshot
+}

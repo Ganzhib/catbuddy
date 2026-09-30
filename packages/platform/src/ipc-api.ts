@@ -7,6 +7,8 @@ import type {
   WebuiThreadPersistedPayload,
   ProviderSettingsUpdate,
   WebSearchSettingsUpdate,
+  ProviderConnectionTestRequest,
+  ProviderConnectionTestResult,
 } from '@catbuddy/shared'
 import { buildWebuiThreadPayload, DESKTOP_BUILTIN_SLASH_COMMANDS } from '@catbuddy/shared'
 import { requireIpcBridge } from './ipc-bridge'
@@ -107,8 +109,9 @@ export async function updateSettingsIpc(
   update: SettingsUpdate,
   _base: string = '',
 ): Promise<SettingsPayload> {
-  if (update.model) await requireIpcBridge().setModel(update.model)
-  return fetchSettingsIpc(_token, _base)
+  const api = requireIpcBridge()
+  if (!api.updateSettings) throw new ApiError(501, 'Secure settings API is unavailable.')
+  return api.updateSettings(update)
 }
 
 export async function updateProviderSettingsIpc(
@@ -116,10 +119,35 @@ export async function updateProviderSettingsIpc(
   update: ProviderSettingsUpdate,
   _base: string = '',
 ): Promise<SettingsPayload> {
-  const path = `providers.${update.provider}`
-  if (update.apiKey !== undefined) await requireIpcBridge().updateConfig(`${path}.apiKey`, update.apiKey)
-  if (update.apiBase !== undefined) await requireIpcBridge().updateConfig(`${path}.apiBase`, update.apiBase)
-  return fetchSettingsIpc(_token, _base)
+  const api = requireIpcBridge()
+  if (!api.upsertProviderSettings) {
+    throw new ApiError(501, 'Secure provider settings API is unavailable.')
+  }
+  return api.upsertProviderSettings(update)
+}
+
+export async function testProviderConnectionIpc(
+  _token: string,
+  update: ProviderConnectionTestRequest,
+  _base: string = '',
+): Promise<ProviderConnectionTestResult> {
+  const api = requireIpcBridge()
+  if (!api.testProviderConnection) {
+    throw new ApiError(501, 'Provider connection testing is unavailable.')
+  }
+  return api.testProviderConnection(update)
+}
+
+export async function deleteProviderCredentialIpc(
+  _token: string,
+  provider: string,
+  _base: string = '',
+): Promise<SettingsPayload> {
+  const api = requireIpcBridge()
+  if (!api.deleteProviderCredential) {
+    throw new ApiError(501, 'Provider credential management is unavailable.')
+  }
+  return api.deleteProviderCredential(provider)
 }
 
 export async function updateWebSearchSettingsIpc(

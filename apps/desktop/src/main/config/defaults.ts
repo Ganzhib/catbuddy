@@ -4,7 +4,6 @@
 import type { catbuddyConfig } from "@catbuddy/shared"
 import {
   resolveProviderApiBase,
-  resolveProviderApiKey,
 } from './env-provider-fallback.js'
 
 export function getDefaultConfig(): catbuddyConfig {
@@ -13,7 +12,7 @@ export function getDefaultConfig(): catbuddyConfig {
     workspace: `${home}/.catbuddy/workspace`,
     agents: {
       defaults: {
-        model: 'deepseek-v4-flash',
+        model: 'deepseek-flash',
         provider: 'deepseek',
         maxToolIterations: 50,
         contextWindowTokens: 128_000,
@@ -36,12 +35,21 @@ export function getDefaultConfig(): catbuddyConfig {
     },
     providers: {
       deepseek: {
-        apiKey: resolveProviderApiKey('deepseek'),
         apiBase: resolveProviderApiBase('deepseek'),
+        protocol: 'openai-compatible',
       },
       openai: {
-        apiKey: resolveProviderApiKey('openai'),
         apiBase: resolveProviderApiBase('openai'),
+        protocol: 'openai-compatible',
+      },
+      anthropic: {
+        apiBase: resolveProviderApiBase('anthropic'),
+        protocol: 'anthropic',
+      },
+      custom: {
+        apiBase: '',
+        protocol: 'openai-compatible',
+        label: 'Custom OpenAI Compatible',
       },
     },
     modelPresets: {},

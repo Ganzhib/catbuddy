@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { AuthGate } from '@/components/auth/AuthGate'
 import { deriveTitle } from '@/lib/format'
 import { ClientProvider, useClient } from '@/providers/ClientProvider'
+import { ProviderSetupGate } from '@/components/providers/ProviderSetupGate'
 import {
   normalizeChatSummary,
   parseSessionKey,
@@ -40,10 +41,12 @@ export default function App() {
     <AuthGate>
       {({ client, token, modelName: bootModel, onLogout }) => (
         <ClientProvider client={client} token={token} modelName={modelName ?? bootModel}>
-          <Shell
-            onModelNameChange={setModelName}
-            onLogout={onLogout}
-          />
+          <ProviderSetupGate token={token} onModelNameChange={setModelName}>
+            <Shell
+              onModelNameChange={setModelName}
+              onLogout={onLogout}
+            />
+          </ProviderSetupGate>
         </ClientProvider>
       )}
     </AuthGate>

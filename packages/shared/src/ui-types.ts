@@ -1,4 +1,11 @@
-import type { McpServerConfig, TokenUsage, FileEditEvent, DiagramUiEvent } from './agent-types.js'
+import type {
+  McpServerConfig,
+  TokenUsage,
+  FileEditEvent,
+  DiagramUiEvent,
+  ProviderCapabilities,
+  ProviderProtocol,
+} from './agent-types.js'
 
 export type Role = "user" | "assistant" | "tool" | "system";
 
@@ -165,6 +172,11 @@ export interface SettingsPayload {
     api_key_hint?: string | null;
     api_base?: string | null;
     default_api_base?: string | null;
+    protocol?: ProviderProtocol;
+    recommended_models?: string[];
+    capabilities?: ProviderCapabilities;
+    credential_source?: "secure_store" | "environment" | "none";
+    active?: boolean;
   }>;
   web_search: {
     provider: string;
@@ -180,6 +192,18 @@ export interface SettingsPayload {
     config_path: string;
   };
   requires_restart: boolean;
+  credential_storage?: ProviderCredentialStorageStatus;
+  capabilities?: {
+    credential_management: boolean;
+    provider_connection_test: boolean;
+  };
+}
+
+export interface ProviderCredentialStorageStatus {
+  available: boolean;
+  secure: boolean;
+  backend: string;
+  message?: string;
 }
 
 export interface SettingsUpdate {
@@ -191,6 +215,25 @@ export interface ProviderSettingsUpdate {
   provider: string;
   apiKey?: string;
   apiBase?: string;
+  label?: string;
+  protocol?: ProviderProtocol;
+  model?: string;
+  recommendedModels?: string[];
+}
+
+export interface ProviderConnectionTestResult {
+  ok: boolean;
+  provider: string;
+  model: string;
+  latencyMs: number;
+  error?: string;
+  statusCode?: number;
+}
+
+export type ProviderConnectionTestRequest = ProviderSettingsUpdate
+
+export interface ProviderCredentialDeleteRequest {
+  provider: string;
 }
 
 export interface WebSearchSettingsUpdate {

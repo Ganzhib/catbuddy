@@ -73,6 +73,10 @@ export const updateSettings = (...args: Parameters<ReturnType<typeof createPlatf
   platform().updateSettings(...args)
 export const updateProviderSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateProviderSettings']>) =>
   platform().updateProviderSettings(...args)
+export const testProviderConnection = (...args: Parameters<ReturnType<typeof createPlatformApi>['testProviderConnection']>) =>
+  platform().testProviderConnection(...args)
+export const deleteProviderCredential = (...args: Parameters<ReturnType<typeof createPlatformApi>['deleteProviderCredential']>) =>
+  platform().deleteProviderCredential(...args)
 export const updateWebSearchSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['updateWebSearchSettings']>) =>
   platform().updateWebSearchSettings(...args)
 export const fetchMcpSettings = (...args: Parameters<ReturnType<typeof createPlatformApi>['fetchMcpSettings']>) =>

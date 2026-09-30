@@ -249,15 +249,15 @@ ${mysqlBootstrapShell()}
 echo "==> compose up (gateway)"
 docker compose --env-file .env.production -f docker-compose.yml up -d --no-build
 
-echo "==> wait health (up to ~20s)"
-for i in 1 2 3 4 5 6 7 8 9 10; do
+echo "==> wait health (up to ~120s)"
+for i in $(seq 1 60); do
   if curl -sf http://127.0.0.1:18765/health >/dev/null; then
     curl -s http://127.0.0.1:18765/health
     echo ""
     docker compose ps
     exit 0
   fi
-  echo "  ... retry $i/10"
+  echo "  ... retry $i/60"
   sleep 2
 done
 

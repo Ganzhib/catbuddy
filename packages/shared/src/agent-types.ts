@@ -260,12 +260,27 @@ export interface catbuddyConfig {
 }
 
 export interface ProviderConfig {
-  apiKey: string
+  /** @deprecated Secrets are migrated to the desktop credential store. */
+  apiKey?: string
   apiBase?: string
+  /** Explicit wire protocol; provider selection must never be inferred from a URL. */
+  protocol?: ProviderProtocol
+  label?: string
+  recommendedModels?: string[]
+  capabilities?: Partial<ProviderCapabilities>
   extraHeaders?: Record<string, string>
   extraBody?: Record<string, unknown>
   region?: string
   profile?: string
+}
+
+export type ProviderProtocol = 'anthropic' | 'openai-compatible'
+
+export interface ProviderCapabilities {
+  streaming: boolean
+  toolCalling: boolean
+  vision: boolean
+  reasoning: boolean
 }
 
 export type FallbackCandidate = string | InlineFallbackConfig

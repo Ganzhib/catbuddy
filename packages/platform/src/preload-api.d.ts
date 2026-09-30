@@ -43,6 +43,10 @@ export interface CatbuddyPreloadApi {
 
   getConfig(): Promise<catbuddyConfig>
   getSettingsPayload?(): Promise<import('@catbuddy/shared').SettingsPayload>
+  updateSettings?(update: import('@catbuddy/shared').SettingsUpdate): Promise<import('@catbuddy/shared').SettingsPayload>
+  upsertProviderSettings?(update: import('@catbuddy/shared').ProviderSettingsUpdate): Promise<import('@catbuddy/shared').SettingsPayload>
+  testProviderConnection?(update: import('@catbuddy/shared').ProviderConnectionTestRequest): Promise<import('@catbuddy/shared').ProviderConnectionTestResult>
+  deleteProviderCredential?(provider: string): Promise<import('@catbuddy/shared').SettingsPayload>
   updateConfig(path: string, value: unknown): Promise<void>
   listModels(): Promise<ModelPresetConfig[]>
   setModel(presetName: string): Promise<void>

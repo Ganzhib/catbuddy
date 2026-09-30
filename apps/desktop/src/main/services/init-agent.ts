@@ -5,6 +5,15 @@ import { createProvider } from "../providers/index.js";
 import { SessionManager } from "../session/session-manager.js";
 import { getDefaultConfig, normalizeConfigWithDefaults } from "../config/defaults.js";
 import { saveConfig } from "../config/persist.js";
+import {
+  createProviderCredentialStore,
+  migrateLegacyProviderCredentials,
+} from "../credentials/index.js";
+import {
+  resolveProviderEnvApiKey,
+  setProviderCredentialResolver,
+} from "../config/env-provider-fallback.js";
+import { ProviderSettingsService } from "./provider-settings.js";
 import { log } from "../utils/index.js";
 import { logger } from "../utils/logger.js";
 import { MessageBus } from "../bus/index.js";
@@ -52,7 +61,15 @@ export async function initAgent(): Promise<AgentRuntime> {
     console.log("[main] Config written to:", configFile);
   }
 
-  if (normalizeConfigWithDefaults(config)) {
+  const credentialStore = createProviderCredentialStore(configFile);
+  const migratedCredentials = migrateLegacyProviderCredentials(
+    config,
+    credentialStore,
+    resolveProviderEnvApiKey,
+  );
+  setProviderCredentialResolver((providerId) => credentialStore.get(providerId));
+
+  if (normalizeConfigWithDefaults(config) || migratedCredentials) {
     saveConfig(configFile, config);
     console.log("[main] Config normalized and saved:", configFile);
   }
@@ -114,7 +131,8 @@ export async function initAgent(): Promise<AgentRuntime> {
     }
   }
 
-  registerIpcHandlers(runtime, channelManager);
+  const providerSettings = new ProviderSettingsService(runtime, credentialStore);
+  registerIpcHandlers(runtime, channelManager, providerSettings);
 
   const cron = startDesktopCron(runtime);
   const heartbeat = startDesktopHeartbeat(runtime);
@@ -124,6 +142,7 @@ export async function initAgent(): Promise<AgentRuntime> {
     langfuseClient.shutdown().catch((err) =>
       console.warn(`[init] langfuse shutdown error: ${err.message}`),
     );
+    setProviderCredentialResolver(null);
   });
 
   channelManager.start();

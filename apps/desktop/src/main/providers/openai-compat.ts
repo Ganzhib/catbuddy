@@ -60,15 +60,17 @@ export class OpenAICompatProvider extends LLMProvider {
     defaultModel?: string
     providerName?: string
     supportsVision?: boolean
+    extraHeaders?: Record<string, string>
   }) {
     super()
-    this.defaultModel = opts.defaultModel ?? 'gpt-4o'
+    this.defaultModel = opts.defaultModel ?? 'gpt-4.1'
     this.supportsVision =
       opts.supportsVision ?? inferSupportsVision(opts.apiBase, opts.providerName)
     this.supportsStreamUsage = inferStreamUsage(opts.apiBase, opts.providerName)
     this.client = new OpenAI({
       apiKey: opts.apiKey || 'sk-placeholder',
       baseURL: opts.apiBase || 'https://api.openai.com/v1',
+      defaultHeaders: opts.extraHeaders,
       maxRetries: 0, // 鑷繁绠＄悊閲嶈瘯
     })
   }

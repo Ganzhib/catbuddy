@@ -1,4 +1,4 @@
-import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate, SkillInfo } from '@catbuddy/shared'
+import type { BootstrapResponse, ChatSummary, SettingsPayload, SettingsUpdate, SlashCommand, WebuiThreadPersistedPayload, ProviderSettingsUpdate, WebSearchSettingsUpdate, SkillInfo, ProviderConnectionTestRequest, ProviderConnectionTestResult } from '@catbuddy/shared'
 import { fetchBootstrapHttp, deriveWsUrlHttp } from './http-bootstrap'
 import { fetchBootstrapIpc, deriveWsUrlIpc } from './ipc-bootstrap'
 import {
@@ -29,6 +29,8 @@ import {
   listSkillsIpc,
   toggleSkillIpc,
   listSlashCommandsIpc,
+  testProviderConnectionIpc,
+  deleteProviderCredentialIpc,
 } from './ipc-api'
 
 export { ApiError } from './ipc-api'
@@ -48,6 +50,8 @@ export interface PlatformApi {
   fetchSettings(token: string, base?: string): Promise<SettingsPayload>
   updateSettings(token: string, update: SettingsUpdate, base?: string): Promise<SettingsPayload>
   updateProviderSettings(token: string, update: ProviderSettingsUpdate, base?: string): Promise<SettingsPayload>
+  testProviderConnection(token: string, update: ProviderConnectionTestRequest, base?: string): Promise<ProviderConnectionTestResult>
+  deleteProviderCredential(token: string, provider: string, base?: string): Promise<SettingsPayload>
   updateWebSearchSettings(token: string, update: WebSearchSettingsUpdate, base?: string): Promise<SettingsPayload>
   fetchMcpSettings(token: string, base?: string): Promise<import('@catbuddy/shared').McpSettingsPayload>
   updateMcpServers(token: string, servers: Record<string, import('@catbuddy/shared').McpServerConfig>, base?: string): Promise<import('@catbuddy/shared').McpSettingsUpdateResult>
@@ -107,6 +111,8 @@ export function createPlatformApi(): PlatformApi {
       fetchSettings: fetchSettingsIpc,
       updateSettings: updateSettingsIpc,
       updateProviderSettings: updateProviderSettingsIpc,
+      testProviderConnection: testProviderConnectionIpc,
+      deleteProviderCredential: deleteProviderCredentialIpc,
       updateWebSearchSettings: updateWebSearchSettingsIpc,
       fetchMcpSettings: fetchMcpSettingsIpc,
       updateMcpServers: updateMcpServersIpc,
@@ -131,6 +137,12 @@ export function createPlatformApi(): PlatformApi {
     fetchSettings: fetchSettingsHttp,
     updateSettings: updateSettingsHttp,
     updateProviderSettings: updateProviderSettingsHttp,
+    testProviderConnection: async () => {
+      throw new Error('Provider connection testing is desktop-only')
+    },
+    deleteProviderCredential: async () => {
+      throw new Error('Provider credential management is desktop-only')
+    },
     updateWebSearchSettings: updateWebSearchSettingsHttp,
     fetchMcpSettings: async () => {
       throw new Error('MCP settings are desktop-only')

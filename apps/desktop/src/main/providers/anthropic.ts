@@ -12,7 +12,7 @@ export class AnthropicProvider extends LLMProvider {
 
   constructor(opts: { apiKey: string; apiBase?: string; defaultModel?: string }) {
     super()
-    this.defaultModel = opts.defaultModel ?? 'claude-sonnet-4-20250514'
+    this.defaultModel = opts.defaultModel ?? 'claude-sonnet-4-6'
     this.client = new Anthropic({
       apiKey: opts.apiKey,
       baseURL: opts.apiBase,

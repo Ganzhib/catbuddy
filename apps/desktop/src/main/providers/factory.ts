@@ -6,6 +6,7 @@ import { AnthropicProvider } from './anthropic'
 import { FallbackProvider } from './fallback'
 import type { LLMProvider } from './base-provider'
 import type { catbuddyConfig } from "@catbuddy/shared"
+import { resolveProviderProtocol } from './catalog.js'
 import {
   resolveProviderApiBase,
   resolveProviderApiKey,
@@ -20,9 +21,11 @@ function makeProvider(params: {
   providerName?: string
   apiKey: string
   apiBase?: string
+  protocol: import('@catbuddy/shared').ProviderProtocol
+  extraHeaders?: Record<string, string>
 }): LLMProvider {
   const { model, apiKey, apiBase } = params
-  if (apiBase?.includes('anthropic')) {
+  if (params.protocol === 'anthropic') {
     return new AnthropicProvider({ apiKey, apiBase, defaultModel: model })
   }
   return new OpenAICompatProvider({
@@ -30,6 +33,7 @@ function makeProvider(params: {
     apiBase,
     defaultModel: model,
     providerName: params.providerName,
+    extraHeaders: params.extraHeaders,
   })
 }
 
@@ -77,5 +81,23 @@ function buildProvider(config: catbuddyConfig, model: string, providerName: stri
     providerName,
     apiKey: resolveProviderApiKey(providerName, providerCfg.apiKey),
     apiBase: resolveProviderApiBase(providerName, providerCfg.apiBase),
+    protocol: resolveProviderProtocol(providerName, providerCfg),
+    extraHeaders: providerCfg.extraHeaders,
+  })
+}
+
+export function createProviderForProfile(params: {
+  providerName: string
+  providerConfig: import('@catbuddy/shared').ProviderConfig
+  model: string
+  apiKey: string
+}): LLMProvider {
+  return makeProvider({
+    providerName: params.providerName,
+    model: params.model,
+    apiKey: params.apiKey,
+    apiBase: resolveProviderApiBase(params.providerName, params.providerConfig.apiBase),
+    protocol: resolveProviderProtocol(params.providerName, params.providerConfig),
+    extraHeaders: params.providerConfig.extraHeaders,
   })
 }

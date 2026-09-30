@@ -45,6 +45,13 @@ function createCatbuddyApi() {
 
     getConfig: () => ipcRenderer.invoke(IPC.CONFIG_GET),
     getSettingsPayload: () => ipcRenderer.invoke(IPC.SETTINGS_GET),
+    updateSettings: (update) => ipcRenderer.invoke(IPC.SETTINGS_UPDATE, update),
+    upsertProviderSettings: (update) =>
+      ipcRenderer.invoke(IPC.SETTINGS_PROVIDER_UPSERT, update),
+    testProviderConnection: (update) =>
+      ipcRenderer.invoke(IPC.SETTINGS_PROVIDER_TEST, update),
+    deleteProviderCredential: (provider) =>
+      ipcRenderer.invoke(IPC.SETTINGS_PROVIDER_DELETE_CREDENTIAL, { provider }),
     updateConfig: (path, value) => ipcRenderer.invoke(IPC.CONFIG_UPDATE, { path, value }),
     listModels: () => ipcRenderer.invoke(IPC.CONFIG_LIST_MODELS),
     setModel: (name) => ipcRenderer.invoke(IPC.CONFIG_SET_MODEL, { presetName: name }),

@@ -1217,6 +1217,18 @@ export class AgentLoop implements RuntimeState {
     this.dream?.setProvider(provider, this.model);
   }
 
+  /** Atomically apply a provider/model pair to every LLM consumer. */
+  applyProviderSelection(provider: LLMProvider, model: string) {
+    console.log(`[agent] Provider/model applied: ${provider.name}/${model}`);
+    this.provider = provider;
+    this.model = model;
+    this._providerSnapshot = null;
+    this.runner.setProvider(provider);
+    this.consolidator.setProvider(provider, model, this.contextWindowTokens);
+    this.subagents?.setProvider(provider, model);
+    this.dream?.setProvider(provider, model);
+  }
+
   /** Background Dream cycle (optional cron). */
   async runDreamOnce(): Promise<string | null> {
     return this.dream?.runOnce() ?? null;

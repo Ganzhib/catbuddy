@@ -6,17 +6,38 @@ import { gatewayEnv } from './session/config/env.js'
 import { isWebLoginRequired } from './session/auth/auth-policy.js'
 import { HttpError } from './http-errors.js'
 
-const SETTINGS_STUB = {
+const SETTINGS_CAPABILITIES = {
+  credential_management: false,
+  provider_connection_test: false,
+} as const
+
+const READ_ONLY_SETTINGS = {
   agent: {
     model: 'desktop',
     provider: 'gateway',
     resolved_provider: 'gateway',
-    has_api_key: true,
+    has_api_key: false,
   },
   providers: [],
   web_search: { provider: 'none', providers: [] },
-  runtime: { config_path: '(catbuddy gateway — desktop agent host)' },
+  runtime: { config_path: '' },
   requires_restart: false,
+  capabilities: SETTINGS_CAPABILITIES,
+}
+
+const CREDENTIAL_MANAGEMENT_DESKTOP_ONLY = {
+  ok: false,
+  error: 'credential_management_desktop_only',
+  message: 'Provider credentials can only be managed in the desktop app.',
+  capabilities: SETTINGS_CAPABILITIES,
+} as const
+
+function rejectCredentialManagement(): never {
+  throw new HttpError(
+    403,
+    CREDENTIAL_MANAGEMENT_DESKTOP_ONLY.error,
+    CREDENTIAL_MANAGEMENT_DESKTOP_ONLY,
+  )
 }
 
 function authHeader(req: { headers: { authorization?: string } }): string | undefined {
@@ -158,22 +179,22 @@ export function registerHttpRoutes(
 
   app.get('/api/settings', async (req) => {
     await auth.resolveWebToken(authHeader(req))
-    return SETTINGS_STUB
+    return READ_ONLY_SETTINGS
   })
 
-  app.post('/api/settings/update', async (req) => {
+  app.patch('/api/settings', async (req) => {
     await auth.resolveWebToken(authHeader(req))
-    return SETTINGS_STUB
+    return rejectCredentialManagement()
   })
 
-  app.post('/api/settings/provider/update', async (req) => {
+  app.patch('/api/settings/provider', async (req) => {
     await auth.resolveWebToken(authHeader(req))
-    return SETTINGS_STUB
+    return rejectCredentialManagement()
   })
 
-  app.post('/api/settings/web-search/update', async (req) => {
+  app.patch('/api/settings/web-search', async (req) => {
     await auth.resolveWebToken(authHeader(req))
-    return SETTINGS_STUB
+    return rejectCredentialManagement()
   })
 
   app.get('/api/commands', async (req) => {

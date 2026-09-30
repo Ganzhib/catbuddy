@@ -22,7 +22,7 @@ jobs:
     name: Gateway and Web
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     environment: production
     env:
       DEPLOY_HOST: 150.158.27.165

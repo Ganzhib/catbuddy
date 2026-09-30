@@ -39,7 +39,10 @@
     }
   },
   "desktopDownload": {
-    "label": "Download Windows app",
+    "label": "Download desktop app",
+    "windows": "Windows",
+    "macApple": "macOS · Apple Silicon",
+    "macIntel": "Using an Intel Mac? Download the Intel version",
     "hint": "Install, sign in with the same email, then turn on Remote control in the sidebar."
   },
   "sidebar": {

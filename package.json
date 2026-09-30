@@ -14,7 +14,7 @@
     "build:all": "pnpm gateway:build && pnpm build:desktop && pnpm build:web",
     "build:desktop": "pnpm --filter @catbuddy/desktop build",
     "build:desktop:verbose": "pnpm --filter @catbuddy/desktop build:verbose",
-    "build:web": "node scripts/stage-desktop-installer.mjs && pnpm --filter @catbuddy/web build",
+    "build:web": "pnpm --filter @catbuddy/web build",
     "build:web:only": "pnpm --filter @catbuddy/web build",
     "stage:desktop-installer": "node scripts/stage-desktop-installer.mjs",
     "build:release": "pnpm build:desktop && pnpm build:web",

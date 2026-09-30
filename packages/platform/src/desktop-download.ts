@@ -1,12 +1,25 @@
-import { DESKTOP_DOWNLOAD_PATH } from '@catbuddy/shared/desktop-download'
+import {
+  getDesktopReleaseDownloadUrl,
+  type DesktopDownloadTarget,
+} from '@catbuddy/shared/desktop-download'
 
 import { hasCatbuddyIpc } from './create-platform'
 import { useCatbuddyGateway } from './gateway-http'
 
-/** Full URL for the desktop installer (Web only). Override with VITE_DESKTOP_DOWNLOAD_URL. */
-export function resolveDesktopDownloadUrl(): string {
-  const custom = import.meta.env.VITE_DESKTOP_DOWNLOAD_URL?.trim()
-  const path = custom || DESKTOP_DOWNLOAD_PATH
+function defaultDesktopDownloadTarget(): DesktopDownloadTarget {
+  if (typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent)) return 'macArm64'
+  return 'windows'
+}
+
+/** Full URL for a desktop installer. Legacy VITE_DESKTOP_DOWNLOAD_URL overrides Windows. */
+export function resolveDesktopDownloadUrl(target = defaultDesktopDownloadTarget()): string {
+  const overrides: Partial<Record<DesktopDownloadTarget, string | undefined>> = {
+    windows: import.meta.env.VITE_DESKTOP_DOWNLOAD_URL_WINDOWS?.trim()
+      || import.meta.env.VITE_DESKTOP_DOWNLOAD_URL?.trim(),
+    macArm64: import.meta.env.VITE_DESKTOP_DOWNLOAD_URL_MAC_ARM64?.trim(),
+    macX64: import.meta.env.VITE_DESKTOP_DOWNLOAD_URL_MAC_X64?.trim(),
+  }
+  const path = overrides[target] || getDesktopReleaseDownloadUrl(target)
   if (/^https?:\/\//i.test(path)) return path
   if (typeof window !== 'undefined') {
     const normalized = path.startsWith('/') ? path : `/${path}`

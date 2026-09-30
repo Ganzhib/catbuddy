@@ -1,21 +1,23 @@
-# Desktop installer (static download)
+# Desktop installer (legacy local staging)
 
-Web UI links to `/downloads/catbuddy-setup-win-x64.zip` (contains `catbuddy-setup-win-x64.exe`).
+The production Web UI downloads installers from GitHub Releases. Stable latest-release URLs are
+defined in `packages/shared/src/desktop-download.ts`.
+
+This directory and the staging command below are retained only for local testing or a self-hosted
+download override via `VITE_DESKTOP_DOWNLOAD_URL*`.
 
 ## Stage installer (cross-platform)
 
 From `catbuddy/` after `pnpm build:desktop`:
 
 ```bash
-pnpm build:web
+node scripts/stage-desktop-installer.mjs
 ```
 
-(`build:web` = stage zip + Vite build. Only Vite: `pnpm build:web:only`.)
-
-One-shot (desktop + web):
+Then build Web normally:
 
 ```bash
-pnpm build:release
+pnpm build:web
 ```
 
 Manual source path:
@@ -24,4 +26,6 @@ Manual source path:
 node scripts/stage-desktop-installer.mjs --source apps/desktop/release-fresh/catbuddy\ Setup\ 0.1.0.exe
 ```
 
-Or set `VITE_DESKTOP_DOWNLOAD_URL` in `apps/web/.env.production` to a CDN URL.
+Supported overrides are `VITE_DESKTOP_DOWNLOAD_URL_WINDOWS`,
+`VITE_DESKTOP_DOWNLOAD_URL_MAC_ARM64`, and `VITE_DESKTOP_DOWNLOAD_URL_MAC_X64`. The legacy
+`VITE_DESKTOP_DOWNLOAD_URL` variable still overrides the Windows URL.

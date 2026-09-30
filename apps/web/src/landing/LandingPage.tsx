@@ -136,7 +136,7 @@ function CtaRow({
   return (
     <div className={cn('space-y-2.5', centered && 'mx-auto max-w-md', className)}>
       <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-stretch', centered && 'sm:justify-center')}>
-        <div className="relative sm:flex-1 sm:max-w-[280px]">
+        <div className="relative sm:flex-[1.5] sm:max-w-[460px]">
           <div className="landing-glow-pulse pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-r from-sky-400/40 to-teal-300/40 blur-lg" />
           <DesktopClientDownload variant="login" showHint={false} className="!mt-0 relative w-full sm:min-w-[220px]" />
         </div>

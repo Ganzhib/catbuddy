@@ -27,7 +27,10 @@
     }
   },
   "desktopDownload": {
-    "label": "下载 Windows 客户端",
+    "label": "下载桌面客户端",
+    "windows": "Windows",
+    "macApple": "macOS · Apple 芯片",
+    "macIntel": "使用 Intel Mac？下载 Intel 版本",
     "hint": "安装后使用与网页相同的邮箱登录，并在侧栏开启「远程控制」。"
   },
   "sidebar": {

@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react'
+import { Apple, Download, MonitorDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -23,15 +23,18 @@ export function DesktopClientDownload({
 
   if (!shouldOfferDesktopDownload()) return null
 
-  const href = resolveDesktopDownloadUrl()
-  const label = t('desktopDownload.label')
+  const windowsHref = resolveDesktopDownloadUrl('windows')
+  const macArmHref = resolveDesktopDownloadUrl('macArm64')
+  const macIntelHref = resolveDesktopDownloadUrl('macX64')
+  const preferredHref = resolveDesktopDownloadUrl()
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.userAgent)
+  const label = isMac ? t('desktopDownload.macApple') : t('desktopDownload.windows')
   const hint = t('desktopDownload.hint')
 
   if (variant === 'banner') {
     return (
       <a
-        href={href}
-        download
+        href={preferredHref}
         className={cn(
           'mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium',
           'bg-sky-500/12 text-sky-800 hover:bg-sky-500/18 dark:text-sky-200',
@@ -47,17 +50,35 @@ export function DesktopClientDownload({
   if (variant === 'login') {
     return (
       <div className={cn('mt-8', className)}>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <a
+            href={windowsHref}
+            className={cn(
+              'flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium',
+              'bg-[#0EA5E9] text-white shadow-md shadow-sky-500/20 transition-all duration-200',
+              'hover:bg-[#0284C7] hover:shadow-lg hover:shadow-sky-500/25',
+            )}
+          >
+            <MonitorDown className="h-4 w-4 shrink-0" aria-hidden />
+            {t('desktopDownload.windows')}
+          </a>
+          <a
+            href={macArmHref}
+            className={cn(
+              'flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium',
+              'border border-[#1E3A8A]/12 bg-white/80 text-[#1E3A8A] transition-all duration-200',
+              'hover:border-sky-300 hover:bg-white dark:bg-white/10 dark:text-white',
+            )}
+          >
+            <Apple className="h-4 w-4 shrink-0" aria-hidden />
+            {t('desktopDownload.macApple')}
+          </a>
+        </div>
         <a
-          href={href}
-          download
-          className={cn(
-            'flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium',
-            'bg-[#0EA5E9] text-white shadow-md shadow-sky-500/20 transition-all duration-200',
-            'hover:bg-[#0284C7] hover:shadow-lg hover:shadow-sky-500/25',
-          )}
+          href={macIntelHref}
+          className={cn('mt-2 block text-center text-[11px] underline-offset-4 hover:underline', authMuted)}
         >
-          <Download className="h-4 w-4 shrink-0" aria-hidden />
-          {label}
+          {t('desktopDownload.macIntel')}
         </a>
         {showHint ? (
           <p className={cn('mt-2 text-center text-xs leading-relaxed', authMuted)}>{hint}</p>
@@ -68,8 +89,7 @@ export function DesktopClientDownload({
 
   return (
     <a
-      href={href}
-      download
+      href={preferredHref}
       title={hint}
       className={cn(
         'flex h-9 w-full items-center justify-start gap-2.5 rounded-full px-3.5 text-[13px] font-medium',

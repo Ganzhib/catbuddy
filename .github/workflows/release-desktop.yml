@@ -1,0 +1,140 @@
+name: Release desktop apps
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            os: windows-latest
+            build_args: --win nsis --x64
+            extension: .exe
+            asset_name: catbuddy-windows-x64.exe
+          - label: macOS Apple Silicon
+            os: macos-15
+            build_args: --mac dmg --arm64
+            extension: .dmg
+            asset_name: catbuddy-macos-arm64.dmg
+          - label: macOS Intel
+            os: macos-15-intel
+            build_args: --mac dmg --x64
+            extension: .dmg
+            asset_name: catbuddy-macos-x64.dmg
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./apps/desktop/package.json').version")"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [[ "$package_version" != "$tag_version" ]]; then
+            echo "Tag version $tag_version does not match apps/desktop/package.json version $package_version" >&2
+            exit 1
+          fi
+
+      - name: Build installer
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CATBUDDY_BUILD_NO_KILL: "1"
+          CATBUDDY_BUILD_OUTPUT: release-ci
+        run: pnpm build:desktop -- ${{ matrix.build_args }}
+
+      - name: Prepare stable release asset
+        shell: bash
+        env:
+          ASSET_EXTENSION: ${{ matrix.extension }}
+          ASSET_NAME: ${{ matrix.asset_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+
+          const sourceDir = path.resolve('apps/desktop/release-ci')
+          const extension = process.env.ASSET_EXTENSION
+          const candidates = fs.readdirSync(sourceDir, { withFileTypes: true })
+            .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(extension))
+            .map((entry) => path.join(sourceDir, entry.name))
+            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
+
+          if (!candidates[0]) throw new Error(`No ${extension} installer was produced in ${sourceDir}`)
+
+          const outputDir = path.resolve('release-assets')
+          fs.mkdirSync(outputDir, { recursive: true })
+          fs.copyFileSync(candidates[0], path.join(outputDir, process.env.ASSET_NAME))
+          console.log(`Release asset: ${process.env.ASSET_NAME}`)
+          NODE
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.asset_name }}
+          path: release-assets/${{ matrix.asset_name }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish GitHub Release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v5
+        with:
+          pattern: desktop-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          assets=(release-assets/catbuddy-windows-x64.exe release-assets/catbuddy-macos-arm64.dmg release-assets/catbuddy-macos-x64.dmg)
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${assets[@]}" --clobber
+          else
+            gh release create "$tag" "${assets[@]}" --title "catbuddy $tag" --generate-notes
+          fi

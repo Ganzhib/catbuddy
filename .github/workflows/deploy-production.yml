@@ -1,0 +1,134 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Gateway and Web
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    env:
+      DEPLOY_HOST: 150.158.27.165
+      DEPLOY_USER: root
+      DEPLOY_PORT: "22"
+      GATEWAY_REMOTE_DIR: /opt/catbuddy/gateway
+      GATEWAY_DOMAIN: gateway.ganzhibin.icu
+      WEB_REMOTE_DIR: /opt/catbuddy/web
+      WEB_DOMAIN: catbuddy.ganzhibin.icu
+      SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$SSH_PRIVATE_KEY" ]]; then
+            echo "Missing production secret: DEPLOY_SSH_KEY" >&2
+            exit 1
+          fi
+          if [[ -z "$PRODUCTION_ENV" ]]; then
+            echo "Missing production secret: PRODUCTION_ENV" >&2
+            exit 1
+          fi
+
+      - name: Prepare deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$RUNNER_TEMP/catbuddy-ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$RUNNER_TEMP/catbuddy-ssh/deploy_key"
+          chmod 600 "$RUNNER_TEMP/catbuddy-ssh/deploy_key"
+          printf '%s\n' "$PRODUCTION_ENV" > .env.production
+
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+
+          const config = {
+            host: process.env.DEPLOY_HOST,
+            user: process.env.DEPLOY_USER,
+            port: Number(process.env.DEPLOY_PORT),
+            identityFile: path.join(process.env.RUNNER_TEMP, 'catbuddy-ssh', 'deploy_key'),
+            remoteDir: process.env.GATEWAY_REMOTE_DIR,
+            domain: process.env.GATEWAY_DOMAIN,
+            envFile: '.env.production',
+            build: true,
+            setupNginx: false,
+            webDomain: process.env.WEB_DOMAIN,
+            webRemoteDir: process.env.WEB_REMOTE_DIR,
+          }
+
+          fs.writeFileSync('deploy/deploy.config.json', `${JSON.stringify(config, null, 2)}\n`)
+          NODE
+
+      - name: Deploy Gateway
+        run: pnpm deploy:gateway
+
+      - name: Verify Gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..12}; do
+            if curl --fail --silent --show-error --max-time 10 "https://$GATEWAY_DOMAIN/health"; then
+              echo
+              exit 0
+            fi
+            echo "Gateway health check $attempt/12 failed; retrying..."
+            sleep 5
+          done
+          echo "Gateway health check failed" >&2
+          exit 1
+
+      - name: Build Web
+        run: pnpm build:web:only
+
+      - name: Deploy Web
+        run: node deploy/deploy-web.cjs --skip-build
+
+      - name: Verify Web
+        run: curl --fail --silent --show-error --max-time 15 "https://$WEB_DOMAIN/" > /dev/null
+
+      - name: Remove temporary secrets
+        if: always()
+        shell: bash
+        run: |
+          rm -f .env.production deploy/deploy.config.json
+          rm -rf "$RUNNER_TEMP/catbuddy-ssh"

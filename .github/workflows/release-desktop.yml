@@ -5,8 +5,18 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: "Reuse desktop artifacts from this workflow run ID (skip builds)"
+        required: false
+        type: string
+      release_tag:
+        description: "Tag to publish when reusing artifacts (for example v0.1.0)"
+        required: false
+        type: string
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -16,6 +26,7 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.label }}
+    if: ${{ inputs.artifact_run_id == '' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 50
     strategy:
@@ -111,7 +122,12 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    if: github.ref_type == 'tag'
+    if: >-
+      ${{
+        always() &&
+        (github.ref_type == 'tag' || inputs.artifact_run_id != '') &&
+        (needs.build.result == 'success' || inputs.artifact_run_id != '')
+      }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -123,14 +139,23 @@ jobs:
           pattern: desktop-*
           path: release-assets
           merge-multiple: true
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.artifact_run_id || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Publish release assets
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           set -euo pipefail
-          tag="$GITHUB_REF_NAME"
+          tag="$RELEASE_TAG"
+          if [[ -z "$tag" ]]; then
+            echo "A release tag is required" >&2
+            exit 1
+          fi
           assets=(release-assets/catbuddy-windows-x64.exe release-assets/catbuddy-macos-arm64.dmg release-assets/catbuddy-macos-x64.dmg)
 
           if gh release view "$tag" >/dev/null 2>&1; then

@@ -9,6 +9,16 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - gateway
+          - web
 
 permissions:
   actions: read
@@ -41,11 +51,28 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          MANUAL_TARGET: ${{ inputs.target }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            gateway=true
-            web=true
+            gateway=false
+            web=false
+            case "${MANUAL_TARGET:-all}" in
+              all)
+                gateway=true
+                web=true
+                ;;
+              gateway)
+                gateway=true
+                ;;
+              web)
+                web=true
+                ;;
+              *)
+                echo "Unknown deployment target: $MANUAL_TARGET" >&2
+                exit 1
+                ;;
+            esac
           else
             manifest="$RUNNER_TEMP/deployment-scope/deployment-scope.json"
             gateway="$(node -p "require(process.argv[1]).gateway" "$manifest")"
@@ -163,7 +190,7 @@ jobs:
 
       - name: Deploy Web
         if: needs.scope.outputs.web == 'true'
-        run: node deploy/deploy-web.cjs --skip-build
+        run: node deploy/deploy-web.cjs --skip-build --skip-cert
 
       - name: Verify Web
         if: needs.scope.outputs.web == 'true'

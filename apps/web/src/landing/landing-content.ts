@@ -128,7 +128,7 @@ export const LANDING_COPY = {
     {
       step: '01',
       title: '下载桌面端',
-      desc: '安装 Windows 客户端，让助手在你的电脑上本地运行。',
+      desc: '安装 Windows 或 macOS 客户端，让助手在你的电脑上本地运行。',
     },
     {
       step: '02',

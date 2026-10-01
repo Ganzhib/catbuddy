@@ -138,7 +138,12 @@ function CtaRow({
       <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-stretch', centered && 'sm:justify-center')}>
         <div className="relative sm:flex-[1.5] sm:max-w-[460px]">
           <div className="landing-glow-pulse pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-r from-sky-400/40 to-teal-300/40 blur-lg" />
-          <DesktopClientDownload variant="login" showHint={false} className="!mt-0 relative w-full sm:min-w-[220px]" />
+          <DesktopClientDownload
+            variant="login"
+            showHint={false}
+            triggerLabel="桌面端体验"
+            className="!mt-0 relative w-full sm:min-w-[220px]"
+          />
         </div>
         <a
           href={APP_HREF}

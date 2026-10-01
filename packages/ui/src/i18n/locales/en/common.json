@@ -40,10 +40,16 @@
   },
   "desktopDownload": {
     "label": "Download desktop app",
+    "experience": "Try the desktop app",
     "windows": "Windows",
     "macApple": "macOS · Apple Silicon",
     "macIntel": "Using an Intel Mac? Download the Intel version",
-    "hint": "Install, sign in with the same email, then turn on Remote control in the sidebar."
+    "hint": "Install, sign in with the same email, then turn on Remote control in the sidebar.",
+    "dialogTitle": "Choose your desktop version",
+    "dialogDescription": "catbuddy runs locally on your computer. Choose the system and chip used by this device, then continue with the same account after installation.",
+    "windowsMeta": "For 64-bit PCs running Windows 10 or 11",
+    "downloadWindows": "Download for Windows",
+    "unsignedNote": "These installers are not code-signed yet. Windows SmartScreen or macOS Gatekeeper may show a security warning; verify the source is Ganzhib/catbuddy before continuing."
   },
   "sidebar": {
     "navigation": "Sidebar navigation",

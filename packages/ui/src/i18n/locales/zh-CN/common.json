@@ -28,10 +28,16 @@
   },
   "desktopDownload": {
     "label": "下载桌面客户端",
+    "experience": "桌面端体验",
     "windows": "Windows",
     "macApple": "macOS · Apple 芯片",
     "macIntel": "使用 Intel Mac？下载 Intel 版本",
-    "hint": "安装后使用与网页相同的邮箱登录，并在侧栏开启「远程控制」。"
+    "hint": "安装后使用与网页相同的邮箱登录，并在侧栏开启「远程控制」。",
+    "dialogTitle": "选择你的桌面版本",
+    "dialogDescription": "catbuddy 在你的电脑上本地运行。请选择当前设备的系统和芯片类型，安装后即可继续使用同一个账号。",
+    "windowsMeta": "适用于 Windows 10 / 11 的 64 位电脑",
+    "downloadWindows": "下载 Windows 版",
+    "unsignedNote": "当前安装包暂未进行代码签名。Windows SmartScreen 或 macOS Gatekeeper 可能显示安全提醒，请确认来源为 Ganzhib/catbuddy 后继续安装。"
   },
   "sidebar": {
     "navigation": "侧边栏导航",

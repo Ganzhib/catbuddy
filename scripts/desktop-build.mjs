@@ -30,7 +30,12 @@ const noKill =
   rawArgs.includes('--no-kill') ||
   process.env.CATBUDDY_BUILD_NO_KILL === '1' ||
   process.env.CATBUDDY_BUILD_NO_KILL === 'true';
-const ebExtraArgs = rawArgs.filter((a) => a !== '--verbose' && a !== '--dir' && a !== '--no-kill');
+// pnpm can forward its standalone option separator through nested workspace scripts.
+// Passing it to electron-builder makes every option appended after it positional, so
+// settings such as directories.output are silently ignored.
+const ebExtraArgs = rawArgs.filter(
+  (a) => a !== '--' && a !== '--verbose' && a !== '--dir' && a !== '--no-kill',
+);
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 
 function stamp() {

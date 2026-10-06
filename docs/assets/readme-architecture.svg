@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="752" viewBox="0 0 1280 752" role="img" aria-labelledby="title desc">
+  <title id="title">catbuddy — One Runtime. Every Screen.</title>
+  <desc id="desc">Desktop uses IPC to reach the local Agent Runtime. Web and the Expo mobile WebView connect through the Gateway. The desktop runtime executes tools against the workspace and calls a configurable LLM provider.</desc>
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ffffff" stroke-opacity=".035"/>
+    </pattern>
+    <marker id="arrow-mint" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse">
+      <path d="M0 0 8 4 0 8" fill="none" stroke="#a9ebc9" stroke-width="1.4"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse">
+      <path d="M0 0 8 4 0 8" fill="none" stroke="#a8bdff" stroke-width="1.4"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="752" rx="20" fill="#101820"/>
+  <rect width="1280" height="752" rx="20" fill="url(#grid)"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="48" y="51" fill="#a9ebc9" font-size="16" font-weight="700" letter-spacing="3">CATBUDDY / SYSTEM OVERVIEW</text>
+    <text x="48" y="117" fill="#f2f5f3" font-size="49" font-weight="700" letter-spacing="-1.5">One Runtime. Every Screen.</text>
+    <text x="48" y="157" fill="#aab7c4" font-size="22">A local execution core, connected across desktop, web and mobile.</text>
+    <path d="M48 188H1232" stroke="#2b3744"/>
+
+    <text x="48" y="228" fill="#aab7c4" font-size="15" font-weight="700" letter-spacing="2">01 / CLIENT SURFACES</text>
+    <text x="454" y="228" fill="#a8bdff" font-size="15" font-weight="700" letter-spacing="2">02 / COORDINATION</text>
+    <text x="864" y="228" fill="#a9ebc9" font-size="15" font-weight="700" letter-spacing="2">03 / LOCAL EXECUTION</text>
+
+    <rect x="48" y="253" width="282" height="104" rx="10" fill="#18232e" stroke="#344353"/>
+    <rect x="69" y="276" width="29" height="22" rx="3" fill="none" stroke="#a9ebc9" stroke-width="2"/>
+    <path d="M83 298v8m-9 0h18" stroke="#a9ebc9" stroke-width="2"/>
+    <text x="114" y="291" fill="#f2f5f3" font-size="24" font-weight="600">Desktop</text>
+    <text x="69" y="329" fill="#aab7c4" font-size="19">Electron + shared React UI</text>
+
+    <rect x="48" y="380" width="282" height="104" rx="10" fill="#18232e" stroke="#344353"/>
+    <rect x="69" y="401" width="29" height="25" rx="3" fill="none" stroke="#a8bdff" stroke-width="2"/>
+    <path d="M70 409h27" stroke="#a8bdff" stroke-width="2"/>
+    <text x="114" y="419" fill="#f2f5f3" font-size="24" font-weight="600">Web</text>
+    <text x="69" y="456" fill="#aab7c4" font-size="19">React SPA / remote control</text>
+
+    <rect x="48" y="507" width="282" height="104" rx="10" fill="#18232e" stroke="#344353"/>
+    <rect x="77" y="528" width="17" height="29" rx="3" fill="none" stroke="#a8bdff" stroke-width="2"/>
+    <circle cx="85.5" cy="551" r="1.3" fill="#a8bdff"/>
+    <text x="114" y="545" fill="#f2f5f3" font-size="24" font-weight="600">Mobile</text>
+    <text x="69" y="584" fill="#aab7c4" font-size="19">Expo / React Native WebView</text>
+
+    <path d="M330 281H863" stroke="#a9ebc9" stroke-width="2" fill="none" marker-start="url(#arrow-mint)" marker-end="url(#arrow-mint)"/>
+    <rect x="481" y="262" width="246" height="32" rx="6" fill="#101820"/>
+    <text x="604" y="284" fill="#a9ebc9" font-size="16" font-weight="600" text-anchor="middle">preload / IPC bridge</text>
+
+    <rect x="454" y="337" width="284" height="274" rx="12" fill="#1b2336" stroke="#677bae"/>
+    <text x="478" y="379" fill="#e3e9ff" font-size="27" font-weight="700">Gateway</text>
+    <text x="478" y="410" fill="#a8bdff" font-size="18">Fastify + HTTP / WebSocket</text>
+    <path d="M478 429H714" stroke="#3d4b69"/>
+    <g fill="#c4cfdf" font-size="20">
+      <text x="478" y="464">Identity + device routing</text>
+      <text x="478" y="500">Session subscriptions</text>
+      <text x="478" y="536">RPC + thread cache</text>
+      <text x="478" y="579">MySQL persistence</text>
+    </g>
+    <path d="M330 432H453" stroke="#a8bdff" stroke-width="2" fill="none" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+    <text x="391" y="419" fill="#a8bdff" font-size="15" text-anchor="middle">HTTP / WS</text>
+    <path d="M330 559H380V479H453" stroke="#a8bdff" stroke-width="2" fill="none" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+    <path d="M738 449H863" stroke="#a8bdff" stroke-width="2" fill="none" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+    <text x="800" y="432" fill="#a8bdff" font-size="15" text-anchor="middle">WS / events</text>
+
+    <rect x="864" y="253" width="368" height="358" rx="12" fill="#152b26" stroke="#66aa8e"/>
+    <text x="888" y="301" fill="#e4f8ed" font-size="28" font-weight="700">Agent Runtime</text>
+    <text x="888" y="332" fill="#a9ebc9" font-size="19">Inside the Desktop main process</text>
+    <path d="M888 351H1208" stroke="#37564a"/>
+    <g fill="#d1e5db" font-size="21">
+      <text x="888" y="386">AgentLoop / explicit state machine</text>
+      <text x="888" y="423">AgentRunner / LLM + tool loop</text>
+      <text x="888" y="460">Context / memory / subagents</text>
+      <text x="888" y="497">ToolRegistry / MCP / workspace</text>
+    </g>
+    <rect x="888" y="527" width="320" height="60" rx="7" fill="#0f211c" stroke="#37564a"/>
+    <text x="1048" y="553" fill="#a9ebc9" font-size="17" font-weight="600" text-anchor="middle">CONFIGURABLE LLM PROVIDER</text>
+    <text x="1048" y="577" fill="#b4c8be" font-size="15" text-anchor="middle">Anthropic / OpenAI-compatible / Fallback</text>
+
+    <path d="M48 649H1232" stroke="#2b3744"/>
+    <text x="48" y="687" fill="#aab7c4" font-size="15" font-weight="700" letter-spacing="2">SHARED FOUNDATION</text>
+    <text x="48" y="720" fill="#d6dfe7" font-size="20">TypeScript contracts + transport adapters + reusable UI</text>
+    <text x="1232" y="687" fill="#a9ebc9" font-size="15" font-weight="700" letter-spacing="2" text-anchor="end">RUNTIME OBSERVABILITY</text>
+    <text x="1232" y="720" fill="#d6dfe7" font-size="20" text-anchor="end">Langfuse / lifecycle hooks / tool events</text>
+  </g>
+</svg>

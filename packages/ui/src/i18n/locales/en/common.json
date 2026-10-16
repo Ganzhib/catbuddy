@@ -75,6 +75,7 @@
     "recent": "Recent",
     "refreshSessions": "Refresh sessions",
     "settings": "Settings",
+    "updateAvailable": "Update available · v{{version}}",
     "nav": {
       "mcp": "MCP",
       "skills": "SKILL",
@@ -174,6 +175,21 @@
       "ai": "AI",
       "system": "System",
       "currentModel": "Current model"
+    },
+    "updates": {
+      "title": "App updates",
+      "installedVersion": "Installed version",
+      "availableTitle": "A new version is available",
+      "availableDescription": "Version {{version}} is available. Download and run the installer for this device to update.",
+      "current": "You're up to date.",
+      "checking": "Checking GitHub Releases…",
+      "checkFailed": "Couldn't check for updates. Check your connection and try again.",
+      "checkHint": "Check whether a newer version is available.",
+      "checkTitle": "Check for updates",
+      "download": "Download v{{version}}",
+      "checkingButton": "Checking…",
+      "checkButton": "Check for updates",
+      "actionFailed": "The update action failed. Please try again."
     },
     "gatewayRemote": {
       "section": "Remote control (Gateway)",

@@ -3,6 +3,7 @@ import {
   Bot,
   CheckCircle2,
   ChevronLeft,
+  Download,
   KeyRound,
   Loader2,
   LogOut,
@@ -19,6 +20,7 @@ import { useProviderSettings } from "@/components/providers/useProviderSettings"
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useClient } from "@/providers/ClientProvider";
+import type { DesktopUpdateStatus } from "@catbuddy/shared";
 
 type SettingsSectionKey = "general" | "providers";
 
@@ -30,6 +32,10 @@ interface SettingsViewProps {
   onLogout?: () => void;
   onRestart?: () => void;
   isRestarting?: boolean;
+  updateStatus: DesktopUpdateStatus | null;
+  updateActionError: boolean;
+  onCheckForUpdate: () => void;
+  onDownloadUpdate: () => void;
 }
 
 const NAV_ITEMS: ReadonlyArray<{ key: SettingsSectionKey; icon: LucideIcon }> = [
@@ -45,6 +51,10 @@ export function SettingsView({
   onLogout,
   onRestart,
   isRestarting = false,
+  updateStatus,
+  updateActionError,
+  onCheckForUpdate,
+  onDownloadUpdate,
 }: SettingsViewProps) {
   const { t } = useTranslation();
   const { token } = useClient();
@@ -88,6 +98,10 @@ export function SettingsView({
               onOpenProviders={() => setActiveSection("providers")}
               onRestart={onRestart}
               isRestarting={isRestarting}
+              updateStatus={updateStatus}
+              updateActionError={updateActionError}
+              onCheckForUpdate={onCheckForUpdate}
+              onDownloadUpdate={onDownloadUpdate}
             />
           )}
         </div>
@@ -162,6 +176,10 @@ function GeneralSettings({
   onOpenProviders,
   onRestart,
   isRestarting,
+  updateStatus,
+  updateActionError,
+  onCheckForUpdate,
+  onDownloadUpdate,
 }: {
   theme: "light" | "dark";
   onToggleTheme: () => void;
@@ -169,6 +187,10 @@ function GeneralSettings({
   onOpenProviders: () => void;
   onRestart?: () => void;
   isRestarting?: boolean;
+  updateStatus: DesktopUpdateStatus | null;
+  updateActionError: boolean;
+  onCheckForUpdate: () => void;
+  onDownloadUpdate: () => void;
 }) {
   const { t } = useTranslation();
   const provider = activeProvider(settings);
@@ -176,6 +198,14 @@ function GeneralSettings({
   const keyConfigured = provider?.configured || settings.agent.has_api_key;
   return (
     <div className="space-y-10">
+      {updateStatus && updateStatus.state !== "unsupported" ? (
+        <DesktopUpdateSection
+          status={updateStatus}
+          actionError={updateActionError}
+          onCheck={onCheckForUpdate}
+          onDownload={onDownloadUpdate}
+        />
+      ) : null}
       <SettingsSection title={t("settings.sections.currentModel")}>
         <SettingsRow title={t("settings.rows.currentProvider")} description={t("settings.help.currentProvider")}>
           <div className="text-left sm:text-right">
@@ -240,6 +270,58 @@ function GeneralSettings({
         </SettingsSection>
       ) : null}
     </div>
+  );
+}
+
+function DesktopUpdateSection({
+  status,
+  actionError,
+  onCheck,
+  onDownload,
+}: {
+  status: DesktopUpdateStatus;
+  actionError: boolean;
+  onCheck: () => void;
+  onDownload: () => void;
+}) {
+  const { t } = useTranslation();
+  let description = t("settings.updates.checkHint");
+  let buttonLabel = t("settings.updates.checkButton");
+  if (status.state === "available") {
+    description = t("settings.updates.availableDescription", { version: status.latestVersion });
+    buttonLabel = t("settings.updates.download", { version: status.latestVersion });
+  } else if (status.state === "current") {
+    description = t("settings.updates.current");
+  } else if (status.state === "checking") {
+    description = t("settings.updates.checking");
+    buttonLabel = t("settings.updates.checkingButton");
+  } else if (status.state === "error") {
+    description = t("settings.updates.checkFailed");
+  }
+
+  return (
+    <SettingsSection title={t("settings.updates.title")}>
+      <SettingsRow title={t("settings.updates.installedVersion")}>
+        <span className="text-sm font-medium tabular-nums">v{status.currentVersion}</span>
+      </SettingsRow>
+      <SettingsRow
+        title={status.state === "available" ? t("settings.updates.availableTitle") : t("settings.updates.checkTitle")}
+        description={description}
+      >
+        <Button
+          type="button"
+          variant={status.state === "available" ? "default" : "outline"}
+          className="min-h-11 w-full sm:w-auto"
+          disabled={status.state === "checking"}
+          onClick={status.state === "available" ? onDownload : onCheck}
+        >
+          {status.state === "checking" ? <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> : null}
+          {status.state === "available" ? <Download className="mr-2 h-4 w-4" aria-hidden /> : null}
+          {buttonLabel}
+        </Button>
+      </SettingsRow>
+      {actionError ? <p className="py-3 text-sm text-destructive" role="alert">{t("settings.updates.actionFailed")}</p> : null}
+    </SettingsSection>
   );
 }
 

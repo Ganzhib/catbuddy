@@ -132,7 +132,7 @@ export function ProviderSettingsPanel({
           const panelId = `provider-panel-${provider.name.replace(/[^a-z0-9_-]/gi, "-")}`;
           return (
             <div key={provider.name}>
-              <div className="flex min-h-[72px] items-center gap-3 py-3">
+              <div className="flex min-h-[72px] flex-wrap items-center gap-3 py-3">
                 <button
                   type="button"
                   className={cn("flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", !provider.configured && "basis-full sm:basis-0")}
@@ -160,7 +160,7 @@ export function ProviderSettingsPanel({
                 </button>
 
                 {!provider.configured ? (
-                  <Button variant="outline" size="sm" className="min-h-11 shrink-0" onClick={() => setExpanded(isExpanded ? null : provider.name)}>
+                  <Button variant="outline" size="sm" className="min-h-11 w-full shrink-0 sm:w-auto" onClick={() => setExpanded(isExpanded ? null : provider.name)}>
                     {provider.api_key_required === false
                       ? t("settings.providers.configureProvider")
                       : t("settings.providers.addApiKey")}

@@ -81,7 +81,7 @@ function LandingNav() {
           <span className={cn('truncate text-sm sm:text-base', authTitle)}>catbuddy</span>
         </a>
 
-        <nav className="hidden items-center gap-0.5 md:flex" aria-label="Landing">
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Landing">
           {NAV_ITEMS.map(({ id, label }) => (
             <Button key={id} type="button" variant="ghost" className={authNavGhost} onClick={() => scrollToId(id)}>
               {label}
@@ -89,7 +89,29 @@ function LandingNav() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <a
+            href="https://github.com/Ganzhib/catbuddy"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GitHub 仓库"
+            className={cn('inline-flex h-9 w-9 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 sm:h-10 sm:w-10', authOutlineBtn)}
+          >
+            <Github className="h-5 w-5" aria-hidden />
+            <span className="sr-only">GitHub 仓库</span>
+          </a>
+          <a
+            href="https://juejin.cn/column/7642179319759011859"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="稀土掘金专栏"
+            className={cn('inline-flex h-9 w-9 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 sm:h-10 sm:w-10', authOutlineBtn)}
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="m12 14.316 7.454-5.88-2.022-1.625L12 11.1l-.004.003-5.432-4.288-2.02 1.624 7.452 5.88Zm0-7.247 2.89-2.298L12 2.453l-.004-.005-2.884 2.318 2.884 2.3Zm0 11.266-.005.002-9.975-7.87L0 12.088l.194.156 11.803 9.308 7.463-5.885L24 12.085l-2.023-1.624Z" />
+            </svg>
+            <span className="sr-only">稀土掘金专栏</span>
+          </a>
           <a
             ref={magnetic.ref}
             href={APP_HREF}
@@ -273,36 +295,6 @@ function HeroSection() {
 
           <div className="landing-enter" style={{ '--enter-delay': '480ms' } as CSSProperties}>
             <CtaRow loginLabel="网页端体验" className="mt-7" />
-          </div>
-
-          <div
-            className="landing-enter mt-4 flex items-center gap-2.5"
-            style={{ '--enter-delay': '520ms' } as CSSProperties}
-            role="group"
-            aria-label="社区链接"
-          >
-            <a
-              href="https://github.com/Ganzhib/catbuddy"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="GitHub 仓库"
-              className={cn('inline-flex h-10 w-10 items-center justify-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500', authOutlineBtn)}
-            >
-              <Github className="h-5 w-5" aria-hidden />
-              <span className="sr-only">GitHub 仓库</span>
-            </a>
-            <a
-              href="https://juejin.cn/column/7642179319759011859"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="稀土掘金专栏"
-              className={cn('inline-flex h-10 w-10 items-center justify-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500', authOutlineBtn)}
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="m12 14.316 7.454-5.88-2.022-1.625L12 11.1l-.004.003-5.432-4.288-2.02 1.624 7.452 5.88Zm0-7.247 2.89-2.298L12 2.453l-.004-.005-2.884 2.318 2.884 2.3Zm0 11.266-.005.002-9.975-7.87L0 12.088l.194.156 11.803 9.308 7.463-5.885L24 12.085l-2.023-1.624Z" />
-              </svg>
-              <span className="sr-only">稀土掘金专栏</span>
-            </a>
           </div>
 
           <div

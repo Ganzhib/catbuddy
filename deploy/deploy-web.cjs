@@ -112,18 +112,16 @@ REMOTE=${JSON.stringify(remoteDir)}
 EMAIL=${JSON.stringify(email || '')}
 SKIP_CERT=${skipCert ? '1' : '0'}
 
+echo "==> unpacking Web archive"
 mkdir -p "$REMOTE"
 cd "$REMOTE"
 tar xzf ${TAR_NAME}
 rm -f ${TAR_NAME}
 
+echo "==> checking nginx"
 if ! command -v nginx >/dev/null 2>&1; then
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get install -y nginx certbot python3-certbot-nginx
-fi
-
-if ! command -v dig >/dev/null 2>&1; then
-  DEBIAN_FRONTEND=noninteractive apt-get install -y dnsutils
 fi
 
 write_nginx_http_only() {
@@ -169,6 +167,7 @@ server {
 NGINX_EOF
 }
 
+echo "==> configuring nginx"
 if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
   write_nginx_https
 else
@@ -184,20 +183,22 @@ echo "==> nginx local smoke test"
 curl -sf -H "Host: $DOMAIN" "http://127.0.0.1/" >/dev/null
 echo "OK http://127.0.0.1/ (Host: $DOMAIN)"
 
-SERVER_IP=$(curl -4 -fsS https://ifconfig.me 2>/dev/null || curl -4 -fsS https://api.ipify.org)
-DOMAIN_IP=$(dig +short "$DOMAIN" A 2>/dev/null | grep -E '^[0-9.]+$' | tail -n1 || true)
-echo "==> DNS: $DOMAIN -> \${DOMAIN_IP:-<none>}, server public IP: $SERVER_IP"
-
 if [ "$SKIP_CERT" = "1" ]; then
   echo "SKIP certbot (--skip-cert)"
-elif [ -z "$DOMAIN_IP" ] || [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-  echo ""
-  echo "WARN: 公网 DNS 未指向本机，跳过 certbot（静态站已部署在 HTTP）"
-  echo "  1. DNSPod：$DOMAIN 的 A 记录 -> $SERVER_IP"
-  echo "  2. 关闭 DNSPod「违规拦截 / 网站封禁」等（否则会返回 dnspod.qcloud.com/webblock）"
-  echo "  3. 生效后 SSH 执行: certbot --nginx -d $DOMAIN"
-  echo ""
-  SKIP_CERT=1
+else
+  SERVER_IP=$(curl -4 -fsS --max-time 10 https://ifconfig.me 2>/dev/null || curl -4 -fsS --max-time 10 https://api.ipify.org)
+  DOMAIN_IP=$(getent ahostsv4 "$DOMAIN" | awk 'NR == 1 { print $1 }' || true)
+  echo "==> DNS: $DOMAIN -> \${DOMAIN_IP:-<none>}, server public IP: $SERVER_IP"
+
+  if [ -z "$DOMAIN_IP" ] || [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+    echo ""
+    echo "WARN: 公网 DNS 未指向本机，跳过 certbot（静态站已部署在 HTTP）"
+    echo "  1. DNSPod：$DOMAIN 的 A 记录 -> $SERVER_IP"
+    echo "  2. 关闭 DNSPod「违规拦截 / 网站封禁」等（否则会返回 dnspod.qcloud.com/webblock）"
+    echo "  3. 生效后 SSH 执行: certbot --nginx -d $DOMAIN"
+    echo ""
+    SKIP_CERT=1
+  fi
 fi
 
 install_cert_acme_alpn() {

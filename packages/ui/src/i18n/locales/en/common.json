@@ -214,7 +214,8 @@
       "compactionEnable": "Enable",
       "compactionThreshold": "Message Threshold"
       ,"currentProvider": "Active provider"
-      ,"manageProviders": "Provider configuration"
+      ,"manageProviders": "Provider configuration",
+      "apiKey": "API key"
     },
     "help": {
       "theme": "Switch between light and dark appearance.",
@@ -225,7 +226,10 @@
       "compactionEnable": "Automatically compress old conversations to save tokens (Agent COMPACT step).",
       "compactionThreshold": "Compress when the number of messages exceeds this count."
       ,"currentProvider": "The provider and model used for new agent requests."
-      ,"manageProviders": "Test connections, replace credentials, and choose the active model."
+      ,"manageProviders": "Test connections, replace credentials, and choose the active model.",
+      "apiKeyConfigured": "A key is configured for this provider. You can replace or manage it here.",
+      "apiKeyMissing": "Add an API key and test the connection to use this provider.",
+      "apiKeyNotRequired": "This provider does not need an API key. Manage its model here."
     },
     "values": {
       "light": "Light",
@@ -245,7 +249,9 @@
       "saving": "Saving",
       "edit": "Edit",
       "cancel": "Cancel"
-      ,"openProviderSettings": "Open model settings"
+      ,"openProviderSettings": "Open model settings",
+      "configureApiKey": "Configure API key",
+      "manageApiKey": "Manage API key"
     },
     "providers": {
       "title": "Provider connections",
@@ -258,6 +264,8 @@
       "environmentManagedHint": "Change or remove this credential outside catbuddy, then restart the desktop app. You can still test it here.",
       "secureStorage": "Protected by system credential storage · {{backend}}",
       "configureHint": "Add credentials and verify the connection",
+      "addApiKey": "Add API key",
+      "configureProvider": "Configure provider",
       "setActive": "Set active",
       "saveAndKeepActive": "Save changes",
       "saveAndActivate": "Save and activate",
@@ -338,7 +346,8 @@
       "apiKeyConfigured": "A key is already configured",
       "apiKeyPlaceholder": "Paste API key",
       "model": "Model",
-      "modelRecommended": "Choose a suggested model or enter another model ID.",
+      "modelRecommended": "Choose a model from the list, or select “Other model ID” to enter one.",
+      "modelCustom": "Other model ID",
       "modelManual": "Enter the exact model ID provided by your provider.",
       "modelPlaceholder": "e.g. deepseek-chat",
       "showAdvanced": "Show advanced endpoint settings",

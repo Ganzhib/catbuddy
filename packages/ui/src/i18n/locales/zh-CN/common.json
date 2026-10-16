@@ -202,7 +202,8 @@
       "compactionEnable": "启用",
       "compactionThreshold": "消息阈值"
       ,"currentProvider": "当前服务提供商"
-      ,"manageProviders": "模型服务配置"
+      ,"manageProviders": "模型服务配置",
+      "apiKey": "API 密钥"
     },
     "help": {
       "theme": "在浅色和深色外观之间切换。",
@@ -213,7 +214,10 @@
       "compactionEnable": "自动压缩旧对话以节省 token（Agent 状态机 COMPACT 步骤）。",
       "compactionThreshold": "当消息数超过此值时触发压缩。"
       ,"currentProvider": "新的 Agent 请求将使用这个服务提供商和模型。"
-      ,"manageProviders": "测试连接、替换凭证，并选择当前模型。"
+      ,"manageProviders": "测试连接、替换凭证，并选择当前模型。",
+      "apiKeyConfigured": "当前服务已配置密钥，可在这里替换或管理。",
+      "apiKeyMissing": "当前服务尚未配置密钥，请添加密钥并测试连接。",
+      "apiKeyNotRequired": "当前服务无需 API 密钥，可在这里管理模型。"
     },
     "values": {
       "light": "浅色",
@@ -233,7 +237,9 @@
       "saving": "保存中",
       "edit": "编辑",
       "cancel": "取消"
-      ,"openProviderSettings": "打开模型设置"
+      ,"openProviderSettings": "打开模型设置",
+      "configureApiKey": "配置 API 密钥",
+      "manageApiKey": "管理 API 密钥"
     },
     "providers": {
       "title": "模型服务连接",
@@ -246,6 +252,8 @@
       "environmentManagedHint": "请在 catbuddy 外部修改或删除该凭证，然后重启桌面客户端。你仍可在这里测试连接。",
       "secureStorage": "由系统凭据存储保护 · {{backend}}",
       "configureHint": "添加凭证并验证连接",
+      "addApiKey": "添加 API 密钥",
+      "configureProvider": "配置服务",
       "setActive": "设为当前",
       "saveAndKeepActive": "保存更改",
       "saveAndActivate": "保存并启用",
@@ -326,7 +334,8 @@
       "apiKeyConfigured": "已经配置密钥",
       "apiKeyPlaceholder": "粘贴 API 密钥",
       "model": "模型",
-      "modelRecommended": "选择推荐模型，或输入其他模型 ID。",
+      "modelRecommended": "从列表选择模型，或选择“其他模型 ID”手动输入。",
+      "modelCustom": "其他模型 ID",
       "modelManual": "请输入服务提供商给出的准确模型 ID。",
       "modelPlaceholder": "例如 deepseek-chat",
       "showAdvanced": "显示高级服务地址设置",

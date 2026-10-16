@@ -12,6 +12,7 @@ import { ThreadShell } from '@/components/thread/ThreadShell'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useSessions } from '@/hooks/useSessions'
 import { useDeferredTitleRefresh } from '@/hooks/useDeferredTitleRefresh'
+import { useDesktopUpdate } from '@/hooks/useDesktopUpdate'
 import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
 import { AuthGate } from '@/components/auth/AuthGate'
@@ -62,6 +63,7 @@ function Shell({
   const { t } = useTranslation()
   const { client } = useClient()
   const { theme, toggle } = useTheme()
+  const desktopUpdate = useDesktopUpdate()
   const { sessions, loading, refresh, createChat, deleteChat } = useSessions()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [draftWorkspaceFolderId, setDraftWorkspaceFolderId] = useState<string | null>(null)
@@ -238,7 +240,7 @@ function Shell({
   const sidebarProps = {
     sessions, activeKey, activePanel: view, loading, onNewChat, onCreateChat, onSelect: onSelectChat,
     onRequestDelete: (key: string, label: string) => setPendingDelete({ key, label }),
-    onSelectPanel, onOpenSettings,
+    onSelectPanel, onOpenSettings, updateStatus: desktopUpdate.status,
   }
 
   return (
@@ -345,6 +347,10 @@ function Shell({
                   await window.catbuddy?.restartApp()
                 }}
                 isRestarting={isRestarting}
+                updateStatus={desktopUpdate.status}
+                updateActionError={desktopUpdate.actionError}
+                onCheckForUpdate={desktopUpdate.check}
+                onDownloadUpdate={desktopUpdate.download}
               />
             </div>
           )}

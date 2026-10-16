@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  Download,
   Menu,
   MessageSquarePlus,
   Plug,
@@ -21,7 +22,7 @@ import { sb, sbInput } from "@/lib/sidebar-styles";
 import { cn } from "@/lib/utils";
 import type { SidebarPanel } from "@/lib/sidebar-panel";
 import { hasCatbuddyIpc } from "@catbuddy/platform";
-import type { ChatSummary, WorkspaceFolder } from "@catbuddy/shared";
+import type { ChatSummary, DesktopUpdateStatus, WorkspaceFolder } from "@catbuddy/shared";
 
 interface SidebarProps {
   sessions: ChatSummary[];
@@ -34,6 +35,7 @@ interface SidebarProps {
   onRequestDelete: (key: string, label: string) => void;
   onSelectPanel: (panel: SidebarPanel) => void;
   onOpenSettings: () => void;
+  updateStatus: DesktopUpdateStatus | null;
   onCollapse: () => void;
 }
 
@@ -189,6 +191,16 @@ export function Sidebar(props: SidebarProps) {
 
         <GatewayRemoteSwitch />
         <DesktopClientDownload variant="sidebar" />
+        {isDesktop && props.updateStatus?.state === "available" ? (
+          <button
+            type="button"
+            onClick={props.onOpenSettings}
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg bg-primary/10 px-3 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Download className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">{t("sidebar.updateAvailable", { version: props.updateStatus.latestVersion })}</span>
+          </button>
+        ) : null}
 
         {isDesktop ? (
           <div className="space-y-3">

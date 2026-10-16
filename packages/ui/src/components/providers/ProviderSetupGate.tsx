@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight, KeyRound, Laptop, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowRight, Download, KeyRound, Laptop, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDesktopUpdate } from "@/hooks/useDesktopUpdate";
 import { ProviderEditor } from "./ProviderEditor";
 import {
   activeProvider,
@@ -59,6 +60,7 @@ export function ProviderSetupView({
   onComplete: (settings: ProviderSettingsPayload) => void;
 }) {
   const { t } = useTranslation();
+  const desktopUpdate = useDesktopUpdate();
   const providers = settings.providers as ProviderInfo[];
   const initial = activeProvider(settings) ?? providers[0] ?? null;
   const [selectedName, setSelectedName] = useState(initial?.name ?? "");
@@ -77,6 +79,22 @@ export function ProviderSetupView({
           <BrandLogo className="h-8 w-auto" />
           <span className="text-xs font-medium text-muted-foreground">{t("providerSetup.step")}</span>
         </header>
+
+        {desktopUpdate.status?.state === "available" ? (
+          <div className="mt-6 flex flex-col gap-3 border-y border-primary/25 bg-primary/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold">{t("settings.updates.availableTitle")}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {t("settings.updates.availableDescription", { version: desktopUpdate.status.latestVersion })}
+              </p>
+              {desktopUpdate.actionError ? <p className="mt-2 text-xs text-destructive" role="alert">{t("settings.updates.actionFailed")}</p> : null}
+            </div>
+            <Button className="min-h-11 shrink-0" onClick={() => void desktopUpdate.download()}>
+              <Download className="mr-2 h-4 w-4" aria-hidden />
+              {t("settings.updates.download", { version: desktopUpdate.status.latestVersion })}
+            </Button>
+          </div>
+        ) : null}
 
         <div className="grid gap-10 py-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-16 lg:py-14">
           <section aria-labelledby="provider-setup-title">

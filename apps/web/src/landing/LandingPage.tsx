@@ -22,6 +22,11 @@ import { Reveal, useMagnetic, useScrollProgress, useScrolled, useTilt } from './
 
 const APP_HREF = '/app'
 
+const COMMUNITY_LINKS = [
+  { label: 'GitHub', href: 'https://github.com/Ganzhib/catbuddy' },
+  { label: '稀土掘金专栏', href: 'https://juejin.cn/column/7642179319759011859' },
+] as const
+
 /* Warm-light palette — soft cream surfaces, sky/teal with a coral pop. */
 const SURFACE = 'border border-[#1E3A8A]/10 bg-white/70 shadow-sm shadow-sky-900/[0.04] backdrop-blur-sm'
 const SURFACE_HOVER = 'hover:border-sky-300/70 hover:bg-white/90 hover:shadow-xl hover:shadow-sky-500/10'
@@ -273,6 +278,24 @@ function HeroSection() {
 
           <div className="landing-enter" style={{ '--enter-delay': '480ms' } as CSSProperties}>
             <CtaRow loginLabel="网页端体验" className="mt-7" />
+          </div>
+
+          <div
+            className="landing-enter mt-4 flex flex-wrap gap-x-5 gap-y-2"
+            style={{ '--enter-delay': '520ms' } as CSSProperties}
+          >
+            {COMMUNITY_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn('inline-flex items-center gap-1 text-xs font-medium underline-offset-4 transition-colors hover:text-sky-600 hover:underline', authBodyStrong)}
+              >
+                {link.label}
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+              </a>
+            ))}
           </div>
 
           <div

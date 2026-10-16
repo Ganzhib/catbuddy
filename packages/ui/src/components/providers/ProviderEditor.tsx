@@ -38,13 +38,17 @@ export function ProviderEditor({
   const apiKeyId = useId();
   const apiBaseId = useId();
   const modelId = useId();
-  const modelListId = useId();
   const recommendedModels = useMemo(() => providerModels(provider), [provider]);
   const [apiKey, setApiKey] = useState("");
   const [apiBase, setApiBase] = useState(provider.api_base ?? provider.default_api_base ?? "");
   const [model, setModel] = useState(
     currentModel?.trim() || recommendedModels[0] || "",
   );
+  const [manualModel, setManualModel] = useState(
+    recommendedModels.length === 0 ||
+    (!!currentModel?.trim() && !recommendedModels.includes(currentModel.trim())),
+  );
+  const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
   const [showKey, setShowKey] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(
     provider.name === "custom" || provider.api_key_required === false,
@@ -59,6 +63,8 @@ export function ProviderEditor({
     setApiKey("");
     setApiBase(provider.api_base ?? provider.default_api_base ?? "");
     setModel(currentModel?.trim() || recommendedModels[0] || "");
+    setManualModel(recommendedModels.length === 0 || (!!currentModel?.trim() && !recommendedModels.includes(currentModel.trim())));
+    setDiscoveredModels([]);
     setShowKey(false);
     setAdvancedOpen(provider.name === "custom" || provider.api_key_required === false);
     setTestResult(null);
@@ -104,6 +110,7 @@ export function ProviderEditor({
     try {
       const result = await testProviderDraft(token, draft());
       setTestResult(result);
+      if (result.ok) setDiscoveredModels(result.models ?? []);
       if (!result.ok) setFormError(result.message || t("providerSetup.errors.testFailed"));
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : String(caught);
@@ -139,8 +146,7 @@ export function ProviderEditor({
   };
 
   const keyRequired = provider.api_key_required ?? true;
-  const discoveredModels = testResult?.models ?? [];
-  const modelOptions = [...new Set([...discoveredModels, ...recommendedModels])];
+  const modelOptions = [...new Set([...recommendedModels, ...discoveredModels])];
 
   return (
     <div className={cn("space-y-5", compact && "space-y-4")}>
@@ -219,26 +225,60 @@ export function ProviderEditor({
             ? t("providerSetup.fields.modelRecommended")
             : t("providerSetup.fields.modelManual")}
         </p>
-        <Input
-          id={modelId}
-          list={modelOptions.length > 0 ? modelListId : undefined}
-          value={model}
-          aria-invalid={!!fieldErrors.model}
-          aria-describedby={`${modelId}-hint${fieldErrors.model ? ` ${modelId}-error` : ""}`}
-          className="mt-2 h-11"
-          placeholder={t("providerSetup.fields.modelPlaceholder")}
-          onChange={(event) => {
-            setModel(event.target.value);
-            setFieldErrors((current) => ({ ...current, model: undefined }));
-            invalidateTest();
-          }}
-          disabled={managedExternally}
-        />
         {modelOptions.length > 0 ? (
-          <datalist id={modelListId}>
-            {modelOptions.map((option) => <option key={option} value={option} />)}
-          </datalist>
-        ) : null}
+          <>
+            <select
+              id={modelId}
+              value={manualModel ? "__custom__" : model}
+              aria-invalid={!!fieldErrors.model}
+              aria-describedby={`${modelId}-hint${fieldErrors.model ? ` ${modelId}-error` : ""}`}
+              className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onChange={(event) => {
+                const selected = event.target.value;
+                setManualModel(selected === "__custom__");
+                setModel(selected === "__custom__" ? "" : selected);
+                setFieldErrors((current) => ({ ...current, model: undefined }));
+                invalidateTest();
+              }}
+              disabled={managedExternally}
+            >
+              {modelOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              <option value="__custom__">{t("providerSetup.fields.modelCustom")}</option>
+            </select>
+            {manualModel ? (
+              <Input
+                id={`${modelId}-custom`}
+                aria-label={t("providerSetup.fields.modelCustom")}
+                value={model}
+                aria-invalid={!!fieldErrors.model}
+                aria-describedby={`${modelId}-hint${fieldErrors.model ? ` ${modelId}-error` : ""}`}
+                className="mt-2 h-11"
+                placeholder={t("providerSetup.fields.modelPlaceholder")}
+                onChange={(event) => {
+                  setModel(event.target.value);
+                  setFieldErrors((current) => ({ ...current, model: undefined }));
+                  invalidateTest();
+                }}
+                disabled={managedExternally}
+              />
+            ) : null}
+          </>
+        ) : (
+          <Input
+            id={modelId}
+            value={model}
+            aria-invalid={!!fieldErrors.model}
+            aria-describedby={`${modelId}-hint${fieldErrors.model ? ` ${modelId}-error` : ""}`}
+            className="mt-2 h-11"
+            placeholder={t("providerSetup.fields.modelPlaceholder")}
+            onChange={(event) => {
+              setModel(event.target.value);
+              setFieldErrors((current) => ({ ...current, model: undefined }));
+              invalidateTest();
+            }}
+            disabled={managedExternally}
+          />
+        )}
         {fieldErrors.model ? (
           <p id={`${modelId}-error`} className="mt-1.5 text-xs text-destructive">{fieldErrors.model}</p>
         ) : null}

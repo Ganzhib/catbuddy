@@ -172,6 +172,8 @@ function GeneralSettings({
 }) {
   const { t } = useTranslation();
   const provider = activeProvider(settings);
+  const keyRequired = provider?.api_key_required ?? true;
+  const keyConfigured = provider?.configured || settings.agent.has_api_key;
   return (
     <div className="space-y-10">
       <SettingsSection title={t("settings.sections.currentModel")}>
@@ -184,9 +186,34 @@ function GeneralSettings({
             <p className="mt-1 text-xs text-muted-foreground">{settings.agent.model || t("settings.values.notAvailable")}</p>
           </div>
         </SettingsRow>
-        <SettingsRow title={t("settings.rows.manageProviders")} description={t("settings.help.manageProviders")}>
-          <Button variant="outline" className="min-h-11" onClick={onOpenProviders}>{t("settings.actions.openProviderSettings")}</Button>
-        </SettingsRow>
+        <div className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <KeyRound className="h-4 w-4" aria-hidden />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">{t("settings.rows.apiKey")}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {provider?.credential_source === "environment"
+                  ? t("settings.providers.environmentManaged")
+                  : !keyRequired
+                    ? t("settings.help.apiKeyNotRequired")
+                    : keyConfigured
+                      ? t("settings.help.apiKeyConfigured")
+                      : t("settings.help.apiKeyMissing")}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={keyConfigured || !keyRequired ? "outline" : "default"}
+            className="min-h-11 w-full sm:w-auto sm:shrink-0"
+            onClick={onOpenProviders}
+          >
+            {keyConfigured || !keyRequired
+              ? t("settings.actions.manageApiKey")
+              : t("settings.actions.configureApiKey")}
+          </Button>
+        </div>
       </SettingsSection>
 
       <SettingsSection title={t("settings.sections.interface")}>

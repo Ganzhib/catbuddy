@@ -65,9 +65,12 @@ jobs:
           ssh_args="-i $HOME/.ssh/taoqi_deploy -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=20 -o ServerAliveCountMax=3"
           echo "Creating the dedicated site directory"
           timeout 60 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'install -d -m 755 /var/www/taoqi-pet'
-          echo "Uploading the static site"
-          timeout 180 rsync -rzc --delete --stats -e "ssh $ssh_args" "$RUNNER_TEMP/taoqi-site/" \
-            "$DEPLOY_USER@$DEPLOY_HOST:/var/www/taoqi-pet/"
+          echo "Uploading the static site archive"
+          tar -C "$RUNNER_TEMP/taoqi-site" -czf "$RUNNER_TEMP/taoqi-site.tar.gz" .
+          timeout 150 scp $ssh_args "$RUNNER_TEMP/taoqi-site.tar.gz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz"
+          timeout 60 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" \
+            "tar -xzf /tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz -C /var/www/taoqi-pet && rm -f /tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz"
           echo "Configuring the Nginx virtual host"
           timeout 90 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'bash -se' <<'REMOTE'
           set -euo pipefail

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     environment:
       name: production
       url: https://pet.ganzhibin.icu/
@@ -67,7 +67,7 @@ jobs:
           timeout 60 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'install -d -m 755 /var/www/taoqi-pet'
           echo "Uploading the static site archive"
           tar -C "$RUNNER_TEMP/taoqi-site" -czf "$RUNNER_TEMP/taoqi-site.tar.gz" .
-          timeout 150 scp $ssh_args "$RUNNER_TEMP/taoqi-site.tar.gz" \
+          timeout 1200 scp $ssh_args "$RUNNER_TEMP/taoqi-site.tar.gz" \
             "$DEPLOY_USER@$DEPLOY_HOST:/tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz"
           timeout 60 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" \
             "tar -xzf /tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz -C /var/www/taoqi-pet && rm -f /tmp/taoqi-site-$GITHUB_RUN_ID.tar.gz"

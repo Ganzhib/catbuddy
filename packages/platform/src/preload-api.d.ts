@@ -107,6 +107,10 @@ export interface CatbuddyPreloadApi {
   ): Promise<import('@catbuddy/shared').SkillInstallResult>
 
   restartApp(): Promise<void>
+  getDesktopUpdateStatus(): Promise<import('@catbuddy/shared').DesktopUpdateStatus>
+  checkDesktopUpdate(): Promise<import('@catbuddy/shared').DesktopUpdateStatus>
+  openDesktopUpdate(): Promise<void>
+  onDesktopUpdateStatus(cb: (status: import('@catbuddy/shared').DesktopUpdateStatus) => void): () => void
 
   getChannelsStatus(): Promise<Record<string, ChannelStatus>>
 

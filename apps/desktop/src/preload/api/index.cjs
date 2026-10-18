@@ -98,6 +98,10 @@ function createCatbuddyApi() {
       ipcRenderer.invoke(IPC.SKILLS_MARKETPLACE_INSTALL, { id }),
 
     restartApp: () => ipcRenderer.invoke('app:restart'),
+    getDesktopUpdateStatus: () => ipcRenderer.invoke(IPC.APP_UPDATE_STATUS),
+    checkDesktopUpdate: () => ipcRenderer.invoke(IPC.APP_UPDATE_CHECK),
+    openDesktopUpdate: () => ipcRenderer.invoke(IPC.APP_UPDATE_DOWNLOAD),
+    onDesktopUpdateStatus: (cb) => subscribe(IPC.APP_UPDATE_STATUS_CHANGED, cb),
 
     getChannelsStatus: () => ipcRenderer.invoke(IPC.CHANNELS_STATUS),
 

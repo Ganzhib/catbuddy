@@ -63,6 +63,7 @@
     "recent": "最近对话",
     "refreshSessions": "刷新会话",
     "settings": "设置",
+    "updateAvailable": "发现新版本 v{{version}}",
     "nav": {
       "mcp": "MCP",
       "skills": "SKILL",
@@ -162,6 +163,21 @@
       "ai": "AI",
       "system": "系统",
       "currentModel": "当前模型"
+    },
+    "updates": {
+      "title": "应用更新",
+      "installedVersion": "当前版本",
+      "availableTitle": "有新版本可用",
+      "availableDescription": "v{{version}} 已发布。下载对应系统的安装包并运行即可更新。",
+      "current": "已是最新版本。",
+      "checking": "正在检查 GitHub 发布版本…",
+      "checkFailed": "检查失败，请确认网络连接后重试。",
+      "checkHint": "检查是否有新版本可用。",
+      "checkTitle": "检查更新",
+      "download": "下载更新 v{{version}}",
+      "checkingButton": "检查中…",
+      "checkButton": "检查更新",
+      "actionFailed": "更新操作失败，请重试。"
     },
     "gatewayRemote": {
       "section": "远程控制",

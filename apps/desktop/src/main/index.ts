@@ -8,6 +8,7 @@ import { configureElectronApp } from "./configure-app.js";
 import { loadCatbuddyEnv, loadEnvFile } from "./utils/index.js";
 import { createMainWindow } from "./windows/main-window.js";
 import { initAgent } from "./services/init-agent.js";
+import { registerDesktopUpdateHandlers, startDesktopUpdateChecks } from "./services/desktop-update.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -39,10 +40,12 @@ if (isPrimaryInstance) {
 app.whenReady().then(async () => {
   if (!isPrimaryInstance) return;
   loadEnvFile(path.join(app.getPath("home"), ".catbuddy.env"));
+  registerDesktopUpdateHandlers();
 
   await initAgent();
 
   mainWindow = createMainWindow();
+  startDesktopUpdateChecks();
   console.log("[main] Main window created");
   mainWindow.on("closed", () => {
     mainWindow = null;

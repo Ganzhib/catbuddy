@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: taoqi-pet-site-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -62,11 +62,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh_args="-i $HOME/.ssh/taoqi_deploy -o StrictHostKeyChecking=accept-new"
-          ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'install -d -m 755 /var/www/taoqi-pet'
-          rsync -rzc --delete -e "ssh $ssh_args" "$RUNNER_TEMP/taoqi-site/" \
+          ssh_args="-i $HOME/.ssh/taoqi_deploy -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=20 -o ServerAliveCountMax=3"
+          echo "Creating the dedicated site directory"
+          timeout 60 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'install -d -m 755 /var/www/taoqi-pet'
+          echo "Uploading the static site"
+          timeout 180 rsync -rzc --delete --stats -e "ssh $ssh_args" "$RUNNER_TEMP/taoqi-site/" \
             "$DEPLOY_USER@$DEPLOY_HOST:/var/www/taoqi-pet/"
-          ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'bash -se' <<'REMOTE'
+          echo "Configuring the Nginx virtual host"
+          timeout 90 ssh $ssh_args "$DEPLOY_USER@$DEPLOY_HOST" 'bash -se' <<'REMOTE'
           set -euo pipefail
           domain=pet.ganzhibin.icu
           config="/etc/nginx/sites-available/$domain"

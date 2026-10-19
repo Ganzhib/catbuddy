@@ -1,6 +1,6 @@
 {
   "name": "@catbuddy/desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "catbuddy desktop — Electron + local agent",
   "main": "dist-electron/index.js",
